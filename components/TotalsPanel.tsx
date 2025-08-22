@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
@@ -113,66 +113,64 @@ export function TotalsPanel() {
           </div>
         </CardHeader>
         <CardContent className={isCompactMode ? "max-h-64 overflow-y-auto" : ""}>
-          {summary.personTotals.length === 0 && !isAddingPerson ? (
-            <div className="text-center py-6 text-muted-foreground">
-              <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">Add people to the bill</p>
-            </div>
-          ) : (
-            <div className={`space-y-${isCompactMode ? "2" : "3"}`}>
-              {summary.personTotals.map((personTotal) => {
-                const person = getPerson(personTotal.personId)
-                if (!person) return null
+          <div className={`space-y-${isCompactMode ? "2" : "3"}`}>
+            {summary.personTotals.map((personTotal) => {
+              const person = getPerson(personTotal.personId)
+              if (!person) return null
 
-                return (
-                  <div key={person.id} className="flex items-center justify-between group">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`${isCompactMode ? "w-2 h-2" : "w-3 h-3"} rounded-full`}
-                        style={{ backgroundColor: person.color }}
-                      />
-                      <span className={`font-medium ${isCompactMode ? "text-xs" : "text-sm"}`}>{person.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="secondary"
-                        className={`font-mono ${isCompactMode ? "text-xs px-2 py-0" : ""} ${hasLargeAmounts ? "text-xs" : ""}`}
-                      >
-                        {formatCurrency(personTotal.total)}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemovePerson(person.id)}
-                        className="h-6 w-6 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
+              return (
+                <div key={person.id} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`${isCompactMode ? "w-2 h-2" : "w-3 h-3"} rounded-full`}
+                      style={{ backgroundColor: person.color }}
+                    />
+                    <span className={`font-medium ${isCompactMode ? "text-xs" : "text-sm"}`}>{person.name}</span>
                   </div>
-                )
-              })}
-            </div>
-          )}
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className={`font-mono ${isCompactMode ? "text-xs px-2 py-0" : ""} ${hasLargeAmounts ? "text-xs" : ""}`}
+                    >
+                      {formatCurrency(personTotal.total)}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemovePerson(person.id)}
+                      className="h-6 w-6 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+            {isAddingPerson && (
+              <div className="flex items-center gap-2 pt-2">
+                <div className={`${isCompactMode ? "w-2 h-2" : "w-3 h-3"} rounded-full bg-transparent`} />
+                <Input
+                  type="text"
+                  placeholder="Enter name"
+                  value={newPersonName}
+                  onChange={(e) => setNewPersonName(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  className="h-8 text-sm flex-1"
+                  autoFocus
+                />
+                <Button size="sm" onClick={handleAddPerson} disabled={!newPersonName.trim()} className="h-8 px-3">
+                  Add
+                </Button>
+              </div>
+            )}
+            {summary.personTotals.length === 0 && !isAddingPerson && (
+              <div className="text-center py-6 text-muted-foreground">
+                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-xs">Add people to the bill</p>
+              </div>
+            )}
+          </div>
         </CardContent>
-        {isAddingPerson && (
-          <CardFooter>
-            <div className="flex items-center gap-2 w-full">
-              <Input
-                type="text"
-                placeholder="Enter name"
-                value={newPersonName}
-                onChange={(e) => setNewPersonName(e.target.value)}
-                onKeyDown={handleKeyPress}
-                className="h-8 text-sm"
-                autoFocus
-              />
-              <Button size="sm" onClick={handleAddPerson} disabled={!newPersonName.trim()} className="h-8 px-3">
-                Add
-              </Button>
-            </div>
-          </CardFooter>
-        )}
       </Card>
 
       {/* Bill Summary */}
