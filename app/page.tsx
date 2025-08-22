@@ -13,11 +13,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
-import { Receipt, Plus, Users, ChevronDown, MoreVertical, Copy, Upload } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Receipt, Plus, Users, ChevronDown, MoreVertical, Copy, Upload, X, Lightbulb } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()

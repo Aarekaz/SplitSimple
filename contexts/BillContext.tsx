@@ -179,13 +179,14 @@ function billReducer(state: BillState, action: BillAction): BillState {
       return addToHistory(state, newBill)
     }
 
-    case "LOAD_BILL":
+    case "LOAD_BILL": {
       return {
-        ...state,
+        ...initialState,
         currentBill: action.payload,
         history: [],
         historyIndex: -1,
       }
+    }
 
     case "NEW_BILL": {
       const newBill = createInitialBill()
