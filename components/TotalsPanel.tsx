@@ -1,19 +1,48 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import React, { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { Calculator, Users, Receipt } from "lucide-react"
+import { Calculator, Users, Receipt, Plus, X } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { getBillSummary } from "@/lib/calculations"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 export function TotalsPanel() {
   const { state, dispatch } = useBill()
   const summary = getBillSummary(state.currentBill)
+  const [newPersonName, setNewPersonName] = useState("")
+  const [isAddingPerson, setIsAddingPerson] = useState(false)
 
   const handleTaxTipAllocationChange = (allocation: "proportional" | "even" | "specific") => {
     dispatch({ type: "SET_TAX_TIP_ALLOCATION", payload: allocation })
+  }
+
+  const handleAddPerson = () => {
+    if (newPersonName.trim()) {
+      dispatch({
+        type: "ADD_PERSON",
+        payload: { name: newPersonName.trim(), color: "" },
+      })
+      setNewPersonName("")
+      setIsAddingPerson(false)
+    }
+  }
+
+  const handleRemovePerson = (personId: string) => {
+    dispatch({ type: "REMOVE_PERSON", payload: personId })
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleAddPerson()
+    } else if (e.key === "Escape") {
+      setIsAddingPerson(false)
+      setNewPersonName("")
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -62,24 +91,32 @@ export function TotalsPanel() {
         </Card>
       )}
 
-      {/* Person Totals */}
+      {/* People Panel */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Individual Totals
-            {peopleCount > 0 && (
-              <Badge variant="outline" className="ml-auto text-xs">
-                {peopleCount}
-              </Badge>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              People
+              {peopleCount > 0 && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {peopleCount}
+                </Badge>
+              )}
+            </CardTitle>
+            {!isAddingPerson && (
+              <Button variant="outline" size="sm" onClick={() => setIsAddingPerson(true)} className="h-7 px-2 text-xs">
+                <Plus className="h-3 w-3 mr-1" />
+                Add
+              </Button>
             )}
-          </CardTitle>
+          </div>
         </CardHeader>
         <CardContent className={isCompactMode ? "max-h-64 overflow-y-auto" : ""}>
-          {summary.personTotals.length === 0 ? (
+          {summary.personTotals.length === 0 && !isAddingPerson ? (
             <div className="text-center py-6 text-muted-foreground">
               <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">Add people to see individual totals</p>
+              <p className="text-xs">Add people to the bill</p>
             </div>
           ) : (
             <div className={`space-y-${isCompactMode ? "2" : "3"}`}>
@@ -88,49 +125,54 @@ export function TotalsPanel() {
                 if (!person) return null
 
                 return (
-                  <div key={person.id} className={`space-y-${isCompactMode ? "1" : "2"}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`${isCompactMode ? "w-2 h-2" : "w-3 h-3"} rounded-full`}
-                          style={{ backgroundColor: person.color }}
-                        />
-                        <span className={`font-medium ${isCompactMode ? "text-xs" : "text-sm"}`}>{person.name}</span>
-                      </div>
+                  <div key={person.id} className="flex items-center justify-between group">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`${isCompactMode ? "w-2 h-2" : "w-3 h-3"} rounded-full`}
+                        style={{ backgroundColor: person.color }}
+                      />
+                      <span className={`font-medium ${isCompactMode ? "text-xs" : "text-sm"}`}>{person.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Badge
                         variant="secondary"
                         className={`font-mono ${isCompactMode ? "text-xs px-2 py-0" : ""} ${hasLargeAmounts ? "text-xs" : ""}`}
                       >
                         {formatCurrency(personTotal.total)}
                       </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemovePerson(person.id)}
+                        className="h-6 w-6 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
-
-                    {(personTotal.tax > 0 || personTotal.tip > 0) && !isCompactMode && (
-                      <div className="ml-5 space-y-1 text-xs text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>Subtotal:</span>
-                          <span>{formatCurrency(personTotal.subtotal)}</span>
-                        </div>
-                        {personTotal.tax > 0 && (
-                          <div className="flex justify-between">
-                            <span>Tax:</span>
-                            <span>{formatCurrency(personTotal.tax)}</span>
-                          </div>
-                        )}
-                        {personTotal.tip > 0 && (
-                          <div className="flex justify-between">
-                            <span>Tip:</span>
-                            <span>{formatCurrency(personTotal.tip)}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 )
               })}
             </div>
           )}
         </CardContent>
+        {isAddingPerson && (
+          <CardFooter>
+            <div className="flex items-center gap-2 w-full">
+              <Input
+                type="text"
+                placeholder="Enter name"
+                value={newPersonName}
+                onChange={(e) => setNewPersonName(e.target.value)}
+                onKeyDown={handleKeyPress}
+                className="h-8 text-sm"
+                autoFocus
+              />
+              <Button size="sm" onClick={handleAddPerson} disabled={!newPersonName.trim()} className="h-8 px-3">
+                Add
+              </Button>
+            </div>
+          </CardFooter>
+        )}
       </Card>
 
       {/* Bill Summary */}

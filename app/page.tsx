@@ -6,7 +6,6 @@ import { CollapsibleItemsTable } from "@/components/CollapsibleItemsTable"
 import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { ExportActions } from "@/components/ExportActions"
-import { PeopleManager } from "@/components/PeopleManager"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -124,7 +123,6 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-4 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <PeopleManager />
             <CollapsibleItemsTable />
           </div>
 
