@@ -31,7 +31,7 @@ export function evaluatePrice(input: string): number {
   }
 }
 
-// Calculate how much each person owes for a specific item
+// Calculate how much each person owes for a specific item, ensuring no "penny problems"
 export function calculateItemSplits(item: Item, people: Person[]): Record<string, number> {
   const splits: Record<string, number> = {}
   const selectedPeople = people.filter((p) => item.splitWith.includes(p.id))
@@ -40,34 +40,58 @@ export function calculateItemSplits(item: Item, people: Person[]): Record<string
     return splits
   }
 
+  let totalAmountSplit = 0
+  const priceInCents = Math.round(item.price * 100)
+
   switch (item.method) {
-    case "even":
-      const evenAmount = item.price / selectedPeople.length
-      selectedPeople.forEach((person) => {
-        splits[person.id] = Math.round(evenAmount * 100) / 100
+    case "even": {
+      const amountPerPerson = Math.floor(priceInCents / selectedPeople.length)
+      selectedPeople.forEach((person, index) => {
+        if (index < selectedPeople.length - 1) {
+          splits[person.id] = amountPerPerson / 100
+          totalAmountSplit += amountPerPerson
+        } else {
+          // Last person gets the remainder
+          splits[person.id] = (priceInCents - totalAmountSplit) / 100
+        }
       })
       break
+    }
 
-    case "shares":
+    case "shares": {
       if (item.customSplits) {
         const totalShares = selectedPeople.reduce((sum, person) => sum + (item.customSplits![person.id] || 0), 0)
         if (totalShares > 0) {
-          selectedPeople.forEach((person) => {
-            const shares = item.customSplits![person.id] || 0
-            splits[person.id] = Math.round(((item.price * shares) / totalShares) * 100) / 100
+          selectedPeople.forEach((person, index) => {
+            if (index < selectedPeople.length - 1) {
+              const shares = item.customSplits![person.id] || 0
+              const amount = Math.round((priceInCents * shares) / totalShares)
+              splits[person.id] = amount / 100
+              totalAmountSplit += amount
+            } else {
+              splits[person.id] = (priceInCents - totalAmountSplit) / 100
+            }
           })
         }
       }
       break
+    }
 
-    case "percent":
+    case "percent": {
       if (item.customSplits) {
-        selectedPeople.forEach((person) => {
-          const percent = item.customSplits![person.id] || 0
-          splits[person.id] = Math.round(((item.price * percent) / 100) * 100) / 100
+        selectedPeople.forEach((person, index) => {
+          if (index < selectedPeople.length - 1) {
+            const percent = item.customSplits![person.id] || 0
+            const amount = Math.round((priceInCents * percent) / 100)
+            splits[person.id] = amount / 100
+            totalAmountSplit += amount
+          } else {
+            splits[person.id] = (priceInCents - totalAmountSplit) / 100
+          }
         })
       }
       break
+    }
 
     case "exact":
       if (item.customSplits) {
@@ -81,7 +105,7 @@ export function calculateItemSplits(item: Item, people: Person[]): Record<string
   return splits
 }
 
-// Calculate totals for each person
+// Calculate totals for each person, ensuring no "penny problems"
 export function calculatePersonTotals(bill: Bill): PersonTotal[] {
   const totals: PersonTotal[] = bill.people.map((person) => ({
     personId: person.id,
@@ -104,28 +128,47 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
 
   // Calculate tax and tip allocation
   const billSubtotal = totals.reduce((sum, t) => sum + t.subtotal, 0)
+  const taxInCents = Math.round(bill.tax * 100)
+  const tipInCents = Math.round(bill.tip * 100)
+  let totalTaxSplit = 0
+  let totalTipSplit = 0
 
   if (billSubtotal > 0) {
-    totals.forEach((personTotal) => {
+    totals.forEach((personTotal, index) => {
+      const isLastPerson = index === totals.length - 1
+
       switch (bill.taxTipAllocation) {
-        case "proportional":
+        case "proportional": {
           const proportion = personTotal.subtotal / billSubtotal
-          personTotal.tax = Math.round(bill.tax * proportion * 100) / 100
-          personTotal.tip = Math.round(bill.tip * proportion * 100) / 100
+          if (!isLastPerson) {
+            const taxAmount = Math.round(taxInCents * proportion)
+            const tipAmount = Math.round(tipInCents * proportion)
+            personTotal.tax = taxAmount / 100
+            personTotal.tip = tipAmount / 100
+            totalTaxSplit += taxAmount
+            totalTipSplit += tipAmount
+          } else {
+            personTotal.tax = (taxInCents - totalTaxSplit) / 100
+            personTotal.tip = (tipInCents - totalTipSplit) / 100
+          }
           break
+        }
 
-        case "even":
-          personTotal.tax = Math.round((bill.tax / bill.people.length) * 100) / 100
-          personTotal.tip = Math.round((bill.tip / bill.people.length) * 100) / 100
+        case "even": {
+          if (!isLastPerson) {
+            const taxAmount = Math.floor(taxInCents / totals.length)
+            const tipAmount = Math.floor(tipInCents / totals.length)
+            personTotal.tax = taxAmount / 100
+            personTotal.tip = tipAmount / 100
+            totalTaxSplit += taxAmount
+            totalTipSplit += tipAmount
+          } else {
+            personTotal.tax = (taxInCents - totalTaxSplit) / 100
+            personTotal.tip = (tipInCents - totalTipSplit) / 100
+          }
           break
-
-        case "specific":
-          // For now, distribute evenly - could be enhanced to allow custom allocation
-          personTotal.tax = Math.round((bill.tax / bill.people.length) * 100) / 100
-          personTotal.tip = Math.round((bill.tip / bill.people.length) * 100) / 100
-          break
+        }
       }
-
       personTotal.total = personTotal.subtotal + personTotal.tax + personTotal.tip
     })
   }

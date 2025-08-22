@@ -13,17 +13,9 @@ import { getBillSummary } from "@/lib/calculations"
 export function MobileTotalsBar() {
   const { state } = useBill()
   const summary = getBillSummary(state.currentBill)
-  const [isExpanded, setIsExpanded] = useState(false)
 
   const formatCurrency = (amount: number) => {
-    const symbol =
-      state.currentBill.currency === "USD"
-        ? "$"
-        : state.currentBill.currency === "EUR"
-          ? "€"
-          : state.currentBill.currency === "GBP"
-            ? "£"
-            : "$"
+    const symbol = "$"
     return `${symbol}${amount.toFixed(2)}`
   }
 
@@ -49,56 +41,22 @@ export function MobileTotalsBar() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      View Details
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[80vh]">
-                    <SheetHeader>
-                      <SheetTitle>Bill Totals</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-4 overflow-y-auto">
-                      <TotalsPanel />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-
-                <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="p-2">
-                  {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-
-            {/* Expanded View */}
-            {isExpanded && (
-              <div className="mt-4 pt-4 border-t space-y-2">
-                {summary.personTotals.slice(0, 3).map((personTotal) => {
-                  const person = getPerson(personTotal.personId)
-                  if (!person) return null
-
-                  return (
-                    <div key={person.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: person.color }} />
-                        <span className="text-sm">{person.name}</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {formatCurrency(personTotal.total)}
-                      </Badge>
-                    </div>
-                  )
-                })}
-
-                {summary.personTotals.length > 3 && (
-                  <div className="text-center text-xs text-muted-foreground">
-                    +{summary.personTotals.length - 3} more people
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    View Details
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="max-h-[80vh] flex flex-col">
+                  <SheetHeader className="px-6 pt-6">
+                    <SheetTitle>Bill Totals</SheetTitle>
+                  </SheetHeader>
+                  <div className="overflow-y-auto p-6 pt-4">
+                    <TotalsPanel compact />
                   </div>
-                )}
-              </div>
-            )}
+                </SheetContent>
+              </Sheet>
+            </div>
           </CardContent>
         </Card>
       </div>

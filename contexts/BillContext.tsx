@@ -22,10 +22,9 @@ export interface Item {
 export interface Bill {
   id: string
   title: string
-  currency: string
   tax: number
   tip: number
-  taxTipAllocation: "proportional" | "even" | "specific"
+  taxTipAllocation: "proportional" | "even"
   people: Person[]
   items: Item[]
 }
@@ -40,10 +39,9 @@ interface BillState {
 
 type BillAction =
   | { type: "SET_BILL_TITLE"; payload: string }
-  | { type: "SET_CURRENCY"; payload: string }
   | { type: "SET_TAX"; payload: number }
   | { type: "SET_TIP"; payload: number }
-  | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" | "specific" }
+  | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" }
   | { type: "ADD_PERSON"; payload: { name: string; color: string } }
   | { type: "REMOVE_PERSON"; payload: string }
   | { type: "ADD_ITEM"; payload: Omit<Item, "id"> }
@@ -81,7 +79,6 @@ const getRandomColor = () => {
 const createInitialBill = (): Bill => ({
   id: crypto.randomUUID(),
   title: "New Bill",
-  currency: "USD",
   tax: 0,
   tip: 0,
   taxTipAllocation: "proportional",
@@ -101,11 +98,6 @@ function billReducer(state: BillState, action: BillAction): BillState {
   switch (action.type) {
     case "SET_BILL_TITLE": {
       const newBill = { ...state.currentBill, title: action.payload }
-      return addToHistory(state, newBill)
-    }
-
-    case "SET_CURRENCY": {
-      const newBill = { ...state.currentBill, currency: action.payload }
       return addToHistory(state, newBill)
     }
 
