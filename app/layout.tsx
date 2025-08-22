@@ -36,33 +36,35 @@ html {
       </head>
       <body>
         <BillProvider>
-          {children}
-          <Toaster />
-          <footer className="container mx-auto max-w-6xl px-4 py-6 text-center text-sm text-muted-foreground">
-            <span>
-              Crafted by{" "}
-              <a
-                href="https://github.com/aarekaz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium underline underline-offset-4 hover:text-primary"
-              >
-                Anurag Dhungana
-              </a>
-              .
-            </span>
-            <span className="mx-2">|</span>
-            <span>
-              <a
-                href="https://github.com/aarekaz/splitsimple"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium underline underline-offset-4 hover:text-primary"
-              >
-                View Source on GitHub
-              </a>
-            </span>
-          </footer>
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-grow">{children}</main>
+            <Toaster />
+            <footer className="flex-shrink-0 container mx-auto max-w-6xl px-4 py-6 text-center text-sm text-muted-foreground">
+              <span>
+                Crafted by{" "}
+                <a
+                  href="https://github.com/aarekaz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-4 hover:text-primary"
+                >
+                  Anurag Dhungana
+                </a>
+                .
+              </span>
+              <span className="mx-2">|</span>
+              <span>
+                <a
+                  href="https://github.com/aarekaz/splitsimple"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-4 hover:text-primary"
+                >
+                  View Source on GitHub
+                </a>
+              </span>
+            </footer>
+          </div>
           <Analytics />
         </BillProvider>
       </body>

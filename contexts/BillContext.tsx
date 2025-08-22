@@ -47,6 +47,7 @@ type BillAction =
   | { type: "ADD_ITEM"; payload: Omit<Item, "id"> }
   | { type: "UPDATE_ITEM"; payload: Item }
   | { type: "REMOVE_ITEM"; payload: string }
+  | { type: "REORDER_ITEMS"; payload: { startIndex: number; endIndex: number } }
   | { type: "LOAD_BILL"; payload: Bill }
   | { type: "NEW_BILL" }
   | { type: "UNDO" }
@@ -175,6 +176,18 @@ function billReducer(state: BillState, action: BillAction): BillState {
       const newBill = {
         ...state.currentBill,
         items: state.currentBill.items.filter((item) => item.id !== action.payload),
+      }
+      return addToHistory(state, newBill)
+    }
+
+    case "REORDER_ITEMS": {
+      const { startIndex, endIndex } = action.payload
+      const newItems = Array.from(state.currentBill.items)
+      const [removed] = newItems.splice(startIndex, 1)
+      newItems.splice(endIndex, 0, removed)
+      const newBill = {
+        ...state.currentBill,
+        items: newItems,
       }
       return addToHistory(state, newBill)
     }

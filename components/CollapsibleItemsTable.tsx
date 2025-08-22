@@ -2,7 +2,24 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users } from "lucide-react"
+import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,12 +33,38 @@ import { calculateItemSplits } from "@/lib/calculations"
 import type { Item } from "@/contexts/BillContext"
 import { AddPersonForm } from "./AddPersonForm"
 
+function SortableItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <div className="flex items-center">
+        <div {...listeners} className="p-3 cursor-grab text-muted-foreground hover:text-foreground">
+          <GripVertical className="h-4 w-4" />
+        </div>
+        <div className="flex-grow">{children}</div>
+      </div>
+    </div>
+  )
+}
+
 export function CollapsibleItemsTable() {
   const { state, dispatch } = useBill()
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [focusNewItem, setFocusNewItem] = useState(false)
   const itemInputRefs = useRef<Record<string, { name: HTMLInputElement | null; price: HTMLInputElement | null }>>({})
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   const items = state.currentBill.items
   const people = state.currentBill.people
@@ -124,6 +167,15 @@ export function CollapsibleItemsTable() {
     return people.filter((person) => item.splitWith.includes(person.id))
   }
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex((item) => item.id === active.id)
+      const newIndex = items.findIndex((item) => item.id === over.id)
+      dispatch({ type: "REORDER_ITEMS", payload: { startIndex: oldIndex, endIndex: newIndex } })
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent, item: Item, index: number) => {
     if (e.key === "Enter") {
       e.preventDefault()
@@ -214,7 +266,8 @@ export function CollapsibleItemsTable() {
           <div className="hidden lg:block">
             <div className="overflow-x-auto">
               {/* Table Header */}
-              <div className="grid grid-cols-[minmax(0,1fr)_100px_200px_150px_60px] gap-px bg-border text-sm font-medium text-muted-foreground">
+              <div className="grid grid-cols-[36px_minmax(0,1fr)_100px_200px_150px_60px] gap-px bg-border text-sm font-medium text-muted-foreground">
+                <div className="bg-muted/50 p-3"></div>
                 <div className="bg-muted/50 p-3">Item Name</div>
                 <div className="bg-muted/50 p-3">Price</div>
                 <div className="bg-muted/50 p-3">Split With</div>
@@ -223,184 +276,208 @@ export function CollapsibleItemsTable() {
               </div>
 
               {/* Table Body */}
-              <div className="divide-y divide-border">
-                {items.map((item, index) => {
-                  const isExpanded = expandedItems.has(item.id)
-                  const splits = getItemSplits(item.id)
-                  const selectedPeople = getSelectedPeople(item.id)
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                  <div className="divide-y divide-border">
+                    {items.map((item, index) => {
+                      const isExpanded = expandedItems.has(item.id)
+                      const splits = getItemSplits(item.id)
+                      const selectedPeople = getSelectedPeople(item.id)
 
-                  return (
-                    <div key={item.id} className="bg-background">
-                      {/* Collapsed Row */}
-                      <div
-                        className="grid grid-cols-[minmax(0,1fr)_100px_200px_150px_60px] gap-px cursor-pointer hover:bg-muted/30 transition-colors"
-                        onClick={() => toggleItemExpansion(item.id)}
-                      >
-                        <div className="p-3 flex items-center gap-2">
-                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          <span className="font-medium truncate">{item.name || "Unnamed Item"}</span>
-                        </div>
-                        <div className="p-3 font-mono">${item.price.toFixed(2)}</div>
-                        <div className="p-3">
-                          {selectedPeople.length > 0 ? (
-                            <Badge variant="secondary" className="text-xs">
-                              {selectedPeople.length} {selectedPeople.length === 1 ? "person" : "people"}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              No one
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <div className="flex flex-wrap gap-1 text-sm">
-                            {Object.entries(splits)
-                              .slice(0, 2)
-                              .map(([personId, amount]) => {
-                                const person = people.find((p) => p.id === personId)
-                                return person ? (
-                                  <Badge key={personId} variant="outline" className="text-xs font-mono">
-                                    ${(amount as number).toFixed(2)}
+                      return (
+                        <SortableItem key={item.id} id={item.id}>
+                          <div className="bg-background">
+                            {/* Collapsed Row */}
+                            <div
+                              className="grid grid-cols-[minmax(0,1fr)_100px_200px_150px_60px] gap-px"
+                              // onClick={() => toggleItemExpansion(item.id)} // This needs to be handled differently
+                            >
+                              <div className="p-3 flex items-center gap-2 cursor-pointer" onClick={() => toggleItemExpansion(item.id)}>
+                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                <span className="font-medium truncate">{item.name || "Unnamed Item"}</span>
+                              </div>
+                              <div className="p-3 font-mono cursor-pointer" onClick={() => toggleItemExpansion(item.id)}>${item.price.toFixed(2)}</div>
+                              <div className="p-3 cursor-pointer" onClick={() => toggleItemExpansion(item.id)}>
+                                {selectedPeople.length > 0 ? (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {selectedPeople.length} {selectedPeople.length === 1 ? "person" : "people"}
                                   </Badge>
-                                ) : null
-                              })}
-                            {Object.keys(splits).length > 2 && <span className="text-muted-foreground">...</span>}
-                          </div>
-                        </div>
-                        <div className="p-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteItem(item.id)
-                            }}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Expanded Row */}
-                      {isExpanded && (
-                        <Card className="m-4 border-t-0 rounded-t-none">
-                          <CardContent className="pt-4 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Item Details */}
-                              <div className="space-y-3">
-                                <div>
-                                  <label className="text-sm font-medium text-card-foreground mb-1 block">Item Name</label>
-                                  <Input
-                                    ref={(el) => {
-                                      if (!itemInputRefs.current[item.id])
-                                        itemInputRefs.current[item.id] = { name: null, price: null }
-                                      itemInputRefs.current[item.id]!.name = el
-                                    }}
-                                    value={item.name}
-                                    onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
-                                    onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                    placeholder="Enter item name"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium text-card-foreground mb-1 block">Price</label>
-                                  <Input
-                                    ref={(el) => {
-                                      if (!itemInputRefs.current[item.id])
-                                        itemInputRefs.current[item.id] = { name: null, price: null }
-                                      itemInputRefs.current[item.id]!.price = el
-                                    }}
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={item.price}
-                                    onChange={(e) =>
-                                      handleUpdateItem(item.id, { price: Number.parseFloat(e.target.value) || 0 })
-                                    }
-                                    onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                    placeholder="0.00"
-                                    className="font-mono"
-                                  />
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">
+                                    No one
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="p-3 cursor-pointer" onClick={() => toggleItemExpansion(item.id)}>
+                                <div className="flex flex-wrap gap-1 text-sm">
+                                  {Object.entries(splits)
+                                    .slice(0, 2)
+                                    .map(([personId, amount]) => {
+                                      const person = people.find((p) => p.id === personId)
+                                      return person ? (
+                                        <Badge key={personId} variant="outline" className="text-xs font-mono">
+                                          ${(amount as number).toFixed(2)}
+                                        </Badge>
+                                      ) : null
+                                    })}
+                                  {Object.keys(splits).length > 2 && <span className="text-muted-foreground">...</span>}
                                 </div>
                               </div>
-
-                              {/* Split Configuration */}
-                              <div className="space-y-3">
-                                <div>
-                                  <label className="text-sm font-medium text-card-foreground mb-1 block">
-                                    Split Method
-                                  </label>
-                                  <Select
-                                    value={item.method}
-                                    onValueChange={(value: any) => handleUpdateItem(item.id, { method: value })}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="even">Even Split</SelectItem>
-                                      <SelectItem value="shares">By Shares</SelectItem>
-                                      <SelectItem value="percent">By Percent</SelectItem>
-                                      <SelectItem value="exact">Exact Amount</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium text-card-foreground mb-1 block">
-                                    Split With
-                                  </label>
-                                  <PersonSelector
-                                    selectedPeople={item.splitWith}
-                                    onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
-                                  />
-                                </div>
+                              <div className="p-3">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeleteItem(item.id)
+                                  }}
+                                  className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
                               </div>
                             </div>
 
-                            {/* Custom Split Inputs */}
-                            {item.method !== "even" && (
-                              <>
-                                <Separator />
-                                <SplitMethodInput
-                                  item={item}
-                                  people={people}
-                                  onCustomSplitsChange={(customSplits) =>
-                                    handleUpdateItem(item.id, { customSplits })
-                                  }
-                                />
-                              </>
-                            )}
-
-                            {/* Per Person Breakdown */}
-                            <Separator />
-                            <div>
-                              <label className="text-sm font-medium text-card-foreground mb-2 block">
-                                Per Person Breakdown
-                              </label>
-                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                                {Object.entries(splits).map(([personId, amount]) => {
-                                  const person = people.find((p) => p.id === personId)
-                                  return person ? (
-                                    <Badge key={personId} variant="secondary" className="justify-between p-2 h-auto">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: person.color }} />
-                                        <span className="text-sm">{person.name}</span>
+                            {/* Expanded Row */}
+                            {isExpanded && (
+                              <div className="col-span-full">
+                                <Card className="m-4 border-t-0 rounded-t-none">
+                                  <CardContent className="pt-4 space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {/* Item Details */}
+                                      <div className="space-y-3">
+                                        <div>
+                                          <label className="text-sm font-medium text-card-foreground mb-1 block">Item Name</label>
+                                          <Input
+                                            ref={(el) => {
+                                              if (!itemInputRefs.current[item.id])
+                                                itemInputRefs.current[item.id] = { name: null, price: null }
+                                              itemInputRefs.current[item.id]!.name = el
+                                            }}
+                                            value={item.name}
+                                            onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
+                                            onKeyDown={(e) => handleKeyDown(e, item, index)}
+                                            placeholder="Enter item name"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium text-card-foreground mb-1 block">Price</label>
+                                          <Input
+                                            ref={(el) => {
+                                              if (!itemInputRefs.current[item.id])
+                                                itemInputRefs.current[item.id] = { name: null, price: null }
+                                              itemInputRefs.current[item.id]!.price = el
+                                            }}
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={item.price}
+                                            onChange={(e) =>
+                                              handleUpdateItem(item.id, { price: Number.parseFloat(e.target.value) || 0 })
+                                            }
+                                            onFocus={(e) => e.target.select()}
+                                            onKeyDown={(e) => handleKeyDown(e, item, index)}
+                                            placeholder="0.00"
+                                            className="font-mono"
+                                          />
+                                        </div>
                                       </div>
-                                      <span className="font-mono text-sm font-medium">
-                                        ${(amount as number).toFixed(2)}
-                                      </span>
-                                    </Badge>
-                                  ) : null
-                                })}
+
+                                      {/* Split Configuration */}
+                                      <div className="space-y-3">
+                                        <div>
+                                          <label className="text-sm font-medium text-card-foreground mb-1 block">
+                                            Split Method
+                                          </label>
+                                          <Select
+                                            value={item.method}
+                                            onValueChange={(value: any) => handleUpdateItem(item.id, { method: value })}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="even">Even Split</SelectItem>
+                                              <SelectItem value="shares">By Shares</SelectItem>
+                                              <SelectItem value="percent">By Percent</SelectItem>
+                                              <SelectItem value="exact">Exact Amount</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium text-card-foreground mb-1 block">
+                                            Split With
+                                          </label>
+                                          <PersonSelector
+                                            selectedPeople={item.splitWith}
+                                            onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Custom Split Inputs */}
+                                    {item.method !== "even" && (
+                                      <>
+                                        <Separator />
+                                        <SplitMethodInput
+                                          item={item}
+                                          people={people}
+                                          onCustomSplitsChange={(customSplits) =>
+                                            handleUpdateItem(item.id, { customSplits })
+                                          }
+                                        />
+                                      </>
+                                    )}
+
+                                    {/* Per Person Breakdown */}
+                                    <Separator />
+                                    <div>
+                                      <label className="text-sm font-medium text-card-foreground mb-2 block">
+                                        Per Person Breakdown
+                                      </label>
+                                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                        {Object.entries(splits).map(([personId, amount]) => {
+                                          const person = people.find((p) => p.id === personId)
+                                          return person ? (
+                                            <Badge key={personId} variant="secondary" className="justify-between p-2 h-auto">
+                                              <div className="flex items-center gap-2">
+                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: person.color }} />
+                                                <span className="text-sm">{person.name}</span>
+                                              </div>
+                                              <span className="font-mono text-sm font-medium">
+                                                ${(amount as number).toFixed(2)}
+                                              </span>
+                                            </Badge>
+                                          ) : null
+                                        })}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
                               </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-                  )
-                })}
+                            )}
+                          </div>
+                        </SortableItem>
+                      )
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
+
+              {/* Add Item Row */}
+              <div className="bg-background">
+                <div className="p-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAddItem(true)}
+                    className="w-full justify-start text-muted-foreground hover:text-foreground h-9"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add item
+                  </Button>
+                </div>
               </div>
 
               {/* Tax & Tip Rows */}
@@ -515,6 +592,7 @@ export function CollapsibleItemsTable() {
                               onChange={(e) =>
                                 handleUpdateItem(item.id, { price: Number.parseFloat(e.target.value) || 0 })
                               }
+                              onFocus={(e) => e.target.select()}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
                               placeholder="0.00"
                               className="font-mono"

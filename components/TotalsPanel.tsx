@@ -11,6 +11,7 @@ import { getBillSummary, getItemBreakdowns } from "@/lib/calculations"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AddPersonForm } from "./AddPersonForm"
+import { useEffect } from "react"
 
 interface TotalsPanelProps {
   compact?: boolean
@@ -23,6 +24,15 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
   const [expandedPeople, setExpandedPeople] = useState<Set<string>>(new Set())
 
   const itemBreakdowns = getItemBreakdowns(state.currentBill)
+
+  useEffect(() => {
+    const peopleIds = state.currentBill.people.map((p) => p.id)
+    if (peopleIds.length > 0 && peopleIds.length <= 5) {
+      setExpandedPeople(new Set(peopleIds))
+    } else {
+      setExpandedPeople(new Set())
+    }
+  }, [state.currentBill.people])
 
   const handleRemovePerson = (personId: string) => {
     dispatch({ type: "REMOVE_PERSON", payload: personId })
@@ -62,7 +72,7 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
           )}
         </h3>
         {!isAddingPerson && (
-          <Button variant="outline" size="sm" onClick={() => setIsAddingPerson(true)} className="h-7 px-2 text-xs">
+          <Button size="sm" onClick={() => setIsAddingPerson(true)} className="h-7 px-2 text-xs">
             <Plus className="h-3 w-3 mr-1" />
             Add
           </Button>
@@ -225,36 +235,6 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
           <BillSummaryPanel />
         </CardContent>
       </Card>
-
-      {/* Quick Stats */}
-      {state.currentBill.items.length > 0 && (
-        <Card>
-          <CardContent className="pt-4">
-            <div
-              className={`grid ${
-                state.currentBill.items.length > 10 || peopleCount > 10 ? "grid-cols-3" : "grid-cols-2"
-              } gap-4 text-center`}
-            >
-              <div>
-                <div className="text-2xl font-bold text-primary">{state.currentBill.items.length}</div>
-                <div className="text-xs text-muted-foreground">Items</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-primary">{peopleCount}</div>
-                <div className="text-xs text-muted-foreground">People</div>
-              </div>
-              {peopleCount > 0 && (state.currentBill.items.length > 10 || peopleCount > 10) && (
-                <div>
-                  <div className="text-2xl font-bold text-primary">
-                    {formatCurrency(summary.total / peopleCount).replace(/[^0-9.]/g, "")}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Avg/Person</div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
