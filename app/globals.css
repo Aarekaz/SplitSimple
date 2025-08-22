@@ -4,31 +4,31 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #374151;
-  --card: #f0fdf4;
-  --card-foreground: #374151;
+  --background: #f8fafc; /* Lighter gray background */
+  --foreground: #0f172a; /* Darker text for better contrast */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #374151;
-  --primary: #15803d;
+  --popover-foreground: #0f172a;
+  --primary: #16a34a; /* A slightly more vibrant green */
   --primary-foreground: #ffffff;
-  --secondary: #84cc16;
-  --secondary-foreground: #374151;
-  --muted: #f0fdf4;
-  --muted-foreground: #374151;
-  --accent: #d97706;
+  --secondary: #a3e635; /* A brighter, more lively secondary color */
+  --secondary-foreground: #1f2937;
+  --muted: #f1f5f9; /* A soft, muted background for secondary elements */
+  --muted-foreground: #64748b;
+  --accent: #f59e0b;
   --accent-foreground: #ffffff;
-  --destructive: #dc2626;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #f9fafb;
-  --ring: #84cc16;
+  --border: #e2e8f0;
+  --input: #f8fafc;
+  --ring: #16a34a;
+  --radius: 0.75rem; /* Slightly larger radius for a softer look */
   --chart-1: #15803d;
   --chart-2: #d97706;
   --chart-3: #facc15;
   --chart-4: #4b5563;
   --chart-5: #e5e7eb;
-  --radius: 0.5rem;
   --sidebar: #f0fdf4;
   --sidebar-foreground: #374151;
   --sidebar-primary: #15803d;

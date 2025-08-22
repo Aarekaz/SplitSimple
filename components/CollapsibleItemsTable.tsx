@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+import { useState, useRef, useEffect } from "react"
 import { ChevronDown, ChevronRight, Plus, Trash2, Calculator } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,14 +13,34 @@ import { useBill } from "@/contexts/BillContext"
 import { PersonSelector } from "./PersonSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
 import { calculateItemSplits } from "@/lib/calculations"
+import type { Item } from "@/contexts/BillContext"
 
 export function CollapsibleItemsTable() {
   const { state, dispatch } = useBill()
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [focusNewItem, setFocusNewItem] = useState(false)
+  const itemInputRefs = useRef<Record<string, { name: HTMLInputElement | null; price: HTMLInputElement | null }>>({})
 
   const items = state.currentBill.items
   const people = state.currentBill.people
+
+  useEffect(() => {
+    if (focusNewItem && items.length > 0) {
+      const newItem = items[items.length - 1]
+      if (newItem) {
+        const newExpanded = new Set(expandedItems)
+        newExpanded.add(newItem.id)
+        setExpandedItems(newExpanded)
+
+        setTimeout(() => {
+          itemInputRefs.current[newItem.id]?.name?.focus()
+          itemInputRefs.current[newItem.id]?.name?.select()
+        }, 0)
+      }
+      setFocusNewItem(false)
+    }
+  }, [focusNewItem, items, expandedItems])
 
   const toggleItemExpansion = (itemId: string) => {
     const newExpanded = new Set(expandedItems)
@@ -31,17 +52,34 @@ export function CollapsibleItemsTable() {
     setExpandedItems(newExpanded)
   }
 
-  const handleAddItem = () => {
+  const handleAddItem = (focus = false) => {
     dispatch({
       type: "ADD_ITEM",
       payload: {
         name: "",
         price: 0,
-        splitWith: [],
+        splitWith: people.map((p) => p.id),
         method: "even" as const,
         customSplits: {},
       },
     })
+    if (focus) {
+      setFocusNewItem(true)
+    }
+  }
+
+  const handleDuplicateItem = (itemToDuplicate: Item) => {
+    dispatch({
+      type: "ADD_ITEM",
+      payload: {
+        name: `${itemToDuplicate.name} (copy)`,
+        price: itemToDuplicate.price,
+        splitWith: itemToDuplicate.splitWith,
+        method: itemToDuplicate.method,
+        customSplits: itemToDuplicate.customSplits,
+      },
+    })
+    setFocusNewItem(true)
   }
 
   const handleUpdateItem = (itemId: string, updates: any) => {
@@ -70,6 +108,31 @@ export function CollapsibleItemsTable() {
     return people.filter((person) => item.splitWith.includes(person.id))
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent, item: Item, index: number) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleAddItem(true)
+    } else if ((e.metaKey || e.ctrlKey) && e.key === "d") {
+      e.preventDefault()
+      handleDuplicateItem(item)
+    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault()
+      const nextIndex = e.key === "ArrowUp" ? index - 1 : index + 1
+      if (nextIndex >= 0 && nextIndex < items.length) {
+        const nextItem = items[nextIndex]
+        const targetInput = e.target as HTMLInputElement
+        const currentField =
+          targetInput === itemInputRefs.current[item.id]?.name
+            ? "name"
+            : "price"
+        itemInputRefs.current[nextItem.id]?.[currentField]?.focus()
+        itemInputRefs.current[nextItem.id]?.[currentField]?.select()
+      }
+    } else if (e.key === "Escape") {
+      ;(e.target as HTMLInputElement).blur()
+    }
+  }
+
   if (items.length === 0) {
     return (
       <Card className="text-center">
@@ -77,7 +140,7 @@ export function CollapsibleItemsTable() {
           <Calculator className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <CardTitle className="mb-2">No items added yet</CardTitle>
           <p className="text-muted-foreground mb-4">Add items to start splitting expenses</p>
-          <Button onClick={handleAddItem}>
+          <Button onClick={() => handleAddItem(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Your First Item
           </Button>
@@ -97,7 +160,7 @@ export function CollapsibleItemsTable() {
             </Button>
             <CardTitle className="text-base">Items ({items.length})</CardTitle>
           </div>
-          <Button onClick={handleAddItem} size="sm">
+          <Button onClick={() => handleAddItem(true)} size="sm">
             <Plus className="h-4 w-4 mr-1" />
             Add Item
           </Button>
@@ -118,7 +181,7 @@ export function CollapsibleItemsTable() {
 
             {/* Table Body */}
             <div className="divide-y divide-border">
-              {items.map((item) => {
+              {items.map((item, index) => {
                 const isExpanded = expandedItems.has(item.id)
                 const splits = getItemSplits(item.id)
                 const selectedPeople = getSelectedPeople(item.id)
@@ -186,14 +249,25 @@ export function CollapsibleItemsTable() {
                               <div>
                                 <label className="text-sm font-medium text-card-foreground mb-1 block">Item Name</label>
                                 <Input
+                                  ref={(el) => {
+                                    if (!itemInputRefs.current[item.id])
+                                      itemInputRefs.current[item.id] = { name: null, price: null }
+                                    itemInputRefs.current[item.id]!.name = el
+                                  }}
                                   value={item.name}
                                   onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
+                                  onKeyDown={(e) => handleKeyDown(e, item, index)}
                                   placeholder="Enter item name"
                                 />
                               </div>
                               <div>
                                 <label className="text-sm font-medium text-card-foreground mb-1 block">Price</label>
                                 <Input
+                                  ref={(el) => {
+                                    if (!itemInputRefs.current[item.id])
+                                      itemInputRefs.current[item.id] = { name: null, price: null }
+                                    itemInputRefs.current[item.id]!.price = el
+                                  }}
                                   type="number"
                                   step="0.01"
                                   min="0"
@@ -201,6 +275,7 @@ export function CollapsibleItemsTable() {
                                   onChange={(e) =>
                                     handleUpdateItem(item.id, { price: Number.parseFloat(e.target.value) || 0 })
                                   }
+                                  onKeyDown={(e) => handleKeyDown(e, item, index)}
                                   placeholder="0.00"
                                   className="font-mono"
                                 />

@@ -68,6 +68,15 @@ const PERSON_COLORS = [
   "#f97316",
 ]
 
+const getRandomColor = () => {
+  const letters = "0123456789ABCDEF"
+  let color = "#"
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)]
+  }
+  return color
+}
+
 // Initial state
 const createInitialBill = (): Bill => ({
   id: crypto.randomUUID(),
@@ -116,10 +125,20 @@ function billReducer(state: BillState, action: BillAction): BillState {
     }
 
     case "ADD_PERSON": {
+      const usedColors = new Set(state.currentBill.people.map((p) => p.color))
+      let newColor = ""
+
+      if (action.payload.color) {
+        newColor = action.payload.color
+      } else {
+        const availableColor = PERSON_COLORS.find((c) => !usedColors.has(c))
+        newColor = availableColor || getRandomColor()
+      }
+
       const newPerson: Person = {
         id: crypto.randomUUID(),
         name: action.payload.name,
-        color: action.payload.color || PERSON_COLORS[state.currentBill.people.length % PERSON_COLORS.length],
+        color: newColor,
       }
       const newBill = {
         ...state.currentBill,

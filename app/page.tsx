@@ -6,7 +6,7 @@ import { CollapsibleItemsTable } from "@/components/CollapsibleItemsTable"
 import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { ExportActions } from "@/components/ExportActions"
-import { PersonChip } from "@/components/PersonChip"
+import { PeopleManager } from "@/components/PeopleManager"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -17,7 +17,6 @@ import { useState } from "react"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
-  const [newPersonName, setNewPersonName] = useState("")
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch({ type: "SET_BILL_TITLE", payload: e.target.value })
@@ -40,34 +39,6 @@ export default function HomePage() {
   const handleNewBill = () => {
     dispatch({ type: "NEW_BILL" })
   }
-
-  const handleAddPerson = () => {
-    if (newPersonName.trim()) {
-      dispatch({
-        type: "ADD_PERSON",
-        payload: {
-          name: newPersonName.trim(),
-          color: "", // Let the reducer assign the color automatically
-        },
-      })
-      setNewPersonName("")
-    }
-  }
-
-  const handleRemovePerson = (personId: string) => {
-    dispatch({ type: "REMOVE_PERSON", payload: personId })
-  }
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleAddPerson()
-    }
-  }
-
-  const maxVisiblePeople = 4
-  const visiblePeople = state.currentBill.people.slice(0, maxVisiblePeople)
-  const hiddenPeople = state.currentBill.people.slice(maxVisiblePeople)
-  const hasHiddenPeople = hiddenPeople.length > 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -146,77 +117,19 @@ export default function HomePage() {
                 />
               </div>
             </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">People ({state.currentBill.people.length}):</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Show first few people */}
-                {visiblePeople.map((person) => (
-                  <PersonChip
-                    key={person.id}
-                    person={person}
-                    onRemove={() => handleRemovePerson(person.id)}
-                    size="sm"
-                  />
-                ))}
-
-                {/* Show overflow dropdown if there are hidden people */}
-                {hasHiddenPeople && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs bg-transparent">
-                        +{hiddenPeople.length} <ChevronDown className="h-3 w-3 ml-1" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2" align="end">
-                      <div className="space-y-2">
-                        <div className="text-xs font-medium text-muted-foreground mb-2">Additional People</div>
-                        <div className="flex flex-wrap gap-1">
-                          {hiddenPeople.map((person) => (
-                            <PersonChip
-                              key={person.id}
-                              person={person}
-                              onRemove={() => handleRemovePerson(person.id)}
-                              size="sm"
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                )}
-
-                {/* Add person input */}
-                <div className="flex items-center gap-1">
-                  <Input
-                    value={newPersonName}
-                    onChange={(e) => setNewPersonName(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Add person"
-                    className="h-7 w-24 text-xs border-border"
-                  />
-                  <Button onClick={handleAddPerson} size="sm" variant="ghost" className="h-7 w-7 p-0">
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-4 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <PeopleManager />
             <CollapsibleItemsTable />
           </div>
 
           <div className="hidden lg:block">
-            <div className="sticky top-4">
+            <div className="sticky top-6">
               <TotalsPanel />
             </div>
           </div>

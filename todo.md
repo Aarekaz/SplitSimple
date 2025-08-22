@@ -1,0 +1,6 @@
+- [x] Implement keyboard shortcuts for item management
+  - [x] "Enter" to add a new item
+  - [x] "Ctrl/Cmd+D" to duplicate an item
+  - [x] Arrow key navigation between items
+  - [x] "Escape" to cancel editing
+- [x] Fix `handleAddItem` bug in `CollapsibleItemsTable.tsx`
