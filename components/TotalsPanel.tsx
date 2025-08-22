@@ -39,15 +39,7 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
   }
 
   const formatCurrency = (amount: number) => {
-    const symbol =
-      state.currentBill.currency === "USD"
-        ? "$"
-        : state.currentBill.currency === "EUR"
-          ? "€"
-          : state.currentBill.currency === "GBP"
-            ? "£"
-            : "$"
-    return `${symbol}${amount.toFixed(2)}`
+    return `$${amount.toFixed(2)}`
   }
 
   const getPerson = (personId: string) => {

@@ -8,13 +8,8 @@ import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { ExportActions } from "@/components/ExportActions"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Receipt, Plus, Users, ChevronDown, MoreVertical, Copy, Upload, X, Lightbulb } from "lucide-react"
+import { Receipt, Plus, Copy, Upload } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
@@ -26,10 +21,6 @@ export default function HomePage() {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch({ type: "SET_BILL_TITLE", payload: e.target.value })
-  }
-
-  const handleCurrencyChange = (currency: string) => {
-    dispatch({ type: "SET_CURRENCY", payload: currency })
   }
 
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
