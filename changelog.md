@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Favicon**: Added a site favicon that matches the header logo for a consistent and professional look.
 - **Vercel Web Analytics**: Integrated Vercel's analytics to track page views and user engagement.
 - **Enhanced Keyboard Shortcuts**:
   - Use `ArrowUp` and `ArrowDown` to navigate between item input fields.
