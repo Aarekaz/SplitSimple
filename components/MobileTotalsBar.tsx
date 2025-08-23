@@ -9,15 +9,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { TotalsPanel } from "./TotalsPanel"
 import { useBill } from "@/contexts/BillContext"
 import { getBillSummary } from "@/lib/calculations"
+import { formatCurrency } from "@/lib/utils"
 
 export function MobileTotalsBar() {
   const { state } = useBill()
   const summary = getBillSummary(state.currentBill)
-
-  const formatCurrency = (amount: number) => {
-    const symbol = "$"
-    return `${symbol}${amount.toFixed(2)}`
-  }
 
   const getPerson = (personId: string) => {
     return state.currentBill.people.find((p) => p.id === personId)
@@ -47,11 +43,8 @@ export function MobileTotalsBar() {
                     View Details
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="max-h-[80vh] flex flex-col">
-                  <SheetHeader className="px-6 pt-6">
-                    <SheetTitle>Bill Totals</SheetTitle>
-                  </SheetHeader>
-                  <div className="overflow-y-auto p-6 pt-4">
+                <SheetContent side="bottom" className="max-h-[80vh] flex flex-col p-0">
+                  <div className="overflow-y-auto p-4 pt-6">
                     <TotalsPanel compact />
                   </div>
                 </SheetContent>

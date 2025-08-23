@@ -13,14 +13,29 @@ import { Receipt, Plus, Copy, Upload } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
   const { toast } = useToast()
+  const [isAddingPerson, setIsAddingPerson] = useState(false)
+  const personInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isAddingPerson) {
+      setTimeout(() => personInputRef.current?.focus(), 0)
+    }
+  }, [isAddingPerson])
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch({ type: "SET_BILL_TITLE", payload: e.target.value })
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      setIsAddingPerson(true)
+    }
   }
 
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,8 +92,9 @@ export default function HomePage() {
               <Input
                 value={state.currentBill.title}
                 onChange={handleTitleChange}
+                onKeyDown={handleTitleKeyDown}
                 placeholder="Untitled Bill"
-                className="h-8 w-36 sm:w-48 border-0 bg-transparent text-lg font-semibold text-foreground px-2 focus:bg-input focus:border focus:border-ring"
+                className="h-8 w-36 sm:w-48 border-0 bg-transparent text-lg font-semibold text-foreground px-2 focus:ring-0 focus:outline-none hover:bg-muted focus:bg-input transition-colors rounded-md"
               />
             </div>
 
@@ -132,7 +148,11 @@ export default function HomePage() {
 
           <div className="hidden lg:block">
             <div className="sticky top-6">
-              <TotalsPanel />
+              <TotalsPanel
+                isAddingPerson={isAddingPerson}
+                setIsAddingPerson={setIsAddingPerson}
+                personInputRef={personInputRef}
+              />
             </div>
           </div>
         </div>

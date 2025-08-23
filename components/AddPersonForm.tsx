@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, forwardRef } from "react"
 import { useBill } from "@/contexts/BillContext"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,10 @@ interface AddPersonFormProps {
   showAlignmentDiv?: boolean
 }
 
-export function AddPersonForm({ onPersonAdded, onCancel, showButton = true, showAlignmentDiv = true }: AddPersonFormProps) {
+export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(function AddPersonForm(
+  { onPersonAdded, onCancel, showButton = true, showAlignmentDiv = true },
+  ref
+) {
   const { dispatch } = useBill()
   const [newPersonName, setNewPersonName] = useState("")
 
@@ -44,6 +47,7 @@ export function AddPersonForm({ onPersonAdded, onCancel, showButton = true, show
     <div className="flex items-center gap-2">
       {showAlignmentDiv && <div className="w-3 h-3 flex-shrink-0" />}
       <Input
+        ref={ref}
         type="text"
         placeholder="Enter name"
         value={newPersonName}
@@ -59,4 +63,4 @@ export function AddPersonForm({ onPersonAdded, onCancel, showButton = true, show
       )}
     </div>
   )
-}
+})

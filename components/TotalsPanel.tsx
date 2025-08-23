@@ -11,16 +11,24 @@ import { getBillSummary, getItemBreakdowns } from "@/lib/calculations"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AddPersonForm } from "./AddPersonForm"
-import { useEffect } from "react"
+import { useEffect, forwardRef } from "react"
+import { formatCurrency } from "@/lib/utils"
 
 interface TotalsPanelProps {
   compact?: boolean
+  isAddingPerson: boolean
+  setIsAddingPerson: (isAdding: boolean) => void
+  personInputRef: React.Ref<HTMLInputElement>
 }
 
-export function TotalsPanel({ compact = false }: TotalsPanelProps) {
+export function TotalsPanel({
+  compact = false,
+  isAddingPerson,
+  setIsAddingPerson,
+  personInputRef,
+}: TotalsPanelProps) {
   const { state, dispatch } = useBill()
   const summary = getBillSummary(state.currentBill)
-  const [isAddingPerson, setIsAddingPerson] = useState(false)
   const [expandedPeople, setExpandedPeople] = useState<Set<string>>(new Set())
 
   const itemBreakdowns = getItemBreakdowns(state.currentBill)
@@ -46,10 +54,6 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
       newExpanded.add(personId)
     }
     setExpandedPeople(newExpanded)
-  }
-
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`
   }
 
   const getPerson = (personId: string) => {
@@ -85,9 +89,9 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
           const isExpanded = expandedPeople.has(person.id)
 
           return (
-            <div key={person.id} className="rounded-md transition-colors hover:bg-muted/50">
+            <div key={person.id} className="rounded-md transition-colors hover:bg-muted/50 group">
               <div
-                className="flex items-center justify-between group p-2 cursor-pointer"
+                className="flex items-center justify-between p-2 cursor-pointer"
                 onClick={() => togglePersonExpansion(person.id)}
               >
                 <div className="flex items-center gap-2">
@@ -95,6 +99,17 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
                   <span className="text-sm font-medium">{person.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation() // prevent toggling expansion
+                      handleRemovePerson(person.id)
+                    }}
+                    className="h-6 w-6 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
                   <Badge variant="secondary" className="font-mono text-xs">
                     {formatCurrency(personTotal.total)}
                   </Badge>
@@ -136,15 +151,7 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
                       </div>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemovePerson(person.id)}
-                    className="h-6 w-auto px-1 mt-2 text-destructive hover:text-destructive text-xs"
-                  >
-                    <X className="h-3 w-3 mr-1" />
-                    Remove {person.name}
-                  </Button>
+                  {/* The remove button is now outside the expanded area */}
                 </div>
               )}
             </div>
@@ -152,14 +159,19 @@ export function TotalsPanel({ compact = false }: TotalsPanelProps) {
         })}
         {isAddingPerson && (
           <div className="pt-2">
-            <AddPersonForm onPersonAdded={() => setIsAddingPerson(false)} onCancel={() => setIsAddingPerson(false)} />
+            <AddPersonForm
+              ref={personInputRef}
+              onPersonAdded={() => setIsAddingPerson(false)}
+              onCancel={() => setIsAddingPerson(false)}
+            />
           </div>
         )}
 
         {summary.personTotals.length === 0 && !isAddingPerson && (
-          <div className="py-6 text-center text-muted-foreground">
+          <div className="py-6 text-center text-muted-foreground border-2 border-dashed rounded-lg">
             <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-xs">Add people to the bill</p>
+            <p className="text-xs font-semibold">Add people to the bill</p>
+            <p className="text-xs mt-1">Click the 'Add' button to start.</p>
           </div>
         )}
       </div>
