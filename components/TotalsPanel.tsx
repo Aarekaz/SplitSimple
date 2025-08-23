@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { AddPersonForm } from "./AddPersonForm"
 import { useEffect, forwardRef } from "react"
 import { formatCurrency } from "@/lib/utils"
+import { AnimatedNumber } from "./AnimatedNumber"
 
 interface TotalsPanelProps {
   compact?: boolean
@@ -43,6 +44,17 @@ export function TotalsPanel({
   }, [state.currentBill.people])
 
   const handleRemovePerson = (personId: string) => {
+    const person = state.currentBill.people.find(p => p.id === personId)
+    const hasItems = itemBreakdowns.some(breakdown => breakdown.splits[personId] > 0)
+    
+    if (hasItems && person) {
+      const itemCount = itemBreakdowns.filter(breakdown => breakdown.splits[personId] > 0).length
+      const confirmed = window.confirm(
+        `${person.name} is assigned to ${itemCount} item${itemCount > 1 ? 's' : ''}. Are you sure you want to remove them? This will unassign them from all items.`
+      )
+      if (!confirmed) return
+    }
+    
     dispatch({ type: "REMOVE_PERSON", payload: personId })
   }
 
@@ -98,7 +110,13 @@ export function TotalsPanel({
                 onClick={() => togglePersonExpansion(person.id)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: person.color }} />
+                  <div 
+                    className="w-4 h-4 rounded-full border-2 border-white shadow-lg"
+                    style={{ 
+                      backgroundColor: person.color,
+                      boxShadow: `0 2px 8px ${person.color}25, 0 0 0 1px ${person.color}20`
+                    }} 
+                  />
                   <div>
                     <p className="text-sm font-medium">{person.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -119,9 +137,16 @@ export function TotalsPanel({
                     <X className="h-3.5 w-3.5" />
                   </Button>
                   <div className="text-right">
-                    <p className="font-mono text-sm font-semibold">
-                      {formatCurrency(personTotal.total)}
-                    </p>
+                    <div className="font-mono text-sm font-semibold">
+                      <AnimatedNumber 
+                        value={personTotal.total}
+                        formatFn={(v) => formatCurrency(v)}
+                        duration={150}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {summary.total > 0 ? `${((personTotal.total / summary.total) * 100).toFixed(0)}%` : '0%'}
+                    </div>
                   </div>
                   <ChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
@@ -231,7 +256,10 @@ export function TotalsPanel({
             <span className="font-semibold">Total</span>
             <div className="text-right">
               <div className="font-mono text-xl font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(summary.total)}
+                <AnimatedNumber 
+                  value={summary.total}
+                  formatFn={(v) => formatCurrency(v)}
+                />
               </div>
               <div className="text-xs text-muted-foreground">
                 {summary.personTotals.length} {summary.personTotals.length === 1 ? 'person' : 'people'}
@@ -247,6 +275,7 @@ export function TotalsPanel({
     return (
       <div className="space-y-6 p-4">
         <PeoplePanel />
+        <div className="border-t border-border/50 my-6"></div>
         <BillSummaryPanel />
       </div>
     )
@@ -255,6 +284,7 @@ export function TotalsPanel({
   return (
     <div className="space-y-6 p-4">
       <PeoplePanel />
+      <div className="border-t border-border/50 my-6"></div>
       <BillSummaryPanel />
     </div>
   )

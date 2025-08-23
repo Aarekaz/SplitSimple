@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { ChevronUp, ChevronDown, Calculator } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,6 +14,14 @@ import { formatCurrency } from "@/lib/utils"
 export function MobileTotalsBar() {
   const { state } = useBill()
   const summary = getBillSummary(state.currentBill)
+  const [isAddingPerson, setIsAddingPerson] = useState(false)
+  const personInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isAddingPerson) {
+      setTimeout(() => personInputRef.current?.focus(), 0)
+    }
+  }, [isAddingPerson])
 
   const getPerson = (personId: string) => {
     return state.currentBill.people.find((p) => p.id === personId)
@@ -48,7 +56,12 @@ export function MobileTotalsBar() {
                     <SheetTitle>Bill Totals</SheetTitle>
                   </SheetHeader>
                   <div className="overflow-y-auto p-4 pt-6">
-                    <TotalsPanel compact />
+                    <TotalsPanel 
+                      compact 
+                      isAddingPerson={isAddingPerson}
+                      setIsAddingPerson={setIsAddingPerson}
+                      personInputRef={personInputRef}
+                    />
                   </div>
                 </SheetContent>
               </Sheet>

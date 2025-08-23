@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical } from "lucide-react"
+import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -67,6 +67,7 @@ export function CollapsibleItemsTable() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [focusNewItem, setFocusNewItem] = useState(false)
+  const [showAddSuccess, setShowAddSuccess] = useState(false)
   const itemInputRefs = useRef<Record<string, { name: HTMLInputElement | null; price: HTMLInputElement | null }>>({})
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -118,6 +119,26 @@ export function CollapsibleItemsTable() {
     }
   }, [focusNewItem, items, expandedItems])
 
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Only trigger if not in an input field
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return
+      }
+      
+      // Cmd+Enter / Ctrl+Enter to add new item
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault()
+        handleAddItem(true)
+      }
+    }
+
+    document.addEventListener('keydown', handleGlobalKeyDown)
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [people])
+
   const toggleItemExpansion = (itemId: string) => {
     const newExpanded = new Set(expandedItems)
     if (newExpanded.has(itemId)) {
@@ -129,6 +150,9 @@ export function CollapsibleItemsTable() {
   }
 
   const handleAddItem = (focus = false) => {
+    // Auto-collapse all currently expanded items
+    setExpandedItems(new Set())
+    
     dispatch({
       type: "ADD_ITEM",
       payload: {
@@ -139,6 +163,11 @@ export function CollapsibleItemsTable() {
         customSplits: {},
       },
     })
+    
+    // Show success feedback
+    setShowAddSuccess(true)
+    setTimeout(() => setShowAddSuccess(false), 600)
+    
     if (focus) {
       setFocusNewItem(true)
     }
@@ -245,10 +274,24 @@ export function CollapsibleItemsTable() {
             </Button>
             <CardTitle className="text-base">Items ({items.length})</CardTitle>
           </div>
-          <Button onClick={() => handleAddItem(true)} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add Item
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => handleAddItem(true)} 
+              size="sm"
+              className={`transition-all ${showAddSuccess ? 'bg-green-600 hover:bg-green-700' : ''}`}
+            >
+              {showAddSuccess ? (
+                <Check className="h-4 w-4 mr-1" />
+              ) : (
+                <Plus className="h-4 w-4 mr-1" />
+              )}
+              {showAddSuccess ? 'Added!' : 'Add Item'}
+            </Button>
+            <div className="text-xs text-muted-foreground hidden sm:block">
+              <kbd className="px-1 py-0.5 bg-muted text-muted-foreground rounded text-xs">⌘</kbd>
+              <kbd className="px-1 py-0.5 bg-muted text-muted-foreground rounded text-xs ml-0.5">↵</kbd>
+            </div>
+          </div>
         </div>
       </CardHeader>
 
@@ -272,9 +315,9 @@ export function CollapsibleItemsTable() {
                             {/* Modern Row */}
                             <div className="flex items-center p-3 gap-4">
                               {/* Chevron */}
-                              <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 transition-colors" onClick={() => toggleItemExpansion(item.id)}>
-                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                    </div>
+                                                            <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 transition-colors" onClick={() => toggleItemExpansion(item.id)}>
+                                <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                              </div>
 
                                       {/* Item Name */}
                               <div className="flex-1 min-w-0">
@@ -288,7 +331,7 @@ export function CollapsibleItemsTable() {
                                           value={item.name}
                                           onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                          placeholder="Enter item name"
+                                          placeholder="Add your item..."
                                     className="h-9 border-none bg-transparent focus-visible:ring-1 text-sm font-medium"
                                   />
                                   {/* Split info as subtle badge */}
@@ -345,7 +388,7 @@ export function CollapsibleItemsTable() {
 
                             {/* Expanded Row */}
                             {isExpanded && (
-                              <div className="border-t bg-muted/20">
+                              <div className="border-t bg-muted/20 animate-in slide-in-from-top-2 fade-in duration-200">
                                 <div className="p-4 space-y-6">
                                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {/* Split Method */}
@@ -431,7 +474,7 @@ export function CollapsibleItemsTable() {
                               value={item.name}
                               onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
-                              placeholder="Enter item name"
+                              placeholder="Add your item..."
                             className="h-9 border-none bg-transparent focus-visible:ring-1 text-sm font-medium flex-1"
                           />
                           <Button
@@ -489,14 +532,14 @@ export function CollapsibleItemsTable() {
                           onClick={() => toggleItemExpansion(item.id)}
                         >
                           <span>Details</span>
-                          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
                         </button>
                       </div>
                         </div>
                           </div>
 
                   {isExpanded && (
-                    <div className="border-t bg-muted/20 p-4 space-y-6">
+                    <div className="border-t bg-muted/20 p-4 space-y-6 animate-in slide-in-from-top-2 fade-in duration-200">
                       <div className="space-y-6">
                         {/* Split Method */}
                         <SplitMethodSelector
