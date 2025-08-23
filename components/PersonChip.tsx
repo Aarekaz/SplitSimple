@@ -53,21 +53,24 @@ export function PersonChip({
         ${sizeClasses[size]} 
         flex items-center gap-1.5 cursor-pointer transition-all
         ${onToggle ? "hover:scale-105" : ""}
-        ${isSelected ? "ring-2 ring-accent/50" : ""}
+        ${isSelected ? "ring-2 ring-accent/50" : "opacity-50 hover:opacity-70"}
         !text-gray-900 font-medium
       `}
       style={{
-        backgroundColor: isSelected ? person.color : "#f8f9fa",
-        borderColor: person.color,
-        color: isSelected ? "white" : "#111827",
+        backgroundColor: isSelected ? person.color : "#f1f5f9",
+        borderColor: isSelected ? person.color : "#cbd5e1",
+        color: isSelected ? "white" : "#64748b",
       }}
       onClick={handleClick}
     >
       <div
-        className={`${size === "sm" ? "w-1.5 h-1.5" : "w-2 h-2"} rounded-full flex-shrink-0`}
-        style={{ backgroundColor: person.color }}
+        className={`${size === "sm" ? "w-1.5 h-1.5" : "w-2 h-2"} rounded-full flex-shrink-0 transition-all`}
+        style={{ 
+          backgroundColor: isSelected ? person.color : person.color,
+          opacity: isSelected ? 1 : 0.5
+        }}
       />
-      <span className="font-semibold flex-1 min-w-0" style={{ color: isSelected ? "white" : "#111827" }}>
+      <span className="font-semibold flex-1 min-w-0 transition-all" style={{ color: isSelected ? "white" : "#64748b" }}>
         {person.name || "Unnamed"}
       </span>
       {showRemove && onRemove && (

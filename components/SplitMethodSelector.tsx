@@ -1,0 +1,80 @@
+"use client"
+
+import { Scale, Percent, Calculator, Users } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+export type SplitMethod = "even" | "shares" | "percent" | "exact"
+
+interface SplitMethodOption {
+  value: SplitMethod
+  label: string
+  description: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+const splitMethodOptions: SplitMethodOption[] = [
+  {
+    value: "even",
+    label: "Even Split",
+    description: "Split equally among selected people",
+    icon: Users,
+  },
+  {
+    value: "shares",
+    label: "By Shares",
+    description: "Split based on custom shares",
+    icon: Scale,
+  },
+  {
+    value: "percent",
+    label: "By Percent",
+    description: "Split by percentage amounts",
+    icon: Percent,
+  },
+  {
+    value: "exact",
+    label: "Exact Amount",
+    description: "Specify exact dollar amounts",
+    icon: Calculator,
+  },
+]
+
+interface SplitMethodSelectorProps {
+  value: SplitMethod
+  onValueChange: (value: SplitMethod) => void
+  className?: string
+}
+
+export function SplitMethodSelector({ value, onValueChange, className }: SplitMethodSelectorProps) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      <label className="text-xs font-medium text-muted-foreground">Split Method</label>
+      <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/20 p-1">
+        {splitMethodOptions.map((option) => {
+          const Icon = option.icon
+          const isActive = value === option.value
+          
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onValueChange(option.value)}
+              className={cn(
+                "flex items-center justify-center gap-1.5 py-2 px-3 rounded-md transition-all text-xs font-medium",
+                "hover:bg-background hover:shadow-sm",
+                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
+                isActive
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title={option.description}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{option.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}

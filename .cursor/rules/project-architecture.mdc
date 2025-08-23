@@ -1,0 +1,29 @@
+---
+alwaysApply: true
+---
+# SplitSimple Project Architecture
+
+This document outlines the core architecture of the SplitSimple application.
+
+## State Management
+
+The application uses React's Context API with a `useReducer` hook as the single source of truth for all application state.
+
+-   **[contexts/BillContext.tsx](mdc:contexts/BillContext.tsx)**: This is the most critical file for state. It defines the data structures (`Bill`, `Item`, `Person`), the reducer logic for all state transitions (adding items, people, etc.), and the `BillProvider` that makes the state available to the entire application.
+
+## Core Logic
+
+All financial calculations and business logic are centralized in the `lib` directory.
+
+-   **[lib/calculations.ts](mdc:lib/calculations.ts)**: This file contains all the functions for splitting expenses, calculating totals for each person, and handling rounding to avoid "penny problems." All mathematical operations should be handled here.
+-   **[lib/utils.ts](mdc:lib/utils.ts)**: Contains general utility functions, such as the centralized `formatCurrency` helper.
+
+## Component Structure
+
+The UI is built with Next.js (App Router), TypeScript, and shadcn/ui components.
+
+-   **[app/page.tsx](mdc:app/page.tsx)**: The main page component. It orchestrates the overall layout, including the header, the main content area, and the mobile-specific components. It is responsible for the high-level conditional rendering of the onboarding flow.
+-   **[components/CollapsibleItemsTable.tsx](mdc:components/CollapsibleItemsTable.tsx)**: The primary component for displaying and managing the list of bill items. It handles adding, editing, deleting, and reordering items.
+-   **[components/TotalsPanel.tsx](mdc:components/TotalsPanel.tsx)**: The sidebar component on desktop that is responsible for managing the list of people and displaying the final bill summary.
+-   **[components/MobileTotalsBar.tsx](mdc:components/MobileTotalsBar.tsx)**: The bottom bar on mobile devices. It provides a summary of the total and contains a sheet that reveals the `TotalsPanel`.
+-   **[hooks/use-mobile.ts](mdc:hooks/use-mobile.ts)**: This hook is used to detect the screen size and enable responsive logic in components, such as showing different UI elements or text on mobile vs. desktop.
