@@ -44,6 +44,9 @@ export function MobileTotalsBar() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="max-h-[80vh] flex flex-col p-0">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Bill Totals</SheetTitle>
+                  </SheetHeader>
                   <div className="overflow-y-auto p-4 pt-6">
                     <TotalsPanel compact />
                   </div>
