@@ -254,7 +254,7 @@ export function CollapsibleItemsTable() {
             {/* Table Body */}
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <div className="divide-y divide-border">
+            <div className="space-y-3 p-4">
                     {items.map((item, index) => {
                 const isExpanded = expandedItems.has(item.id)
                 const splits = getItemSplits(item.id)
@@ -262,97 +262,102 @@ export function CollapsibleItemsTable() {
 
                 return (
                         <SortableItem key={item.id} id={item.id}>
-                          <div className="bg-background">
-                    {/* Collapsed Row */}
-                            <div className="grid grid-cols-[auto_minmax(0,1fr)_120px_60px] items-center gap-px transition-colors">
-                              <div className="p-3 flex items-center gap-2 cursor-pointer hover:bg-muted/50" onClick={() => toggleItemExpansion(item.id)}>
-                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                                <div className="flex flex-col">
-                                  <div className="text-xs text-muted-foreground">
-                                    {selectedPeople.length > 0 ? (
-                                      item.method === "even" ? 
-                                        `Split ${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
-                                        `${item.method === 'shares' ? 'By shares' : item.method === 'percent' ? 'By %' : 'By amount'} · ${selectedPeople.length} people`
-                                    ) : (
-                                      "No one selected"
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="p-1">
-                                <Input
-                                  ref={(el) => {
-                                    if (!itemInputRefs.current[item.id])
-                                      itemInputRefs.current[item.id] = { name: null, price: null }
-                                    itemInputRefs.current[item.id]!.name = el
-                                  }}
-                                  value={item.name}
-                                  onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
-                                  onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                  placeholder="Enter item name"
-                                  className="h-9 border-none focus-visible:ring-1"
-                                />
-                              </div>
-                              <div className="p-1">
-                                <Input
-                                  ref={(el) => {
-                                    if (!itemInputRefs.current[item.id])
-                                      itemInputRefs.current[item.id] = { name: null, price: null }
-                                    itemInputRefs.current[item.id]!.price = el
-                                  }}
-                                  type="text"
-                                  inputMode="decimal"
-                                  pattern="[0-9]*\\.?[0-9]*"
-                                  step="0.01"
-                                  min="0"
-                                  value={item.price}
-                                  onChange={(e) =>
-                                    handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
-                                  }
-                                  onFocus={(e) => e.target.select()}
-                                  onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                  placeholder="0.00"
-                                  className="font-mono h-9 border-none focus-visible:ring-1 text-right"
-                                />
-                              </div>
-                              <div className="p-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeleteItem(item.id)
-                          }}
-                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive transition-colors"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
+                          <div className="rounded-lg border bg-card hover:shadow-sm transition-all group">
+                            {/* Modern Row */}
+                            <div className="flex items-center p-3 gap-4">
+                              {/* Chevron */}
+                              <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 transition-colors" onClick={() => toggleItemExpansion(item.id)}>
+                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </div>
 
-                    {/* Expanded Row */}
-                    {isExpanded && (
-                              <div className="bg-muted/30">
-                                <div className="p-4">
-                                  <div className="space-y-4">
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                      {/* Split Method */}
-                                      <SplitMethodSelector
-                                        value={item.method}
-                                        onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
-                                      />
+                                      {/* Item Name */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                        <Input
+                                          ref={(el) => {
+                                            if (!itemInputRefs.current[item.id])
+                                              itemInputRefs.current[item.id] = { name: null, price: null }
+                                            itemInputRefs.current[item.id]!.name = el
+                                          }}
+                                          value={item.name}
+                                          onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
+                                          onKeyDown={(e) => handleKeyDown(e, item, index)}
+                                          placeholder="Enter item name"
+                                    className="h-9 border-none bg-transparent focus-visible:ring-1 text-sm font-medium"
+                                  />
+                                  {/* Split info as subtle badge */}
+                                  {selectedPeople.length > 0 && (
+                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground border-none">
+                                      {item.method === "even" ? 
+                                        `${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
+                                        `${item.method === 'shares' ? 'Shares' : item.method === 'percent' ? '%' : '$'} · ${selectedPeople.length}`
+                                      }
+                                    </Badge>
+                                  )}
+                                </div>
+                                      </div>
+                              
+                                      {/* Price */}
+                              <div className="w-32">
+                                        <Input
+                                          ref={(el) => {
+                                            if (!itemInputRefs.current[item.id])
+                                              itemInputRefs.current[item.id] = { name: null, price: null }
+                                            itemInputRefs.current[item.id]!.price = el
+                                          }}
+                                          type="text"
+                                          inputMode="decimal"
+                                          pattern="[0-9]*\\.?[0-9]*"
+                                          step="0.01"
+                                          min="0"
+                                          value={item.price}
+                                          onChange={(e) =>
+                                            handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
+                                          }
+                                          onFocus={(e) => e.target.select()}
+                                          onKeyDown={(e) => handleKeyDown(e, item, index)}
+                                          placeholder="0.00"
+                                  className="font-mono h-9 border-none bg-transparent focus-visible:ring-1 text-right font-semibold"
+                                        />
+                                      </div>
+                              
+                              {/* Actions */}
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeleteItem(item.id)
+                                  }}
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                                    </div>
+                                      </div>
+
+                            {/* Expanded Row */}
+                            {isExpanded && (
+                              <div className="border-t bg-muted/20">
+                                <div className="p-4 space-y-6">
+                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Split Method */}
+                                    <SplitMethodSelector
+                                      value={item.method}
+                                      onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
+                                    />
 
                                       {/* Split With */}
-                                      <EnhancedPersonSelector
-                                        selectedPeople={item.splitWith}
-                                        onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
-                                      />
-                                    </div>
+                                    <EnhancedPersonSelector
+                                          selectedPeople={item.splitWith}
+                                          onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
+                                        />
                                   </div>
 
                                   {/* Custom Split Inputs */}
                                   {item.method !== "even" && (
-                                    <div className="mt-4 pt-4 border-t">
+                                    <div className="pt-2 border-t">
                                       <SplitMethodInput
                                         item={item}
                                         people={people}
@@ -362,8 +367,6 @@ export function CollapsibleItemsTable() {
                                       />
                                     </div>
                                   )}
-
-
                                 </div>
                               </div>
                             )}
@@ -390,15 +393,15 @@ export function CollapsibleItemsTable() {
                 </div>
               </div>
 
-            </div>
-            
+              </div>
+
             {/* Tax and Tip Section for Desktop */}
             <div className="p-4">
               <TaxTipSection />
             </div>
           </div>
 
-          {/* Mobile Card View */}
+                    {/* Mobile View */}
           <div className="lg:hidden p-4 space-y-3">
             {items.map((item, index) => {
               const isExpanded = expandedItems.has(item.id)
@@ -406,98 +409,117 @@ export function CollapsibleItemsTable() {
               const selectedPeople = getSelectedPeople(item.id)
 
               return (
-                <Card key={item.id} className="overflow-hidden">
-                  <div className="p-2 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <Input
-                          ref={(el) => {
-                            if (!itemInputRefs.current[item.id])
-                              itemInputRefs.current[item.id] = { name: null, price: null }
-                            itemInputRefs.current[item.id]!.name = el
-                          }}
-                          value={item.name}
-                          onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
-                          onKeyDown={(e) => handleKeyDown(e, item, index)}
-                          placeholder="Enter item name"
-                          className="h-9 font-medium"
-                        />
+                <div key={item.id} className="rounded-lg border bg-card hover:shadow-sm transition-all group">
+                  {/* Mobile Row */}
+                  <div className="p-3 space-y-3">
+                    <div className="flex items-start gap-3">
+                      {/* Item Name */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Input
+                              ref={(el) => {
+                                if (!itemInputRefs.current[item.id])
+                                  itemInputRefs.current[item.id] = { name: null, price: null }
+                                itemInputRefs.current[item.id]!.name = el
+                              }}
+                              value={item.name}
+                              onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
+                              onKeyDown={(e) => handleKeyDown(e, item, index)}
+                              placeholder="Enter item name"
+                            className="h-9 border-none bg-transparent focus-visible:ring-1 text-sm font-medium flex-1"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteItem(item.id)
+                            }}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
+                          </div>
+                    
+                    <div className="flex items-center justify-between">
+                          {/* Price */}
                       <div className="w-28">
-                        <Input
-                          ref={(el) => {
-                            if (!itemInputRefs.current[item.id])
-                              itemInputRefs.current[item.id] = { name: null, price: null }
-                            itemInputRefs.current[item.id]!.price = el
-                          }}
-                          type="text"
-                          inputMode="decimal"
-                          pattern="[0-9]*\\.?[0-9]*"
-                          step="0.01"
-                          min="0"
-                          value={item.price}
-                          onChange={(e) =>
-                            handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
-                          }
-                          onFocus={(e) => e.target.select()}
-                          onKeyDown={(e) => handleKeyDown(e, item, index)}
-                          placeholder="0.00"
-                          className="font-mono h-9 text-right"
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteItem(item.id)
-                        }}
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-xs text-muted-foreground text-center">
-                        {selectedPeople.length > 0 ? (
-                          item.method === "even" ? 
-                            `Split ${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
-                            `${item.method === 'shares' ? 'By shares' : item.method === 'percent' ? 'By %' : 'By amount'} · ${selectedPeople.length} people`
-                        ) : (
-                          "No one selected"
+                            <Input
+                              ref={(el) => {
+                                if (!itemInputRefs.current[item.id])
+                                  itemInputRefs.current[item.id] = { name: null, price: null }
+                                itemInputRefs.current[item.id]!.price = el
+                              }}
+                              type="text"
+                              inputMode="decimal"
+                              pattern="[0-9]*\\.?[0-9]*"
+                              step="0.01"
+                              min="0"
+                              value={item.price}
+                              onChange={(e) =>
+                                handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
+                              }
+                              onFocus={(e) => e.target.select()}
+                              onKeyDown={(e) => handleKeyDown(e, item, index)}
+                              placeholder="0.00"
+                          className="font-mono h-9 border-none bg-transparent focus-visible:ring-1 text-right font-semibold"
+                            />
+                          </div>
+                      
+                      {/* Split info and expand button */}
+                      <div className="flex items-center gap-3">
+                        {selectedPeople.length > 0 && (
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground border-none">
+                            {item.method === "even" ? 
+                              `${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
+                              `${item.method === 'shares' ? 'Shares' : item.method === 'percent' ? '%' : '$'} · ${selectedPeople.length}`
+                            }
+                          </Badge>
                         )}
+                        <button
+                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => toggleItemExpansion(item.id)}
+                        >
+                          <span>Details</span>
+                          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                        </button>
                       </div>
-                      <div
-                        className="flex items-center justify-center gap-2 text-sm text-muted-foreground cursor-pointer py-1 rounded-md hover:bg-muted"
-                        onClick={() => toggleItemExpansion(item.id)}
-                      >
-                        <span>Details</span>
-                        <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                      </div>
-                    </div>
-                  </div>
+                        </div>
+                          </div>
 
                   {isExpanded && (
-                    <CardContent className="p-4 pt-2 border-t">
-                                             <div className="space-y-6">
-                         <div className="space-y-6">
-                           {/* Split Method */}
-                           <SplitMethodSelector
-                             value={item.method}
-                             onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
-                           />
+                    <div className="border-t bg-muted/20 p-4 space-y-6">
+                      <div className="space-y-6">
+                        {/* Split Method */}
+                        <SplitMethodSelector
+                          value={item.method}
+                          onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
+                        />
 
-                           {/* Split With */}
-                           <EnhancedPersonSelector
-                             selectedPeople={item.splitWith}
-                             onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
-                           />
-                         </div>
-                       </div>
+                          {/* Split With */}
+                        <EnhancedPersonSelector
+                              selectedPeople={item.splitWith}
+                              onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
+                            />
+                      </div>
 
-                    </CardContent>
+                      {/* Custom Split Inputs */}
+                      {item.method !== "even" && (
+                        <div className="pt-2 border-t">
+                          <SplitMethodInput
+                            item={item}
+                            people={people}
+                            onCustomSplitsChange={(customSplits) =>
+                              handleUpdateItem(item.id, { customSplits })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
-                </Card>
+                </div>
               )
             })}
 
