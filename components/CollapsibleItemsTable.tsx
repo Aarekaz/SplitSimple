@@ -45,12 +45,18 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <div className="flex items-center">
-        <div {...listeners} className="p-3 cursor-grab text-muted-foreground hover:text-foreground">
-          <GripVertical className="h-4 w-4" />
-        </div>
-        <div className="flex-grow">{children}</div>
+    <div ref={setNodeRef} style={style} {...attributes} className="relative group">
+      {/* Drag Handle - appears on hover */}
+      <div 
+        {...listeners} 
+        className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-md cursor-grab hover:bg-muted/50 opacity-0 group-hover:opacity-100 transition-all z-10 bg-background/80 backdrop-blur-sm border border-border/50"
+        title="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
+      {/* Content with subtle left padding when drag handle is visible */}
+      <div className="group-hover:pl-10 transition-all duration-200">
+        {children}
       </div>
     </div>
   )
