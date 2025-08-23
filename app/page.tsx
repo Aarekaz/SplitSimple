@@ -25,15 +25,18 @@ export default function HomePage() {
   const personInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const isMobile = useIsMobile()
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  const isNewBill = state.currentBill.title === "New Bill" && state.currentBill.people.length === 0
+  const isNewBillFlow =
+    isInitialLoad && state.currentBill.title === "New Bill" && state.currentBill.people.length === 0
 
   useEffect(() => {
-    if (isNewBill) {
+    if (isNewBillFlow) {
       titleInputRef.current?.focus()
       titleInputRef.current?.select()
+      setIsInitialLoad(false) // This is the key: we only do this once.
     }
-  }, [isNewBill])
+  }, [isNewBillFlow])
 
   useEffect(() => {
     if (isAddingPerson) {
@@ -165,10 +168,10 @@ export default function HomePage() {
                 <CardHeader className="text-center">
                   <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   <CardTitle>
-                    {isNewBill ? "Welcome to SplitSimple!" : "Who's splitting the bill?"}
+                    {isNewBillFlow ? "Welcome to SplitSimple!" : "Who's splitting the bill?"}
                   </CardTitle>
                   <p className="text-muted-foreground pt-1">
-                    {isNewBill
+                    {isNewBillFlow
                       ? "First, give your bill a name above."
                       : isMobile
                       ? "Tap 'View Details' below to add people."
