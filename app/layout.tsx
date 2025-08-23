@@ -25,15 +25,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} antialiased`}>
-      <head>
-        <style>{`
-html {
-  font-family: ${inter.style.fontFamily};
-  --font-sans: ${inter.style.fontFamily};
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-        `}</style>
-      </head>
       <body>
         <BillProvider>
           <div className="flex flex-col min-h-screen">
