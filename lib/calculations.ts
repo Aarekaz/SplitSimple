@@ -41,7 +41,8 @@ export function calculateItemSplits(item: Item, people: Person[]): Record<string
   }
 
   let totalAmountSplit = 0
-  const priceInCents = Math.round(item.price * 100)
+  const itemPrice = parseFloat(item.price) || 0
+  const priceInCents = Math.round(itemPrice * 100)
 
   switch (item.method) {
     case "even": {
@@ -128,8 +129,10 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
 
   // Calculate tax and tip allocation
   const billSubtotal = totals.reduce((sum, t) => sum + t.subtotal, 0)
-  const taxInCents = Math.round(bill.tax * 100)
-  const tipInCents = Math.round(bill.tip * 100)
+  const tax = parseFloat(bill.tax) || 0
+  const tip = parseFloat(bill.tip) || 0
+  const taxInCents = Math.round(tax * 100)
+  const tipInCents = Math.round(tip * 100)
   let totalTaxSplit = 0
   let totalTipSplit = 0
 
@@ -198,7 +201,7 @@ export function getItemBreakdowns(bill: Bill): ItemBreakdown[] {
   return bill.items.map((item) => ({
     itemId: item.id,
     itemName: item.name,
-    itemPrice: item.price,
+    itemPrice: parseFloat(item.price) || 0,
     splits: calculateItemSplits(item, bill.people),
   }))
 }

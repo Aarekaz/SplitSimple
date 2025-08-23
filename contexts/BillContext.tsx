@@ -13,7 +13,7 @@ export interface Person {
 export interface Item {
   id: string
   name: string
-  price: number
+  price: string
   splitWith: string[] // person IDs
   method: "even" | "shares" | "percent" | "exact"
   customSplits?: Record<string, number> // person ID -> amount/share/percent
@@ -22,8 +22,8 @@ export interface Item {
 export interface Bill {
   id: string
   title: string
-  tax: number
-  tip: number
+  tax: string
+  tip: string
   taxTipAllocation: "proportional" | "even"
   people: Person[]
   items: Item[]
@@ -39,8 +39,8 @@ interface BillState {
 
 type BillAction =
   | { type: "SET_BILL_TITLE"; payload: string }
-  | { type: "SET_TAX"; payload: number }
-  | { type: "SET_TIP"; payload: number }
+  | { type: "SET_TAX"; payload: string }
+  | { type: "SET_TIP"; payload: string }
   | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" }
   | { type: "ADD_PERSON"; payload: { name: string; color: string } }
   | { type: "REMOVE_PERSON"; payload: string }
@@ -80,8 +80,8 @@ const getRandomColor = () => {
 const createInitialBill = (): Bill => ({
   id: crypto.randomUUID(),
   title: "New Bill",
-  tax: 0,
-  tip: 0,
+  tax: "",
+  tip: "",
   taxTipAllocation: "proportional",
   people: [],
   items: [],

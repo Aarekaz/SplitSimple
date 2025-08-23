@@ -70,14 +70,22 @@ export function CollapsibleItemsTable() {
   const people = state.currentBill.people
   const { tax, tip, taxTipAllocation } = state.currentBill
 
+  const sanitizeNumericInput = (value: string) => {
+    // Allow only one decimal point, and only numbers.
+    let sanitized = value.replace(/[^0-9.]/g, "")
+    const parts = sanitized.split(".")
+    if (parts.length > 2) {
+      sanitized = `${parts[0]}.${parts.slice(1).join("")}`
+    }
+    return sanitized
+  }
+
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number.parseFloat(e.target.value) || 0
-    dispatch({ type: "SET_TAX", payload: value })
+    dispatch({ type: "SET_TAX", payload: sanitizeNumericInput(e.target.value) })
   }
 
   const handleTipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number.parseFloat(e.target.value) || 0
-    dispatch({ type: "SET_TIP", payload: value })
+    dispatch({ type: "SET_TIP", payload: sanitizeNumericInput(e.target.value) })
   }
 
   const handleTaxTipAllocationChange = (value: "proportional" | "even") => {
@@ -116,7 +124,7 @@ export function CollapsibleItemsTable() {
       type: "ADD_ITEM",
       payload: {
         name: "",
-        price: 0,
+        price: "",
         splitWith: people.map((p) => p.id),
         method: "even" as const,
         customSplits: {},
@@ -296,7 +304,7 @@ export function CollapsibleItemsTable() {
                                 {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                 <span className="font-medium truncate">{item.name || "Unnamed Item"}</span>
                               </div>
-                              <div className="p-3 font-mono cursor-pointer" onClick={() => toggleItemExpansion(item.id)}>${item.price.toFixed(2)}</div>
+                              <div className="p-3 font-mono cursor-pointer" onClick={() => toggleItemExpansion(item.id)}>${(parseFloat(item.price) || 0).toFixed(2)}</div>
                               <div className="p-3 cursor-pointer" onClick={() => toggleItemExpansion(item.id)}>
                                 {selectedPeople.length > 0 ? (
                                   <Badge variant="secondary" className="text-xs">
@@ -368,12 +376,14 @@ export function CollapsibleItemsTable() {
                                                 itemInputRefs.current[item.id] = { name: null, price: null }
                                               itemInputRefs.current[item.id]!.price = el
                                             }}
-                                            type="number"
+                                            type="text"
+                                            inputMode="decimal"
+                                            pattern="[0-9]*\\.?[0-9]*"
                                             step="0.01"
                                             min="0"
                                             value={item.price}
                                             onChange={(e) =>
-                                              handleUpdateItem(item.id, { price: Number.parseFloat(e.target.value) || 0 })
+                                              handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
                                             }
                                             onFocus={(e) => e.target.select()}
                                             onKeyDown={(e) => handleKeyDown(e, item, index)}
@@ -489,11 +499,14 @@ export function CollapsibleItemsTable() {
                 <div className="p-3 font-medium text-muted-foreground col-span-1">Tax</div>
                 <div className="p-3 col-span-1">
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     step="0.01"
                     min="0"
                     value={tax}
                     onChange={handleTaxChange}
+                    onFocus={(e) => e.target.select()}
                     placeholder="0.00"
                     className="h-8 font-mono bg-transparent border-input"
                   />
@@ -508,11 +521,14 @@ export function CollapsibleItemsTable() {
                 <div className="p-3 font-medium text-muted-foreground col-span-1">Tip</div>
                 <div className="p-3 col-span-1">
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     step="0.01"
                     min="0"
                     value={tip}
                     onChange={handleTipChange}
+                    onFocus={(e) => e.target.select()}
                     placeholder="0.00"
                     className="h-8 font-mono bg-transparent border-input"
                   />
@@ -539,7 +555,7 @@ export function CollapsibleItemsTable() {
                   >
                     <div className="space-y-1">
                       <CardTitle className="text-base">{item.name || "Unnamed Item"}</CardTitle>
-                      <p className="text-sm font-mono text-muted-foreground">${item.price.toFixed(2)}</p>
+                      <p className="text-sm font-mono text-muted-foreground">${(parseFloat(item.price) || 0).toFixed(2)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -585,12 +601,14 @@ export function CollapsibleItemsTable() {
                                   itemInputRefs.current[item.id] = { name: null, price: null }
                                 itemInputRefs.current[item.id]!.price = el
                               }}
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
+                              pattern="[0-9]*\\.?[0-9]*"
                               step="0.01"
                               min="0"
                               value={item.price}
                               onChange={(e) =>
-                                handleUpdateItem(item.id, { price: Number.parseFloat(e.target.value) || 0 })
+                                handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
                               }
                               onFocus={(e) => e.target.select()}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
@@ -676,11 +694,14 @@ export function CollapsibleItemsTable() {
                 <div className="flex items-center justify-between">
                   <label className="font-medium">Tax</label>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     step="0.01"
                     min="0"
                     value={tax}
                     onChange={handleTaxChange}
+                    onFocus={(e) => e.target.select()}
                     placeholder="0.00"
                     className="h-9 w-24 font-mono text-right"
                   />
@@ -688,11 +709,14 @@ export function CollapsibleItemsTable() {
                 <div className="flex items-center justify-between">
                   <label className="font-medium">Tip</label>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     step="0.01"
                     min="0"
                     value={tip}
                     onChange={handleTipChange}
+                    onFocus={(e) => e.target.select()}
                     placeholder="0.00"
                     className="h-9 w-24 font-mono text-right"
                   />
