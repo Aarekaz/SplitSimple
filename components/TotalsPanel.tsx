@@ -64,101 +64,111 @@ export function TotalsPanel({
   const hasLargeAmounts = summary.total > 1000
 
   const PeoplePanel = () => (
-    <>
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-base font-semibold flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          People
-          {peopleCount > 0 && (
-            <Badge variant="outline" className="ml-2 text-xs">
-              {peopleCount}
-            </Badge>
-          )}
-        </h3>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+            <Users className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold">People</h3>
+            {peopleCount > 0 && (
+              <p className="text-xs text-muted-foreground">{peopleCount} member{peopleCount > 1 ? 's' : ''}</p>
+            )}
+          </div>
+        </div>
         {!isAddingPerson && (
-          <Button size="sm" onClick={() => setIsAddingPerson(true)} className="h-7 px-2 text-xs">
+          <Button size="sm" onClick={() => setIsAddingPerson(true)} className="h-8 px-3 text-xs shadow-sm">
             <Plus className="h-3 w-3 mr-1" />
             Add
           </Button>
         )}
       </div>
-      <div className="mt-4 space-y-1">
+      
+      <div className="space-y-2">
         {summary.personTotals.map((personTotal) => {
           const person = getPerson(personTotal.personId)
           if (!person) return null
           const isExpanded = expandedPeople.has(person.id)
 
           return (
-            <div key={person.id} className="rounded-md transition-colors hover:bg-muted/50 group">
+            <div key={person.id} className="rounded-lg border bg-card transition-all hover:shadow-sm group">
               <div
-                className="flex items-center justify-between p-2 cursor-pointer"
+                className="flex items-center justify-between p-3 cursor-pointer"
                 onClick={() => togglePersonExpansion(person.id)}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: person.color }} />
-                  <span className="text-sm font-medium">{person.name}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: person.color }} />
+                  <div>
+                    <p className="text-sm font-medium">{person.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {itemBreakdowns.filter(breakdown => breakdown.splits[person.id] > 0).length} item{itemBreakdowns.filter(breakdown => breakdown.splits[person.id] > 0).length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={(e) => {
-                      e.stopPropagation() // prevent toggling expansion
+                      e.stopPropagation()
                       handleRemovePerson(person.id)
                     }}
-                    className="h-6 w-6 p-0 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
                   >
                     <X className="h-3.5 w-3.5" />
                   </Button>
-                  <Badge variant="secondary" className="font-mono text-xs">
-                    {formatCurrency(personTotal.total)}
-                  </Badge>
+                  <div className="text-right">
+                    <p className="font-mono text-sm font-semibold">
+                      {formatCurrency(personTotal.total)}
+                    </p>
+                  </div>
                   <ChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
                   />
                 </div>
               </div>
               {isExpanded && (
-                <div className="pb-3 px-3 text-xs">
-                  <ul className="space-y-1 text-muted-foreground list-disc pl-5 mb-2">
+                <div className="px-3 pb-3 border-t bg-muted/20">
+                  <div className="pt-3 space-y-2 text-xs">
                     {itemBreakdowns
                       .filter((breakdown) => breakdown.splits[person.id] > 0)
                       .map((breakdown) => (
-                        <li key={breakdown.itemId}>
-                          <span className="font-medium text-foreground">{breakdown.itemName}</span>:{" "}
-                          {formatCurrency(breakdown.splits[person.id])}
-                        </li>
+                        <div key={breakdown.itemId} className="flex justify-between items-center py-1">
+                          <span className="font-medium">{breakdown.itemName}</span>
+                          <span className="font-mono text-muted-foreground">
+                            {formatCurrency(breakdown.splits[person.id])}
+                          </span>
+                        </div>
                       ))}
-                  </ul>
-
-                  <Separator className="my-2" />
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span>Subtotal</span>
-                      <span className="font-mono">{formatCurrency(personTotal.subtotal)}</span>
+                    
+                    <div className="border-t pt-2 mt-2 space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="font-mono">{formatCurrency(personTotal.subtotal)}</span>
+                      </div>
+                      {personTotal.tax > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Tax</span>
+                          <span className="font-mono">{formatCurrency(personTotal.tax)}</span>
+                        </div>
+                      )}
+                      {personTotal.tip > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Tip</span>
+                          <span className="font-mono">{formatCurrency(personTotal.tip)}</span>
+                        </div>
+                      )}
                     </div>
-                    {personTotal.tax > 0 && (
-                      <div className="flex justify-between">
-                        <span>Tax</span>
-                        <span className="font-mono">{formatCurrency(personTotal.tax)}</span>
-                      </div>
-                    )}
-                    {personTotal.tip > 0 && (
-                      <div className="flex justify-between">
-                        <span>Tip</span>
-                        <span className="font-mono">{formatCurrency(personTotal.tip)}</span>
-                      </div>
-                    )}
                   </div>
-                  {/* The remove button is now outside the expanded area */}
                 </div>
               )}
             </div>
           )
         })}
+        
         {isAddingPerson && (
-          <div className="pt-2">
+          <div className="rounded-lg border bg-card p-3">
             <AddPersonForm
               ref={personInputRef}
               onPersonAdded={() => setIsAddingPerson(false)}
@@ -168,85 +178,84 @@ export function TotalsPanel({
         )}
 
         {summary.personTotals.length === 0 && !isAddingPerson && (
-          <div className="py-6 text-center text-muted-foreground border-2 border-dashed rounded-lg">
-            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-xs font-semibold">Add people to the bill</p>
-            <p className="text-xs mt-1">Click the 'Add' button to start.</p>
+          <div className="py-8 text-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/20">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted mx-auto mb-3">
+              <Users className="h-6 w-6" />
+            </div>
+            <p className="font-medium mb-1">No people added yet</p>
+            <p className="text-xs">Add people to start splitting the bill</p>
           </div>
         )}
       </div>
-    </>
+    </div>
   )
 
   const BillSummaryPanel = () => (
-    <>
-      <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
-        <Receipt className="h-4 w-4" />
-        Bill Summary
-      </h3>
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span>Subtotal:</span>
-          <span className={`font-mono ${hasLargeAmounts ? "text-xs" : ""}`}>
-            {formatCurrency(summary.subtotal)}
-          </span>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/20">
+          <Receipt className="h-4 w-4 text-green-600 dark:text-green-400" />
         </div>
-
-        {summary.tax > 0 && (
-          <div className="flex justify-between text-sm">
-            <span>Tax:</span>
-            <span className={`font-mono ${hasLargeAmounts ? "text-xs" : ""}`}>{formatCurrency(summary.tax)}</span>
-          </div>
-        )}
-
-        {summary.tip > 0 && (
-          <div className="flex justify-between text-sm">
-            <span>Tip:</span>
-            <span className={`font-mono ${hasLargeAmounts ? "text-xs" : ""}`}>{formatCurrency(summary.tip)}</span>
-          </div>
-        )}
-
-        <Separator />
-
-        <div className="flex justify-between font-semibold">
-          <span>Total:</span>
-          <span className={`font-mono ${hasLargeAmounts ? "text-base" : "text-lg"}`}>
-            {formatCurrency(summary.total)}
-          </span>
+        <div>
+          <h3 className="text-base font-semibold">Bill Summary</h3>
+          <p className="text-xs text-muted-foreground">Total breakdown</p>
         </div>
       </div>
-    </>
+      
+      <div className="rounded-lg border bg-card p-4 space-y-3">
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="font-mono font-medium">
+              {formatCurrency(summary.subtotal)}
+            </span>
+          </div>
+
+          {summary.tax > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Tax</span>
+              <span className="font-mono font-medium">{formatCurrency(summary.tax)}</span>
+            </div>
+          )}
+
+          {summary.tip > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Tip</span>
+              <span className="font-mono font-medium">{formatCurrency(summary.tip)}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t pt-3">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold">Total</span>
+            <div className="text-right">
+              <div className="font-mono text-xl font-bold text-green-600 dark:text-green-400">
+                {formatCurrency(summary.total)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {summary.personTotals.length} {summary.personTotals.length === 1 ? 'person' : 'people'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 
   if (compact) {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader className="p-4">
-            <PeoplePanel />
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <BillSummaryPanel />
-          </CardContent>
-        </Card>
+      <div className="space-y-6 p-4">
+        <PeoplePanel />
+        <BillSummaryPanel />
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <PeoplePanel />
-        </CardHeader>
-      </Card>
-      <Card>
-        <CardContent className="pt-6">
-          <BillSummaryPanel />
-        </CardContent>
-      </Card>
+    <div className="space-y-6 p-4">
+      <PeoplePanel />
+      <BillSummaryPanel />
     </div>
   )
 }

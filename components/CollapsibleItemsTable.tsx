@@ -31,6 +31,7 @@ import { PersonSelector } from "./PersonSelector"
 import { EnhancedPersonSelector } from "./EnhancedPersonSelector"
 import { SplitMethodSelector } from "./SplitMethodSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
+import { TaxTipSection } from "./TaxTipSection"
 import { calculateItemSplits } from "@/lib/calculations"
 import type { Item } from "@/contexts/BillContext"
 import { AddPersonForm } from "./AddPersonForm"
@@ -266,6 +267,17 @@ export function CollapsibleItemsTable() {
                             <div className="grid grid-cols-[auto_minmax(0,1fr)_120px_60px] items-center gap-px transition-colors">
                               <div className="p-3 flex items-center gap-2 cursor-pointer hover:bg-muted/50" onClick={() => toggleItemExpansion(item.id)}>
                                 {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                <div className="flex flex-col">
+                                  <div className="text-xs text-muted-foreground">
+                                    {selectedPeople.length > 0 ? (
+                                      item.method === "even" ? 
+                                        `Split ${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
+                                        `${item.method === 'shares' ? 'By shares' : item.method === 'percent' ? 'By %' : 'By amount'} · ${selectedPeople.length} people`
+                                    ) : (
+                                      "No one selected"
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                               <div className="p-1">
                                 <Input
@@ -351,34 +363,7 @@ export function CollapsibleItemsTable() {
                                     </div>
                                   )}
 
-                                  {/* Per Person Breakdown */}
-                                  <div className="mt-4 pt-4 border-t">
-                                    <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                                      Per Person Breakdown
-                                    </label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                                      {Object.entries(splits).map(([personId, amount]) => {
-                                        const person = people.find((p) => p.id === personId)
-                                        return person ? (
-                                          <div
-                                            key={personId}
-                                            className="bg-background border rounded-md p-2 flex justify-between items-center"
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              <div
-                                                className="w-3 h-3 rounded-full"
-                                                style={{ backgroundColor: person.color }}
-                                              />
-                                              <span className="text-sm font-medium truncate">{person.name}</span>
-                                            </div>
-                                            <span className="font-mono text-sm font-medium">
-                                              ${(amount as number).toFixed(2)}
-                                            </span>
-                                          </div>
-                                        ) : null
-                                      })}
-                                    </div>
-                                  </div>
+
                                 </div>
                               </div>
                             )}
@@ -405,53 +390,11 @@ export function CollapsibleItemsTable() {
                 </div>
               </div>
 
-              {/* Tax & Tip Rows */}
-              <div className="bg-muted/30 col-span-5">
-                <Separator />
-              </div>
-              {/* Tax Row */}
-              <div className="grid grid-cols-subgrid col-span-5 bg-muted/30">
-                <div className="p-3 font-medium text-muted-foreground col-span-1">Tax</div>
-                <div className="p-3 col-span-1">
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    step="0.01"
-                    min="0"
-                    value={tax}
-                    onChange={handleTaxChange}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="0.00"
-                    className="h-8 font-mono bg-transparent border-input"
-                  />
-                </div>
-                <div className="p-3 col-span-3 text-sm text-muted-foreground flex items-center">
-                  Split {taxTipAllocation}ly
-                </div>
-              </div>
-
-              {/* Tip Row */}
-              <div className="grid grid-cols-subgrid col-span-5 bg-muted/30">
-                <div className="p-3 font-medium text-muted-foreground col-span-1">Tip</div>
-                <div className="p-3 col-span-1">
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    step="0.01"
-                    min="0"
-                    value={tip}
-                    onChange={handleTipChange}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="0.00"
-                    className="h-8 font-mono bg-transparent border-input"
-                  />
-                </div>
-                <div className="p-3 col-span-3 text-sm text-muted-foreground flex items-center">
-                  Split {taxTipAllocation}ly
-                </div>
-              </div>
+            </div>
+            
+            {/* Tax and Tip Section for Desktop */}
+            <div className="p-4">
+              <TaxTipSection />
             </div>
           </div>
 
@@ -514,12 +457,23 @@ export function CollapsibleItemsTable() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div
-                      className="flex items-center justify-center gap-2 text-sm text-muted-foreground cursor-pointer py-1 rounded-md hover:bg-muted"
-                      onClick={() => toggleItemExpansion(item.id)}
-                    >
-                      <span>Details</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                    <div className="space-y-1">
+                      <div className="text-xs text-muted-foreground text-center">
+                        {selectedPeople.length > 0 ? (
+                          item.method === "even" ? 
+                            `Split ${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
+                            `${item.method === 'shares' ? 'By shares' : item.method === 'percent' ? 'By %' : 'By amount'} · ${selectedPeople.length} people`
+                        ) : (
+                          "No one selected"
+                        )}
+                      </div>
+                      <div
+                        className="flex items-center justify-center gap-2 text-sm text-muted-foreground cursor-pointer py-1 rounded-md hover:bg-muted"
+                        onClick={() => toggleItemExpansion(item.id)}
+                      >
+                        <span>Details</span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                      </div>
                     </div>
                   </div>
 
@@ -540,90 +494,19 @@ export function CollapsibleItemsTable() {
                            />
                          </div>
                        </div>
-                      {item.method !== "even" && (
-                        <div className="mt-4 pt-4 border-t">
-                          <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                            Per Person Breakdown
-                          </label>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {Object.entries(splits).map(([personId, amount]) => {
-                              const person = people.find((p) => p.id === personId)
-                              return person ? (
-                                <div
-                                  key={personId}
-                                  className="bg-background border rounded-md p-2 flex justify-between items-center"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: person.color }} />
-                                    <span className="text-sm font-medium truncate">{person.name}</span>
-                                  </div>
-                                  <span className="font-mono text-sm font-medium">
-                                    ${(amount as number).toFixed(2)}
-                                  </span>
-                                </div>
-                              ) : null
-                            })}
-                          </div>
-                        </div>
-                      )}
+
                     </CardContent>
                   )}
                 </Card>
               )
             })}
 
-            {/* Tax and Tip for Mobile */}
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="font-medium">Tax</label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    step="0.01"
-                    min="0"
-                    value={tax}
-                    onChange={handleTaxChange}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="0.00"
-                    className="h-9 w-24 font-mono text-right"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <label className="font-medium">Tip</label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    step="0.01"
-                    min="0"
-                    value={tip}
-                    onChange={handleTipChange}
-                    onFocus={(e) => e.target.select()}
-                    placeholder="0.00"
-                    className="h-9 w-24 font-mono text-right"
-                  />
-            </div>
-              </CardContent>
-            </Card>
+            {/* Tax and Tip Section */}
+            <TaxTipSection />
           </div>
         </CardContent>
       )}
-      <CardFooter className="bg-muted/50 p-3 border-t">
-        <div className="flex items-center justify-end gap-2 text-sm w-full">
-          <span className="text-muted-foreground">Split Tax & Tip:</span>
-          <Select value={taxTipAllocation} onValueChange={handleTaxTipAllocationChange}>
-            <SelectTrigger className="h-8 w-32 border-input bg-background">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="proportional">Proportionally</SelectItem>
-              <SelectItem value="even">Evenly</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </CardFooter>
+
     </Card>
   )
 }
