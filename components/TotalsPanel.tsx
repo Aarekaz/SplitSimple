@@ -14,6 +14,7 @@ import { AddPersonForm } from "./AddPersonForm"
 import { useEffect, forwardRef } from "react"
 import { formatCurrency } from "@/lib/utils"
 import { AnimatedNumber } from "./AnimatedNumber"
+import { BillStatusIndicator } from "./BillStatusIndicator"
 
 interface TotalsPanelProps {
   compact?: boolean
@@ -221,10 +222,11 @@ export function TotalsPanel({
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/20">
           <Receipt className="h-4 w-4 text-green-600 dark:text-green-400" />
         </div>
-        <div>
+        <div className="flex-1">
           <h3 className="text-base font-semibold">Bill Summary</h3>
           <p className="text-xs text-muted-foreground">Total breakdown</p>
         </div>
+        <BillStatusIndicator showSelector={!compact} compact={compact} />
       </div>
       
       <div className="rounded-lg border bg-card p-4 space-y-3">

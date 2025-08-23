@@ -17,6 +17,8 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { BillStatusIndicator } from "@/components/BillStatusIndicator"
+import { ShareBill } from "@/components/ShareBill"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
@@ -117,6 +119,10 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-2">
+              <BillStatusIndicator compact />
+              
+              <ShareBill size="sm" showText={false} />
+              
               <TooltipProvider delayDuration={300}>
                 {/* Copy Button */}
                 <Tooltip>

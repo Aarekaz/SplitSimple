@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useReducer, useEffect } from "react"
+import { getBillFromCloud } from "@/lib/sharing"
 
 // Types
 export interface Person {
@@ -22,6 +23,7 @@ export interface Item {
 export interface Bill {
   id: string
   title: string
+  status: "draft" | "active" | "closed"
   tax: string
   tip: string
   taxTipAllocation: "proportional" | "even"
@@ -39,6 +41,7 @@ interface BillState {
 
 type BillAction =
   | { type: "SET_BILL_TITLE"; payload: string }
+  | { type: "SET_BILL_STATUS"; payload: "draft" | "active" | "closed" }
   | { type: "SET_TAX"; payload: string }
   | { type: "SET_TIP"; payload: string }
   | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" }
@@ -85,6 +88,7 @@ const simpleUUID = () => {
 const createInitialBill = (): Bill => ({
   id: simpleUUID(),
   title: "New Bill",
+  status: "draft",
   tax: "",
   tip: "",
   taxTipAllocation: "proportional",
@@ -104,6 +108,11 @@ function billReducer(state: BillState, action: BillAction): BillState {
   switch (action.type) {
     case "SET_BILL_TITLE": {
       const newBill = { ...state.currentBill, title: action.payload }
+      return addToHistory(state, newBill)
+    }
+
+    case "SET_BILL_STATUS": {
+      const newBill = { ...state.currentBill, status: action.payload }
       return addToHistory(state, newBill)
     }
 
@@ -245,6 +254,36 @@ function billReducer(state: BillState, action: BillAction): BillState {
   }
 }
 
+// Sharing functionality
+const saveBillToLocalStorage = (bill: Bill) => {
+  try {
+    const billsData = localStorage.getItem("splitsimple_bills") || "{}"
+    const bills = JSON.parse(billsData)
+    bills[bill.id] = bill
+    localStorage.setItem("splitsimple_bills", JSON.stringify(bills))
+  } catch (error) {
+    console.error("Failed to save bill to localStorage:", error)
+  }
+}
+
+const loadBillFromLocalStorage = (billId: string): Bill | null => {
+  try {
+    const billsData = localStorage.getItem("splitsimple_bills")
+    if (!billsData) return null
+    const bills = JSON.parse(billsData)
+    return bills[billId] || null
+  } catch (error) {
+    console.error("Failed to load bill from localStorage:", error)
+    return null
+  }
+}
+
+const generateShareUrl = (billId: string): string => {
+  return `${window.location.origin}${window.location.pathname}?bill=${billId}`
+}
+
+export { saveBillToLocalStorage, loadBillFromLocalStorage, generateShareUrl }
+
 function addToHistory(state: BillState, newBill: Bill): BillState {
   const newHistory = state.history.slice(0, state.historyIndex + 1)
   newHistory.push(JSON.parse(JSON.stringify(state.currentBill))) // Deep clone current state
@@ -277,23 +316,59 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
   const canUndo = state.historyIndex >= 0
   const canRedo = state.historyIndex < state.history.length - 1
 
-  // Auto-save to localStorage
+  // Check for shared bill on mount and load data from localStorage
   useEffect(() => {
-    localStorage.setItem("splitSimple_currentBill", JSON.stringify(state.currentBill))
-  }, [state.currentBill])
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("splitSimple_currentBill")
-    if (saved) {
+    const loadBill = async () => {
       try {
-        const bill = JSON.parse(saved)
-        dispatch({ type: "LOAD_BILL", payload: bill })
+        // Check for shared bill in URL
+        const urlParams = new URLSearchParams(window.location.search)
+        const sharedBillId = urlParams.get("bill")
+        
+        if (sharedBillId) {
+          // First try to load from Redis (cloud)
+          const cloudResult = await getBillFromCloud(sharedBillId)
+          if (cloudResult.bill) {
+            dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
+            return
+          }
+          
+          // Fallback to localStorage for backwards compatibility
+          const localSharedBill = loadBillFromLocalStorage(sharedBillId)
+          if (localSharedBill) {
+            dispatch({ type: "LOAD_BILL", payload: localSharedBill })
+            return
+          }
+          
+          // If shared bill not found, show error but continue with default
+          console.warn(`Shared bill ${sharedBillId} not found in cloud or local storage`)
+        }
+        
+        // Load current bill from localStorage
+        const saved = localStorage.getItem("splitSimple_currentBill")
+        if (saved) {
+          const bill = JSON.parse(saved)
+          dispatch({ type: "LOAD_BILL", payload: bill })
+        }
       } catch (error) {
-        console.error("Failed to load saved bill:", error)
+        console.error("Failed to load bill:", error)
       }
     }
+
+    loadBill()
   }, [])
+
+  // Auto-save to localStorage whenever state changes
+  useEffect(() => {
+    try {
+      // Save current bill to main storage
+      localStorage.setItem("splitSimple_currentBill", JSON.stringify(state.currentBill))
+      
+      // Also save to shared bills storage for sharing
+      saveBillToLocalStorage(state.currentBill)
+    } catch (error) {
+      console.error("Failed to save bill to localStorage:", error)
+    }
+  }, [state.currentBill])
 
   return <BillContext.Provider value={{ state, dispatch, canUndo, canRedo }}>{children}</BillContext.Provider>
 }
