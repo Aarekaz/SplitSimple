@@ -14,12 +14,24 @@ import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
 import { useState, useEffect, useRef } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Users } from "lucide-react"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
   const { toast } = useToast()
   const [isAddingPerson, setIsAddingPerson] = useState(false)
   const personInputRef = useRef<HTMLInputElement>(null)
+  const titleInputRef = useRef<HTMLInputElement>(null)
+
+  const isNewBill = state.currentBill.title === "New Bill" && state.currentBill.people.length === 0
+
+  useEffect(() => {
+    if (isNewBill) {
+      titleInputRef.current?.focus()
+      titleInputRef.current?.select()
+    }
+  }, [isNewBill])
 
   useEffect(() => {
     if (isAddingPerson) {
@@ -90,6 +102,7 @@ export default function HomePage() {
                 <span className="text-sm font-medium text-muted-foreground hidden sm:inline">SplitSimple</span>
               </div>
               <Input
+                ref={titleInputRef}
                 value={state.currentBill.title}
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
@@ -143,7 +156,23 @@ export default function HomePage() {
       <main className="container mx-auto px-4 py-4 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <CollapsibleItemsTable />
+            {state.currentBill.people.length > 0 ? (
+              <CollapsibleItemsTable />
+            ) : (
+              <Card>
+                <CardHeader className="text-center">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <CardTitle>
+                    {isNewBill ? "Welcome to SplitSimple!" : "Who's splitting the bill?"}
+                  </CardTitle>
+                  <p className="text-muted-foreground pt-1">
+                    {isNewBill
+                      ? "First, give your bill a name above."
+                      : "Add the first person on the right to get started."}
+                  </p>
+                </CardHeader>
+              </Card>
+            )}
           </div>
 
           <div className="hidden lg:block">

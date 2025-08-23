@@ -211,42 +211,17 @@ export function CollapsibleItemsTable() {
 
   if (items.length === 0) {
     return (
-      <div className="space-y-6">
-        {people.length === 0 && (
-          <Card>
-            <CardHeader className="text-center">
-              <Users className="mx-auto h-10 w-10 text-muted-foreground" />
-              <CardTitle>Who's splitting the bill?</CardTitle>
-              <p className="text-muted-foreground text-sm pt-1">Add the first person to get started.</p>
-            </CardHeader>
-            <CardContent>
-              <div className="max-w-xs mx-auto">
-                <AddPersonForm showButton={false} showAlignmentDiv={false} />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className={`text-center ${people.length === 0 ? "border-dashed" : ""}`}>
-          <CardContent className="pt-8 pb-8">
-            <Calculator
-              className={`mx-auto h-12 w-12 text-muted-foreground ${people.length === 0 ? "opacity-50" : ""} mb-4`}
-            />
-            <CardTitle className={`mb-2 ${people.length === 0 ? "text-muted-foreground" : ""}`}>
-              {people.length === 0 ? "Next, add your items" : "No items added yet"}
-            </CardTitle>
-            <p className="text-muted-foreground mb-4">
-              {people.length === 0
-                ? "Once you've added people, you can add expenses."
-                : "Add items to start splitting expenses"}
-            </p>
-            <Button onClick={() => handleAddItem(true)} disabled={people.length === 0}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Item
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="text-center">
+        <CardContent className="pt-8 pb-8">
+          <Calculator className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <CardTitle className="mb-2">No items added yet</CardTitle>
+          <p className="text-muted-foreground mb-4">Add items to start splitting expenses</p>
+          <Button onClick={() => handleAddItem(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Your First Item
+          </Button>
+        </CardContent>
+      </Card>
     )
   }
 
