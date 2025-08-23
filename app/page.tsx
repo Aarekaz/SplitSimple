@@ -16,6 +16,7 @@ import { generateSummaryText, copyToClipboard } from "@/lib/export"
 import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [isAddingPerson, setIsAddingPerson] = useState(false)
   const personInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const isMobile = useIsMobile()
 
   const isNewBill = state.currentBill.title === "New Bill" && state.currentBill.people.length === 0
 
@@ -168,6 +170,8 @@ export default function HomePage() {
                   <p className="text-muted-foreground pt-1">
                     {isNewBill
                       ? "First, give your bill a name above."
+                      : isMobile
+                      ? "Tap 'View Details' below to add people."
                       : "Add the first person on the right to get started."}
                   </p>
                 </CardHeader>

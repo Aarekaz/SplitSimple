@@ -76,9 +76,14 @@ const getRandomColor = () => {
   return color
 }
 
+// A simple and compatible UUID generator
+const simpleUUID = () => {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+}
+
 // Initial state
 const createInitialBill = (): Bill => ({
-  id: crypto.randomUUID(),
+  id: simpleUUID(),
   title: "New Bill",
   tax: "",
   tip: "",
@@ -129,7 +134,7 @@ function billReducer(state: BillState, action: BillAction): BillState {
       }
 
       const newPerson: Person = {
-        id: crypto.randomUUID(),
+        id: simpleUUID(),
         name: action.payload.name,
         color: newColor,
       }
@@ -155,7 +160,7 @@ function billReducer(state: BillState, action: BillAction): BillState {
     case "ADD_ITEM": {
       const newItem: Item = {
         ...action.payload,
-        id: crypto.randomUUID(),
+        id: simpleUUID(),
       }
       const newBill = {
         ...state.currentBill,
