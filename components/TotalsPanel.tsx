@@ -135,7 +135,7 @@ export function TotalsPanel({
                     <X className="h-3.5 w-3.5" />
                   </Button>
                   <div className="text-right">
-                    <div className="font-mono text-sm font-semibold">
+                    <div className="receipt-amount text-sm">
                       <AnimatedNumber 
                         value={personTotal.total}
                         formatFn={(v) => formatCurrency(v)}
@@ -159,7 +159,7 @@ export function TotalsPanel({
                       .map((breakdown) => (
                         <div key={breakdown.itemId} className="flex justify-between items-center py-1">
                           <span className="font-medium">{breakdown.itemName}</span>
-                          <span className="font-mono text-muted-foreground">
+                          <span className="receipt-subtotal text-muted-foreground">
                             {formatCurrency(breakdown.splits[person.id])}
                           </span>
                         </div>
@@ -168,18 +168,18 @@ export function TotalsPanel({
                     <div className="border-t pt-2 mt-2 space-y-1">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span className="font-mono">{formatCurrency(personTotal.subtotal)}</span>
+                        <span className="receipt-subtotal">{formatCurrency(personTotal.subtotal)}</span>
                       </div>
                       {personTotal.tax > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Tax</span>
-                          <span className="font-mono">{formatCurrency(personTotal.tax)}</span>
+                          <span className="receipt-subtotal">{formatCurrency(personTotal.tax)}</span>
                         </div>
                       )}
                       {personTotal.tip > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Tip</span>
-                          <span className="font-mono">{formatCurrency(personTotal.tip)}</span>
+                          <span className="receipt-subtotal">{formatCurrency(personTotal.tip)}</span>
                         </div>
                       )}
                     </div>
@@ -218,7 +218,7 @@ export function TotalsPanel({
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Subtotal</span>
-          <span className="font-mono font-medium">
+          <span className="receipt-subtotal">
             {formatCurrency(summary.subtotal)}
           </span>
         </div>
@@ -226,14 +226,14 @@ export function TotalsPanel({
         {summary.tax > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Tax</span>
-            <span className="font-mono font-medium">{formatCurrency(summary.tax)}</span>
+            <span className="receipt-subtotal">{formatCurrency(summary.tax)}</span>
           </div>
         )}
 
         {summary.tip > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Tip</span>
-            <span className="font-mono font-medium">{formatCurrency(summary.tip)}</span>
+            <span className="receipt-subtotal">{formatCurrency(summary.tip)}</span>
           </div>
         )}
       </div>
@@ -241,7 +241,7 @@ export function TotalsPanel({
       <div className="border-t pt-3">
         <div className="flex justify-between items-center">
           <span className="font-semibold">Total</span>
-          <div className="font-mono text-xl font-bold text-green-600 dark:text-green-400">
+          <div className="receipt-total text-green-600 dark:text-green-400">
             <AnimatedNumber 
               value={summary.total}
               formatFn={(v) => formatCurrency(v)}

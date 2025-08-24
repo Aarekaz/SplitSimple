@@ -37,7 +37,7 @@
   --sidebar-accent-foreground: #374151;
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #84cc16;
-  --font-inter: "Inter", sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", monospace;
 }
 
 .dark {
@@ -73,7 +73,7 @@
   --sidebar-accent-foreground: #1f2937;
   --sidebar-border: #4b5563;
   --sidebar-ring: #84cc16;
-  --font-inter: "Inter", sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", monospace;
 }
 
 @theme inline {
@@ -113,8 +113,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: var(--font-inter);
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: var(--font-jetbrains-mono);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
 @layer base {
@@ -124,5 +124,46 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1; /* Tabular numbers for consistent alignment */
+  }
+}
+
+/* Professional Receipt Typography */
+@layer utilities {
+  .receipt-title {
+    @apply text-xl font-bold tracking-tight font-mono;
+  }
+  
+  .receipt-amount {
+    @apply font-mono font-semibold text-right tabular-nums;
+  }
+  
+  .receipt-item-name {
+    @apply font-medium leading-snug;
+  }
+  
+  .receipt-detail {
+    @apply text-xs text-muted-foreground font-normal;
+  }
+  
+  .receipt-total {
+    @apply text-lg font-bold font-mono tabular-nums;
+  }
+  
+  .receipt-subtotal {
+    @apply font-mono font-medium tabular-nums;
+  }
+  
+  .receipt-section-title {
+    @apply text-sm font-semibold uppercase tracking-wider;
+  }
+  
+  /* Number formatting utilities */
+  .numbers-aligned {
+    @apply font-mono tabular-nums;
+  }
+  
+  .currency-display {
+    @apply font-mono font-semibold tabular-nums;
   }
 }

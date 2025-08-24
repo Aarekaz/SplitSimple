@@ -114,7 +114,7 @@ export default function HomePage() {
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
                 placeholder="Untitled Bill"
-                className="h-8 w-36 sm:w-48 border-0 bg-transparent text-lg font-semibold text-foreground px-2 focus:ring-0 focus:outline-none hover:bg-muted focus:bg-input transition-colors rounded-md"
+                className="receipt-title h-8 w-36 sm:w-48 border-0 bg-transparent text-foreground px-2 focus:ring-0 focus:outline-none hover:bg-muted focus:bg-input transition-colors rounded-md"
               />
             </div>
 

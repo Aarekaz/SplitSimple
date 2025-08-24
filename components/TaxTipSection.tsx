@@ -69,7 +69,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
                 onChange={handleTaxChange}
                 onFocus={(e) => e.target.select()}
                 placeholder="0.00"
-                className="h-10 font-mono text-right pr-8"
+                className="receipt-amount h-10 pr-8"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                 $
@@ -90,7 +90,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
                 onChange={handleTipChange}
                 onFocus={(e) => e.target.select()}
                 placeholder="0.00"
-                className="h-10 font-mono text-right pr-8"
+                className="receipt-amount h-10 pr-8"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                 $

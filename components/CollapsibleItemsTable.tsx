@@ -332,11 +332,11 @@ export function CollapsibleItemsTable() {
                                           onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
                                           placeholder="Add your item..."
-                                    className="h-9 border-none bg-transparent focus-visible:ring-1 text-sm font-medium"
+                                    className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm"
                                   />
                                   {/* Split info as subtle badge */}
                                   {selectedPeople.length > 0 && (
-                                    <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground border-none">
+                                    <Badge variant="secondary" className="receipt-detail px-2 py-0.5 bg-muted/50 border-none">
                                       {item.method === "even" ? 
                                         `${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
                                         `${item.method === 'shares' ? 'Shares' : item.method === 'percent' ? '%' : '$'} · ${selectedPeople.length}`
@@ -366,7 +366,7 @@ export function CollapsibleItemsTable() {
                                           onFocus={(e) => e.target.select()}
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
                                           placeholder="0.00"
-                                  className="font-mono h-9 border-none bg-transparent focus-visible:ring-1 text-right font-semibold"
+                                  className="receipt-amount h-9 border-none bg-transparent focus-visible:ring-1"
                                         />
                                       </div>
                               
@@ -475,7 +475,7 @@ export function CollapsibleItemsTable() {
                               onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
                               placeholder="Add your item..."
-                            className="h-9 border-none bg-transparent focus-visible:ring-1 text-sm font-medium flex-1"
+                            className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm flex-1"
                           />
                           <Button
                             variant="ghost"

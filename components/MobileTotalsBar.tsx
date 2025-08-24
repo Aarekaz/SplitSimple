@@ -39,8 +39,8 @@ export function MobileTotalsBar() {
               <div className="flex items-center gap-3">
                 <Calculator className="h-5 w-5 text-primary" />
                 <div>
-                  <div className="font-semibold">{formatCurrency(summary.total)}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="receipt-amount text-base">{formatCurrency(summary.total)}</div>
+                  <div className="receipt-detail">
                     {state.currentBill.people.length} people • {state.currentBill.items.length} items
                   </div>
                 </div>
