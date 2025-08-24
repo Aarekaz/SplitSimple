@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
-import { Calculator, Percent } from "lucide-react"
+import { Calculator, Percent, FileText } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { cn } from "@/lib/utils"
 
@@ -14,7 +15,7 @@ interface TaxTipSectionProps {
 
 export function TaxTipSection({ className }: TaxTipSectionProps) {
   const { state, dispatch } = useBill()
-  const { tax, tip, taxTipAllocation } = state.currentBill
+  const { tax, tip, taxTipAllocation, notes } = state.currentBill
 
   const sanitizeNumericInput = (value: string) => {
     let sanitized = value.replace(/[^0-9.]/g, "")
@@ -35,6 +36,10 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
 
   const handleTaxTipAllocationChange = (value: "proportional" | "even") => {
     dispatch({ type: "SET_TAX_TIP_ALLOCATION", payload: value })
+  }
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    dispatch({ type: "SET_NOTES", payload: e.target.value })
   }
 
   return (
@@ -114,6 +119,24 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
             {taxTipAllocation === "proportional" 
               ? "Split based on each person's subtotal" 
               : "Split equally among all people"}
+          </p>
+        </div>
+
+        {/* Receipt Notes */}
+        <div className="border-t pt-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <label className="text-sm font-medium">Receipt Notes</label>
+          </div>
+          <Textarea
+            value={notes}
+            onChange={handleNotesChange}
+            placeholder="Add custom notes... (e.g., 'Service charge included', 'Cash only', etc.)"
+            className="min-h-[60px] text-sm resize-none"
+            maxLength={200}
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional footer message that appears on shared receipts ({notes.length}/200)
           </p>
         </div>
       </div>

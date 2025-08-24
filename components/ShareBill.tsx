@@ -4,13 +4,14 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Share2, Copy, Check, ExternalLink, FileText, Download, Separator } from "lucide-react"
+import { Share2, Copy, Check, ExternalLink, FileText, Download, Receipt } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useBill } from "@/contexts/BillContext"
 import { copyToClipboard, generateItemBreakdownText, downloadCSV } from "@/lib/export"
 import { useToast } from "@/hooks/use-toast"
 import { storeBillInCloud, generateCloudShareUrl } from "@/lib/sharing"
+import { ReceiptView } from "./ReceiptView"
 
 interface ShareBillProps {
   variant?: "default" | "outline" | "ghost"
@@ -213,7 +214,12 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
           {/* Export Options */}
           <div className="border-t pt-4 space-y-3">
             <Label className="text-sm font-medium">Export Options</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
+              <ReceiptView 
+                variant="outline" 
+                size="sm" 
+                showText={true}
+              />
               <Button
                 variant="outline"
                 size="sm"

@@ -29,6 +29,7 @@ export interface Bill {
   tax: string
   tip: string
   taxTipAllocation: "proportional" | "even"
+  notes: string
   people: Person[]
   items: Item[]
 }
@@ -46,6 +47,7 @@ interface BillState {
 type BillAction =
   | { type: "SET_BILL_TITLE"; payload: string }
   | { type: "SET_BILL_STATUS"; payload: "draft" | "active" | "closed" }
+  | { type: "SET_NOTES"; payload: string }
   | { type: "SET_TAX"; payload: string }
   | { type: "SET_TIP"; payload: string }
   | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" }
@@ -98,6 +100,7 @@ const createInitialBill = (): Bill => ({
   tax: "",
   tip: "",
   taxTipAllocation: "proportional",
+  notes: "",
   people: [],
   items: [],
 })
@@ -121,6 +124,11 @@ function billReducer(state: BillState, action: BillAction): BillState {
 
     case "SET_BILL_STATUS": {
       const newBill = { ...state.currentBill, status: action.payload }
+      return addToHistory(state, newBill)
+    }
+
+    case "SET_NOTES": {
+      const newBill = { ...state.currentBill, notes: action.payload }
       return addToHistory(state, newBill)
     }
 
@@ -373,9 +381,12 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           // First try to load from Redis (cloud)
           const cloudResult = await getBillFromCloud(sharedBillId)
           if (cloudResult.bill) {
-            // Migration: Add status field to existing shared bills
+            // Migration: Add missing fields to existing shared bills
             if (!cloudResult.bill.status) {
               cloudResult.bill.status = "draft"
+            }
+            if (!cloudResult.bill.notes) {
+              cloudResult.bill.notes = ""
             }
             dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
             return
@@ -384,9 +395,12 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           // Fallback to localStorage for backwards compatibility
           const localSharedBill = loadBillFromLocalStorage(sharedBillId)
           if (localSharedBill) {
-            // Migration: Add status field to existing local shared bills
+            // Migration: Add missing fields to existing local shared bills
             if (!localSharedBill.status) {
               localSharedBill.status = "draft"
+            }
+            if (!localSharedBill.notes) {
+              localSharedBill.notes = ""
             }
             dispatch({ type: "LOAD_BILL", payload: localSharedBill })
             return
@@ -400,9 +414,12 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         const saved = localStorage.getItem("splitSimple_currentBill")
         if (saved) {
           const bill = JSON.parse(saved)
-          // Migration: Add status field to existing bills
+          // Migration: Add missing fields to existing bills
           if (!bill.status) {
             bill.status = "draft"
+          }
+          if (!bill.notes) {
+            bill.notes = ""
           }
           dispatch({ type: "LOAD_BILL", payload: bill })
         }
