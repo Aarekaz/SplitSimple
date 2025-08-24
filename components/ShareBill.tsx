@@ -214,32 +214,34 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
           {/* Export Options */}
           <div className="border-t pt-4 space-y-3">
             <Label className="text-sm font-medium">Export Options</Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-2">
               <ReceiptView 
                 variant="outline" 
                 size="sm" 
                 showText={true}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyBreakdown}
-                disabled={state.currentBill.items.length === 0}
-                className="flex items-center gap-2 text-xs"
-              >
-                <FileText className="h-4 w-4" />
-                Copy Breakdown
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCSV}
-                disabled={state.currentBill.items.length === 0}
-                className="flex items-center gap-2 text-xs"
-              >
-                <Download className="h-4 w-4" />
-                Download CSV
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyBreakdown}
+                  disabled={state.currentBill.items.length === 0}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  <FileText className="h-4 w-4" />
+                  Copy Breakdown
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCSV}
+                  disabled={state.currentBill.items.length === 0}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  <Download className="h-4 w-4" />
+                  Download CSV
+                </Button>
+              </div>
             </div>
           </div>
 

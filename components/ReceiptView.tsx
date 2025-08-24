@@ -51,7 +51,7 @@ export function ReceiptView({ variant = "outline", size = "sm", showText = true 
           {showText && <span>Receipt View</span>}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
@@ -60,7 +60,7 @@ export function ReceiptView({ variant = "outline", size = "sm", showText = true 
         </DialogHeader>
         
         {/* Receipt Content */}
-        <div className="receipt-content font-mono text-sm space-y-6 bg-white text-black p-6 rounded-lg border">
+        <div className="receipt-content font-mono text-sm space-y-6 bg-white text-black p-4 sm:p-6 rounded-lg border">
           {/* Header */}
           <div className="text-center space-y-2">
             <h1 className="text-xl font-bold tracking-tight">

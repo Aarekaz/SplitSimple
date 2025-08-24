@@ -55,7 +55,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
           </div>
         </div>
         <Select value={taxTipAllocation} onValueChange={handleTaxTipAllocationChange}>
-          <SelectTrigger className="w-40 h-8">
+          <SelectTrigger className="w-32 sm:w-40 h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -66,7 +66,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
       </div>
       
       <div className="rounded-lg border bg-card p-4 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground">Tax</label>
             <div className="relative">
