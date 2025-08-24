@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
-import { Calculator, Percent, FileText } from "lucide-react"
+import { Calculator, FileText } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { cn } from "@/lib/utils"
 
@@ -44,14 +44,25 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/20">
-          <Calculator className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/20">
+            <Calculator className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold">Tax & Tip</h3>
+            <p className="text-xs text-muted-foreground">Additional charges</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-base font-semibold">Tax & Tip</h3>
-          <p className="text-xs text-muted-foreground">Additional charges</p>
-        </div>
+        <Select value={taxTipAllocation} onValueChange={handleTaxTipAllocationChange}>
+          <SelectTrigger className="w-40 h-8">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="proportional">Split proportionally</SelectItem>
+            <SelectItem value="even">Split evenly</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       <div className="rounded-lg border bg-card p-4 space-y-4">
@@ -97,29 +108,6 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="border-t pt-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Percent className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Split Method</span>
-            </div>
-            <Select value={taxTipAllocation} onValueChange={handleTaxTipAllocationChange}>
-              <SelectTrigger className="w-40 h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="proportional">Proportionally</SelectItem>
-                <SelectItem value="even">Evenly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {taxTipAllocation === "proportional" 
-              ? "Split based on each person's subtotal" 
-              : "Split equally among all people"}
-          </p>
         </div>
 
         {/* Receipt Notes */}
