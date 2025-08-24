@@ -117,6 +117,12 @@ export function ReceiptView({ variant = "outline", size = "sm", showText = true 
                 <span className="font-bold">{formatCurrency(summary.tip)}</span>
               </div>
             )}
+            {summary.discount > 0 && (
+              <div className="flex justify-between">
+                <span>Discount</span>
+                <span className="font-bold text-green-600">-{formatCurrency(summary.discount)}</span>
+              </div>
+            )}
           </div>
 
           <div className="border-b border-gray-400"></div>

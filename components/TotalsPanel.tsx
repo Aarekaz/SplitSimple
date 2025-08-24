@@ -236,6 +236,12 @@ export function TotalsPanel({
             <span className="receipt-subtotal">{formatCurrency(summary.tip)}</span>
           </div>
         )}
+        {summary.discount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Discount</span>
+            <span className="receipt-subtotal text-green-600 dark:text-green-400">-{formatCurrency(summary.discount)}</span>
+          </div>
+        )}
       </div>
 
       <div className="border-t pt-3">

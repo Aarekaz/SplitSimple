@@ -28,6 +28,7 @@ export interface Bill {
   status: "draft" | "active" | "closed"
   tax: string
   tip: string
+  discount: string
   taxTipAllocation: "proportional" | "even"
   notes: string
   people: Person[]
@@ -50,6 +51,7 @@ type BillAction =
   | { type: "SET_NOTES"; payload: string }
   | { type: "SET_TAX"; payload: string }
   | { type: "SET_TIP"; payload: string }
+  | { type: "SET_DISCOUNT"; payload: string }
   | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" }
   | { type: "ADD_PERSON"; payload: { name: string; color: string } }
   | { type: "REMOVE_PERSON"; payload: string }
@@ -99,6 +101,7 @@ const createInitialBill = (): Bill => ({
   status: "draft",
   tax: "",
   tip: "",
+  discount: "",
   taxTipAllocation: "proportional",
   notes: "",
   people: [],
@@ -139,6 +142,11 @@ function billReducer(state: BillState, action: BillAction): BillState {
 
     case "SET_TIP": {
       const newBill = { ...state.currentBill, tip: action.payload }
+      return addToHistory(state, newBill)
+    }
+
+    case "SET_DISCOUNT": {
+      const newBill = { ...state.currentBill, discount: action.payload }
       return addToHistory(state, newBill)
     }
 
@@ -388,6 +396,9 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             if (!cloudResult.bill.notes) {
               cloudResult.bill.notes = ""
             }
+            if (!cloudResult.bill.discount) {
+              cloudResult.bill.discount = ""
+            }
             dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
             return
           }
@@ -401,6 +412,9 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             }
             if (!localSharedBill.notes) {
               localSharedBill.notes = ""
+            }
+            if (!localSharedBill.discount) {
+              localSharedBill.discount = ""
             }
             dispatch({ type: "LOAD_BILL", payload: localSharedBill })
             return
@@ -420,6 +434,9 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           }
           if (!bill.notes) {
             bill.notes = ""
+          }
+          if (!bill.discount) {
+            bill.discount = ""
           }
           dispatch({ type: "LOAD_BILL", payload: bill })
         }

@@ -5,6 +5,7 @@ export interface PersonTotal {
   subtotal: number
   tax: number
   tip: number
+  discount: number
   total: number
 }
 
@@ -113,6 +114,7 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
     subtotal: 0,
     tax: 0,
     tip: 0,
+    discount: 0,
     total: 0,
   }))
 
@@ -127,14 +129,17 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
     })
   })
 
-  // Calculate tax and tip allocation
+  // Calculate tax, tip, and discount allocation
   const billSubtotal = totals.reduce((sum, t) => sum + t.subtotal, 0)
   const tax = parseFloat(bill.tax) || 0
   const tip = parseFloat(bill.tip) || 0
+  const discount = parseFloat(bill.discount) || 0
   const taxInCents = Math.round(tax * 100)
   const tipInCents = Math.round(tip * 100)
+  const discountInCents = Math.round(discount * 100)
   let totalTaxSplit = 0
   let totalTipSplit = 0
+  let totalDiscountSplit = 0
 
   if (billSubtotal > 0) {
     totals.forEach((personTotal, index) => {
@@ -146,13 +151,17 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
           if (!isLastPerson) {
             const taxAmount = Math.round(taxInCents * proportion)
             const tipAmount = Math.round(tipInCents * proportion)
+            const discountAmount = Math.round(discountInCents * proportion)
             personTotal.tax = taxAmount / 100
             personTotal.tip = tipAmount / 100
+            personTotal.discount = discountAmount / 100
             totalTaxSplit += taxAmount
             totalTipSplit += tipAmount
+            totalDiscountSplit += discountAmount
           } else {
             personTotal.tax = (taxInCents - totalTaxSplit) / 100
             personTotal.tip = (tipInCents - totalTipSplit) / 100
+            personTotal.discount = (discountInCents - totalDiscountSplit) / 100
           }
           break
         }
@@ -161,18 +170,22 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
           if (!isLastPerson) {
             const taxAmount = Math.floor(taxInCents / totals.length)
             const tipAmount = Math.floor(tipInCents / totals.length)
+            const discountAmount = Math.floor(discountInCents / totals.length)
             personTotal.tax = taxAmount / 100
             personTotal.tip = tipAmount / 100
+            personTotal.discount = discountAmount / 100
             totalTaxSplit += taxAmount
             totalTipSplit += tipAmount
+            totalDiscountSplit += discountAmount
           } else {
             personTotal.tax = (taxInCents - totalTaxSplit) / 100
             personTotal.tip = (tipInCents - totalTipSplit) / 100
+            personTotal.discount = (discountInCents - totalDiscountSplit) / 100
           }
           break
         }
       }
-      personTotal.total = personTotal.subtotal + personTotal.tax + personTotal.tip
+      personTotal.total = personTotal.subtotal + personTotal.tax + personTotal.tip - personTotal.discount
     })
   }
 
@@ -185,12 +198,14 @@ export function getBillSummary(bill: Bill) {
   const subtotal = personTotals.reduce((sum, t) => sum + t.subtotal, 0)
   const totalTax = personTotals.reduce((sum, t) => sum + t.tax, 0)
   const totalTip = personTotals.reduce((sum, t) => sum + t.tip, 0)
-  const grandTotal = subtotal + totalTax + totalTip
+  const totalDiscount = personTotals.reduce((sum, t) => sum + t.discount, 0)
+  const grandTotal = subtotal + totalTax + totalTip - totalDiscount
 
   return {
     subtotal: Math.round(subtotal * 100) / 100,
     tax: Math.round(totalTax * 100) / 100,
     tip: Math.round(totalTip * 100) / 100,
+    discount: Math.round(totalDiscount * 100) / 100,
     total: Math.round(grandTotal * 100) / 100,
     personTotals,
   }

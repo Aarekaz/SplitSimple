@@ -34,6 +34,10 @@ export function generateSummaryText(bill: Bill): string {
         if (personTotal.tip > 0) {
           text += `  Tip: ${currencySymbol}${personTotal.tip.toFixed(2)}\n`
         }
+
+        if (personTotal.discount > 0) {
+          text += `  Discount: -${currencySymbol}${personTotal.discount.toFixed(2)}\n`
+        }
         text += `  Total: ${currencySymbol}${personTotal.total.toFixed(2)}\n`
       }
     })
@@ -48,9 +52,13 @@ export function generateSummaryText(bill: Bill): string {
     text += `Tax: ${currencySymbol}${summary.tax.toFixed(2)}\n`
   }
 
-  if (summary.tip > 0) {
-    text += `Tip: ${currencySymbol}${summary.tip.toFixed(2)}\n`
-  }
+      if (summary.tip > 0) {
+      text += `Tip: ${currencySymbol}${summary.tip.toFixed(2)}\n`
+    }
+
+    if (summary.discount > 0) {
+      text += `Discount: -${currencySymbol}${summary.discount.toFixed(2)}\n`
+    }
 
   text += `Grand Total: ${currencySymbol}${summary.total.toFixed(2)}\n`
 
@@ -105,11 +113,11 @@ export function generateCSV(bill: Bill): { itemsCSV: string; totalsCSV: string }
   })
 
   // Totals CSV
-  let totalsCSV = "Person,Subtotal,Tax,Tip,Total\n"
+      let totalsCSV = "Person,Subtotal,Tax,Tip,Discount,Total\n"
   summary.personTotals.forEach((personTotal) => {
     const person = bill.people.find((p) => p.id === personTotal.personId)
     if (person) {
-      totalsCSV += `"${person.name}",${personTotal.subtotal.toFixed(2)},${personTotal.tax.toFixed(2)},${personTotal.tip.toFixed(2)},${personTotal.total.toFixed(2)}\n`
+              totalsCSV += `"${person.name}",${personTotal.subtotal.toFixed(2)},${personTotal.tax.toFixed(2)},${personTotal.tip.toFixed(2)},${personTotal.discount.toFixed(2)},${personTotal.total.toFixed(2)}\n`
     }
   })
 
