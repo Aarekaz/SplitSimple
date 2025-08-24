@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useBill } from "@/contexts/BillContext"
 import { Clock, CheckCircle, XCircle } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 const statusConfig = {
   draft: {
@@ -36,37 +37,31 @@ interface BillStatusIndicatorProps {
 
 export function BillStatusIndicator({ compact = false, showSelector = true }: BillStatusIndicatorProps) {
   const { state, dispatch } = useBill()
+  const { toast } = useToast()
   const currentStatus = state.currentBill.status
   const config = statusConfig[currentStatus]
   const Icon = config.icon
 
   const handleStatusChange = (newStatus: "draft" | "active" | "closed") => {
     dispatch({ type: "SET_BILL_STATUS", payload: newStatus })
+    toast({
+      title: "Status updated",
+      description: `Bill is now ${statusConfig[newStatus].label.toLowerCase()}`,
+    })
   }
 
   if (compact) {
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1.5 text-xs px-2 py-1">
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    )
-  }
-
-  if (!showSelector) {
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <Badge variant={config.variant} className="flex items-center gap-1.5">
-          <Icon className="h-3.5 w-3.5" />
+    if (!showSelector) {
+      return (
+        <Badge variant={config.variant} className="flex items-center gap-1.5 text-xs px-2 py-1">
+          <Icon className="h-3 w-3" />
           {config.label}
         </Badge>
-        <span className="text-muted-foreground text-xs">{config.description}</span>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex items-center gap-2">
+      )
+    }
+    
+    // Compact selector for header
+    return (
       <Select value={currentStatus} onValueChange={handleStatusChange}>
         <SelectTrigger className="w-auto h-8 border-none shadow-none p-0 gap-1.5 hover:bg-muted/50 focus:ring-0 focus:ring-offset-0">
           <SelectValue asChild>
@@ -76,7 +71,7 @@ export function BillStatusIndicator({ compact = false, showSelector = true }: Bi
             </Badge>
           </SelectValue>
         </SelectTrigger>
-        <SelectContent align="end" className="min-w-40">
+        <SelectContent align="end" className="min-w-48">
           {Object.entries(statusConfig).map(([status, statusConfig]) => {
             const StatusIcon = statusConfig.icon
             return (
@@ -93,6 +88,28 @@ export function BillStatusIndicator({ compact = false, showSelector = true }: Bi
           })}
         </SelectContent>
       </Select>
+    )
+  }
+
+  if (!showSelector) {
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <Badge variant={config.variant} className="flex items-center gap-1.5">
+          <Icon className="h-3.5 w-3.5" />
+          {config.label}
+        </Badge>
+        <span className="text-muted-foreground text-xs">{config.description}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <Badge variant={config.variant} className="flex items-center gap-1.5">
+        <Icon className="h-3.5 w-3.5" />
+        {config.label}
+      </Badge>
+      <span className="text-muted-foreground text-xs">{config.description}</span>
     </div>
   )
 }

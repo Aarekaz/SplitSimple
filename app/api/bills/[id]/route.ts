@@ -25,10 +25,10 @@ const getRedisClient = async () => {
 // GET /api/bills/[id] - Retrieve a shared bill
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const billId = params.id
+    const { id: billId } = await params
     
     if (!billId || typeof billId !== 'string') {
       return NextResponse.json(
@@ -68,10 +68,10 @@ export async function GET(
 // POST /api/bills/[id] - Store a bill for sharing
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const billId = params.id
+    const { id: billId } = await params
     
     if (!billId || typeof billId !== 'string') {
       return NextResponse.json(

@@ -2,9 +2,11 @@
 
 import type React from "react"
 import { createContext, useContext, useReducer, useEffect } from "react"
-import { getBillFromCloud } from "@/lib/sharing"
+import { getBillFromCloud, storeBillInCloud } from "@/lib/sharing"
 
 // Types
+export type SyncStatus = "never_synced" | "syncing" | "synced" | "error"
+
 export interface Person {
   id: string
   name: string
@@ -37,6 +39,8 @@ interface BillState {
   history: Bill[]
   historyIndex: number
   maxHistorySize: number
+  syncStatus: SyncStatus
+  lastSyncTime: number | null
 }
 
 type BillAction =
@@ -55,6 +59,8 @@ type BillAction =
   | { type: "NEW_BILL" }
   | { type: "UNDO" }
   | { type: "REDO" }
+  | { type: "SET_SYNC_STATUS"; payload: SyncStatus }
+  | { type: "SYNC_TO_CLOUD" }
 
 // Default colors for people
 const PERSON_COLORS = [
@@ -101,6 +107,8 @@ const initialState: BillState = {
   history: [],
   historyIndex: -1,
   maxHistorySize: 50,
+  syncStatus: "never_synced",
+  lastSyncTime: null,
 }
 
 // Reducer
@@ -244,9 +252,25 @@ function billReducer(state: BillState, action: BillAction): BillState {
           ...state,
           currentBill: nextBill,
           historyIndex: state.historyIndex + 1,
+          syncStatus: "never_synced", // Mark as needing sync after redo
         }
       }
       return state
+    }
+
+    case "SET_SYNC_STATUS": {
+      return {
+        ...state,
+        syncStatus: action.payload,
+        lastSyncTime: action.payload === "synced" ? Date.now() : state.lastSyncTime,
+      }
+    }
+
+    case "SYNC_TO_CLOUD": {
+      return {
+        ...state,
+        syncStatus: "syncing",
+      }
     }
 
     default:
@@ -298,6 +322,7 @@ function addToHistory(state: BillState, newBill: Bill): BillState {
     currentBill: newBill,
     history: newHistory,
     historyIndex: newHistory.length - 1,
+    syncStatus: "never_synced", // Mark as needing sync when bill changes
   }
 }
 
@@ -307,6 +332,7 @@ const BillContext = createContext<{
   dispatch: React.Dispatch<BillAction>
   canUndo: boolean
   canRedo: boolean
+  syncToCloud: () => Promise<void>
 } | null>(null)
 
 // Provider
@@ -315,6 +341,25 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
   const canUndo = state.historyIndex >= 0
   const canRedo = state.historyIndex < state.history.length - 1
+
+  // Auto-sync to cloud functionality
+  const syncToCloud = async () => {
+    if (state.syncStatus === "syncing") return // Avoid duplicate sync calls
+    
+    dispatch({ type: "SYNC_TO_CLOUD" })
+    
+    try {
+      const result = await storeBillInCloud(state.currentBill)
+      if (result.success) {
+        dispatch({ type: "SET_SYNC_STATUS", payload: "synced" })
+      } else {
+        dispatch({ type: "SET_SYNC_STATUS", payload: "error" })
+      }
+    } catch (error) {
+      console.error("Sync to cloud failed:", error)
+      dispatch({ type: "SET_SYNC_STATUS", payload: "error" })
+    }
+  }
 
   // Check for shared bill on mount and load data from localStorage
   useEffect(() => {
@@ -328,6 +373,10 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           // First try to load from Redis (cloud)
           const cloudResult = await getBillFromCloud(sharedBillId)
           if (cloudResult.bill) {
+            // Migration: Add status field to existing shared bills
+            if (!cloudResult.bill.status) {
+              cloudResult.bill.status = "draft"
+            }
             dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
             return
           }
@@ -335,6 +384,10 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           // Fallback to localStorage for backwards compatibility
           const localSharedBill = loadBillFromLocalStorage(sharedBillId)
           if (localSharedBill) {
+            // Migration: Add status field to existing local shared bills
+            if (!localSharedBill.status) {
+              localSharedBill.status = "draft"
+            }
             dispatch({ type: "LOAD_BILL", payload: localSharedBill })
             return
           }
@@ -347,6 +400,10 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         const saved = localStorage.getItem("splitSimple_currentBill")
         if (saved) {
           const bill = JSON.parse(saved)
+          // Migration: Add status field to existing bills
+          if (!bill.status) {
+            bill.status = "draft"
+          }
           dispatch({ type: "LOAD_BILL", payload: bill })
         }
       } catch (error) {
@@ -370,7 +427,18 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.currentBill])
 
-  return <BillContext.Provider value={{ state, dispatch, canUndo, canRedo }}>{children}</BillContext.Provider>
+  // Debounced auto-sync to cloud when bill changes
+  useEffect(() => {
+    if (state.syncStatus === "never_synced") {
+      const timeoutId = setTimeout(() => {
+        syncToCloud()
+      }, 2000) // 2-second debounce
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [state.currentBill, state.syncStatus])
+
+  return <BillContext.Provider value={{ state, dispatch, canUndo, canRedo, syncToCloud }}>{children}</BillContext.Provider>
 }
 
 // Hook

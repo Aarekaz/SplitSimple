@@ -19,6 +19,7 @@ import { Users } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { BillStatusIndicator } from "@/components/BillStatusIndicator"
 import { ShareBill } from "@/components/ShareBill"
+import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
@@ -119,7 +120,9 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <BillStatusIndicator compact />
+              <BillStatusIndicator compact={true} showSelector={true} />
+              
+              <SyncStatusIndicator compact />
               
               <ShareBill size="sm" showText={false} />
               

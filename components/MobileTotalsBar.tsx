@@ -10,6 +10,7 @@ import { TotalsPanel } from "./TotalsPanel"
 import { useBill } from "@/contexts/BillContext"
 import { getBillSummary } from "@/lib/calculations"
 import { formatCurrency } from "@/lib/utils"
+import { SyncStatusIndicator } from "./SyncStatusIndicator"
 
 export function MobileTotalsBar() {
   const { state } = useBill()
@@ -45,26 +46,29 @@ export function MobileTotalsBar() {
                 </div>
               </div>
 
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    View Details
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="max-h-[80vh] flex flex-col p-0">
-                  <SheetHeader className="sr-only">
-                    <SheetTitle>Bill Totals</SheetTitle>
-                  </SheetHeader>
-                  <div className="overflow-y-auto p-4 pt-6">
-                    <TotalsPanel 
-                      compact 
-                      isAddingPerson={isAddingPerson}
-                      setIsAddingPerson={setIsAddingPerson}
-                      personInputRef={personInputRef}
-                    />
-                  </div>
-                </SheetContent>
-              </Sheet>
+              <div className="flex items-center gap-2">
+                <SyncStatusIndicator compact />
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      View Details
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="max-h-[80vh] flex flex-col p-0">
+                    <SheetHeader className="sr-only">
+                      <SheetTitle>Bill Totals</SheetTitle>
+                    </SheetHeader>
+                    <div className="overflow-y-auto p-4 pt-6">
+                      <TotalsPanel 
+                        compact 
+                        isAddingPerson={isAddingPerson}
+                        setIsAddingPerson={setIsAddingPerson}
+                        personInputRef={personInputRef}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
           </CardContent>
         </Card>

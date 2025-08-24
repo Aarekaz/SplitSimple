@@ -15,6 +15,7 @@ import { useEffect, forwardRef } from "react"
 import { formatCurrency } from "@/lib/utils"
 import { AnimatedNumber } from "./AnimatedNumber"
 import { BillStatusIndicator } from "./BillStatusIndicator"
+import { SyncStatusIndicator } from "./SyncStatusIndicator"
 
 interface TotalsPanelProps {
   compact?: boolean
@@ -36,12 +37,8 @@ export function TotalsPanel({
   const itemBreakdowns = getItemBreakdowns(state.currentBill)
 
   useEffect(() => {
-    const peopleIds = state.currentBill.people.map((p) => p.id)
-    if (peopleIds.length > 0 && peopleIds.length <= 5) {
-      setExpandedPeople(new Set(peopleIds))
-    } else {
-      setExpandedPeople(new Set())
-    }
+    // Always start with collapsed people - user can expand manually
+    setExpandedPeople(new Set())
   }, [state.currentBill.people])
 
   const handleRemovePerson = (personId: string) => {
@@ -226,7 +223,10 @@ export function TotalsPanel({
           <h3 className="text-base font-semibold">Bill Summary</h3>
           <p className="text-xs text-muted-foreground">Total breakdown</p>
         </div>
-        <BillStatusIndicator showSelector={!compact} compact={compact} />
+        <div className="flex items-center gap-2">
+          <SyncStatusIndicator compact={compact} />
+          <BillStatusIndicator showSelector={false} compact={true} />
+        </div>
       </div>
       
       <div className="rounded-lg border bg-card p-4 space-y-3">
