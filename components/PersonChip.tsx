@@ -4,6 +4,7 @@ import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type { Person } from "@/contexts/BillContext"
+import { cn } from "@/lib/utils"
 
 interface PersonChipProps {
   person: Person
@@ -46,38 +47,33 @@ export function PersonChip({
     }
   }
 
+  const baseClasses = "flex items-center gap-1.5 cursor-pointer transition-all border"
+  const selectedClasses = "bg-primary text-primary-foreground hover:bg-primary/90"
+  const unselectedClasses = "bg-muted hover:bg-muted/80 text-muted-foreground border-dashed"
+
   return (
-    <Badge
-      variant={isSelected ? "default" : "secondary"}
-      className={`
-        ${sizeClasses[size]} 
-        flex items-center gap-1.5 cursor-pointer transition-all
-        ${onToggle ? "hover:scale-105" : ""}
-        ${isSelected ? "ring-2 ring-accent/50" : "opacity-50 hover:opacity-70"}
-        !text-gray-900 font-medium
-      `}
-      style={{
-        backgroundColor: isSelected ? person.color : "#f1f5f9",
-        borderColor: isSelected ? person.color : "#cbd5e1",
-        color: isSelected ? "white" : "#64748b",
-      }}
+    <div
       onClick={handleClick}
+      className={cn(
+        baseClasses,
+        sizeClasses[size],
+        isSelected ? selectedClasses : unselectedClasses,
+        "rounded-full font-medium"
+      )}
     >
       <div
-        className={`${size === "sm" ? "w-1.5 h-1.5" : "w-2 h-2"} rounded-full flex-shrink-0 transition-all`}
-        style={{ 
-          backgroundColor: isSelected ? person.color : person.color,
-          opacity: isSelected ? 1 : 0.5
-        }}
+        className={cn("w-2 h-2 rounded-full flex-shrink-0", isSelected ? 'bg-primary-foreground/80' : 'bg-primary/80')}
+        style={{ backgroundColor: person.color }}
       />
-      <span className="font-semibold flex-1 min-w-0 transition-all" style={{ color: isSelected ? "white" : "#64748b" }}>
-        {person.name || "Unnamed"}
-      </span>
+      <span className="font-medium flex-1 min-w-0">{person.name || "Unnamed"}</span>
       {showRemove && onRemove && (
         <Button
           variant="ghost"
           size="sm"
-          className={`${buttonSizeClasses[size]} hover:bg-destructive/20 ml-1 flex-shrink-0`}
+          className={cn(
+            buttonSizeClasses[size],
+            "hover:bg-destructive/20 ml-1 flex-shrink-0 rounded-full"
+          )}
           onClick={(e) => {
             e.stopPropagation()
             onRemove(person.id)
@@ -87,6 +83,6 @@ export function PersonChip({
           <span className="sr-only">Remove {person.name}</span>
         </Button>
       )}
-    </Badge>
+    </div>
   )
 }

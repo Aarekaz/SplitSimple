@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check } from "lucide-react"
+import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check, MoreHorizontal, Copy } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -22,19 +22,45 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useBill } from "@/contexts/BillContext"
 import { PersonSelector } from "./PersonSelector"
-import { EnhancedPersonSelector } from "./EnhancedPersonSelector"
 import { SplitMethodSelector } from "./SplitMethodSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
 import { TaxTipSection } from "./TaxTipSection"
 import { calculateItemSplits } from "@/lib/calculations"
-import type { Item } from "@/contexts/BillContext"
+import type { Item, Person } from "@/contexts/BillContext"
 import { AddPersonForm } from "./AddPersonForm"
+
+function AvatarStack({ people }: { people: Person[] }) {
+  const maxAvatars = 4
+  const visibleAvatars = people.slice(0, maxAvatars)
+  const hiddenCount = people.length - maxAvatars
+
+  return (
+    <div className="flex items-center -space-x-2">
+      {visibleAvatars.map((person) => (
+        <div
+          key={person.id}
+          className="w-6 h-6 rounded-full border-2 border-background flex items-center justify-center text-xs font-bold text-white"
+          style={{ backgroundColor: person.color }}
+          title={person.name}
+        >
+          {person.name.charAt(0).toUpperCase()}
+        </div>
+      ))}
+      {hiddenCount > 0 && (
+        <div className="w-6 h-6 rounded-full border-2 border-background bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold">
+          +{hiddenCount}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function SortableItem({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
@@ -252,7 +278,7 @@ export function CollapsibleItemsTable() {
       <Card className="text-center">
         <CardContent className="pt-8 pb-8">
           <Calculator className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <CardTitle className="mb-2">No items added yet</CardTitle>
+          <CardTitle className="mb-2 font-mono">No items added yet</CardTitle>
           <p className="text-muted-foreground mb-4">Add items to start splitting expenses</p>
           <Button onClick={() => handleAddItem(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -272,7 +298,7 @@ export function CollapsibleItemsTable() {
             <Button variant="ghost" size="sm" onClick={() => setIsCollapsed(!isCollapsed)} className="h-6 w-6 p-0">
               {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
-            <CardTitle className="text-base">Items ({items.length})</CardTitle>
+            <CardTitle className="text-base font-mono">Items ({items.length})</CardTitle>
           </div>
           <div className="flex items-center gap-2">
             <Button 
@@ -283,10 +309,10 @@ export function CollapsibleItemsTable() {
               {showAddSuccess ? (
                 <Check className="h-4 w-4 mr-1" />
               ) : (
-                <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 mr-1" />
               )}
               {showAddSuccess ? 'Added!' : 'Add Item'}
-            </Button>
+          </Button>
             <div className="text-xs text-muted-foreground hidden sm:block">
               <kbd className="px-1 py-0.5 bg-muted text-muted-foreground rounded text-xs">⌘</kbd>
               <kbd className="px-1 py-0.5 bg-muted text-muted-foreground rounded text-xs ml-0.5">↵</kbd>
@@ -317,7 +343,7 @@ export function CollapsibleItemsTable() {
                               {/* Chevron */}
                                                             <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 transition-colors" onClick={() => toggleItemExpansion(item.id)}>
                                 <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
-                              </div>
+                      </div>
 
                                       {/* Item Name */}
                               <div className="flex-1 min-w-0">
@@ -335,15 +361,14 @@ export function CollapsibleItemsTable() {
                                     className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm"
                                   />
                                   {/* Split info as subtle badge */}
-                                  {selectedPeople.length > 0 && (
+                        {selectedPeople.length > 0 ? (
+                                    <AvatarStack people={selectedPeople} />
+                        ) : (
                                     <Badge variant="secondary" className="receipt-detail px-2 py-0.5 bg-muted/50 border-none">
-                                      {item.method === "even" ? 
-                                        `${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
-                                        `${item.method === 'shares' ? 'Shares' : item.method === 'percent' ? '%' : '$'} · ${selectedPeople.length}`
-                                      }
-                                    </Badge>
-                                  )}
-                                </div>
+                            No one
+                          </Badge>
+                        )}
+                      </div>
                                       </div>
                               
                                       {/* Price */}
@@ -372,50 +397,58 @@ export function CollapsibleItemsTable() {
                               
                               {/* Actions */}
                               <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDeleteItem(item.id)
-                                  }}
-                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleDuplicateItem(item)}>
+                                      <Copy className="mr-2 h-4 w-4" />
+                                      <span>Duplicate</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDeleteItem(item.id)} className="text-destructive">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      <span>Delete</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                                     </div>
                                       </div>
 
                             {/* Expanded Row */}
                             {isExpanded && (
                               <div className="border-t bg-muted/20 animate-in slide-in-from-top-2 fade-in duration-200">
-                                <div className="p-4 space-y-6">
-                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* Split Method */}
-                                    <SplitMethodSelector
-                                      value={item.method}
-                                      onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
-                                    />
-
-                                      {/* Split With */}
-                                    <EnhancedPersonSelector
-                                          selectedPeople={item.splitWith}
-                                          onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
-                                        />
-                                  </div>
-
-                                  {/* Custom Split Inputs */}
-                                  {item.method !== "even" && (
-                                    <div className="pt-2 border-t">
-                                      <SplitMethodInput
-                                        item={item}
-                                        people={people}
-                                        onCustomSplitsChange={(customSplits) =>
-                                          handleUpdateItem(item.id, { customSplits })
-                                        }
+                                <div className="p-4 space-y-4">
+                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                                    {/* Left Side: Method and Custom Inputs */}
+                                    <div className="space-y-4">
+                                      <SplitMethodSelector
+                                        value={item.method}
+                                        onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
                                       />
+                                      {item.method !== "even" && (
+                                        <div className="pt-2">
+                                          <SplitMethodInput
+                                            item={item}
+                                            people={people}
+                                            onCustomSplitsChange={(customSplits) =>
+                                              handleUpdateItem(item.id, { customSplits })
+                                            }
+                                          />
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
+
+                                    {/* Right Side: Split With */}
+                                    <PersonSelector
+                                      selectedPeople={item.splitWith}
+                                      onSelectionChange={(selected) =>
+                                        handleUpdateItem(item.id, { splitWith: selected })
+                                      }
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -447,8 +480,8 @@ export function CollapsibleItemsTable() {
             {/* Tax and Tip Section for Desktop */}
             <div className="p-4">
               <TaxTipSection />
-            </div>
-          </div>
+                        </div>
+                      </div>
 
                     {/* Mobile View */}
           <div className="lg:hidden p-4 space-y-3">
@@ -477,25 +510,25 @@ export function CollapsibleItemsTable() {
                               placeholder="Add your item..."
                             className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm flex-1"
                           />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteItem(item.id)
-                            }}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteItem(item.id)
+                          }}
                             className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                          >
+                        >
                             <Trash2 className="h-4 w-4" />
-                          </Button>
+                        </Button>
                         </div>
                       </div>
-                          </div>
-                    
+                    </div>
+
                     <div className="flex items-center justify-between">
                           {/* Price */}
                       <div className="w-28">
-                            <Input
+                                <Input
                               ref={(el) => {
                                 if (!itemInputRefs.current[item.id])
                                   itemInputRefs.current[item.id] = { name: null, price: null }
@@ -504,27 +537,26 @@ export function CollapsibleItemsTable() {
                               type="text"
                               inputMode="decimal"
                               pattern="[0-9]*\\.?[0-9]*"
-                              step="0.01"
-                              min="0"
-                              value={item.price}
-                              onChange={(e) =>
+                                  step="0.01"
+                                  min="0"
+                                  value={item.price}
+                                  onChange={(e) =>
                                 handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
-                              }
+                                  }
                               onFocus={(e) => e.target.select()}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
-                              placeholder="0.00"
+                                  placeholder="0.00"
                           className="font-mono h-9 border-none bg-transparent focus-visible:ring-1 text-right font-semibold"
                             />
                           </div>
                       
                       {/* Split info and expand button */}
                       <div className="flex items-center gap-3">
-                        {selectedPeople.length > 0 && (
-                          <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground border-none">
-                            {item.method === "even" ? 
-                              `${selectedPeople.length} way${selectedPeople.length > 1 ? 's' : ''}` :
-                              `${item.method === 'shares' ? 'Shares' : item.method === 'percent' ? '%' : '$'} · ${selectedPeople.length}`
-                            }
+                        {selectedPeople.length > 0 ? (
+                           <AvatarStack people={selectedPeople} />
+                        ) : (
+                           <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-muted/50 text-muted-foreground border-none">
+                            No one
                           </Badge>
                         )}
                         <button
@@ -543,37 +575,37 @@ export function CollapsibleItemsTable() {
                       <div className="space-y-6">
                         {/* Split Method */}
                         <SplitMethodSelector
-                          value={item.method}
+                                  value={item.method}
                           onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
                         />
 
                           {/* Split With */}
-                        <EnhancedPersonSelector
-                              selectedPeople={item.splitWith}
-                              onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
-                            />
-                      </div>
+                                <PersonSelector
+                                  selectedPeople={item.splitWith}
+                                  onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
+                                />
+                          </div>
 
-                      {/* Custom Split Inputs */}
-                      {item.method !== "even" && (
-                        <div className="pt-2 border-t">
-                          <SplitMethodInput
-                            item={item}
-                            people={people}
-                            onCustomSplitsChange={(customSplits) =>
-                              handleUpdateItem(item.id, { customSplits })
-                            }
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                          {/* Custom Split Inputs */}
+                          {item.method !== "even" && (
+                      <div className="pt-2 border-t">
+                              <SplitMethodInput
+                                item={item}
+                                people={people}
+                          onCustomSplitsChange={(customSplits) =>
+                            handleUpdateItem(item.id, { customSplits })
+                          }
+                        />
+                          </div>
+                    )}
+                  </div>
+                    )}
+                  </div>
+                )
+              })}
 
-            {/* Tax and Tip Section */}
-            <TaxTipSection />
+          {/* Tax and Tip Section */}
+          <TaxTipSection />
           </div>
         </CardContent>
       )}

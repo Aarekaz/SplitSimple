@@ -155,16 +155,16 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-4 max-w-6xl">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
+      <main className="container mx-auto px-4 py-4 lg:py-6 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {state.currentBill.people.length > 0 ? (
               <CollapsibleItemsTable />
             ) : (
               <Card>
-                <CardHeader className="text-center">
+                <CardHeader className="text-center p-4 lg:p-6">
                   <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <CardTitle>
+                  <CardTitle className="font-mono">
                     {isNewBillFlow ? "Welcome to SplitSimple!" : "Who's splitting the bill?"}
                   </CardTitle>
                   <p className="text-muted-foreground pt-1">

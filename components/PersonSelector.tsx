@@ -1,16 +1,23 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
+import { CheckSquare, Square, RotateCcw } from "lucide-react"
 import { PersonChip } from "./PersonChip"
 import { useBill } from "@/contexts/BillContext"
+import { cn } from "@/lib/utils"
 
 interface PersonSelectorProps {
   selectedPeople: string[]
   onSelectionChange: (selectedIds: string[]) => void
   size?: "sm" | "md" | "lg"
+  className?: string
 }
 
-export function PersonSelector({ selectedPeople, onSelectionChange, size = "sm" }: PersonSelectorProps) {
+export function PersonSelector({ 
+  selectedPeople, 
+  onSelectionChange, 
+  size = "sm", 
+  className 
+}: PersonSelectorProps) {
   const { state } = useBill()
 
   const handleTogglePerson = (personId: string) => {
@@ -21,35 +28,24 @@ export function PersonSelector({ selectedPeople, onSelectionChange, size = "sm" 
     onSelectionChange(newSelection)
   }
 
-  const handleSelectAll = () => {
-    onSelectionChange(state.currentBill.people.map((p) => p.id))
-  }
-
-  const handleSelectNone = () => {
-    onSelectionChange([])
-  }
-
-  const handleInvertSelection = () => {
-    const unselected = state.currentBill.people.filter((p) => !selectedPeople.includes(p.id)).map((p) => p.id)
-    onSelectionChange(unselected)
-  }
-
   if (state.currentBill.people.length === 0) {
-    return <div className="text-xs text-muted-foreground italic">Add people first to split expenses</div>
+    return (
+      <div className="space-y-2">
+        <label className="text-xs font-medium text-muted-foreground">Split With</label>
+        <div className="text-xs text-muted-foreground italic p-3 border border-dashed rounded-lg text-center">
+          Add people first to split expenses
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        <Button variant="ghost" size="sm" onClick={handleSelectAll} className="h-8 px-3 text-xs">
-          All
-        </Button>
-        <Button variant="ghost" size="sm" onClick={handleSelectNone} className="h-8 px-3 text-xs">
-          None
-        </Button>
-        <Button variant="ghost" size="sm" onClick={handleInvertSelection} className="h-8 px-3 text-xs">
-          Invert
-        </Button>
+    <div className={cn("space-y-3", className)}>
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-medium text-muted-foreground">Split With</label>
+        <div className="text-xs text-muted-foreground">
+          {selectedPeople.length} of {state.currentBill.people.length} selected
+        </div>
       </div>
 
       {/* Person chips */}
@@ -65,6 +61,8 @@ export function PersonSelector({ selectedPeople, onSelectionChange, size = "sm" 
           />
         ))}
       </div>
+
+
     </div>
   )
 }
