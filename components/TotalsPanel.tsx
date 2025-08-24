@@ -214,59 +214,38 @@ export function TotalsPanel({
   )
 
   const BillSummaryPanel = () => (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/20">
-          <Receipt className="h-4 w-4 text-green-600 dark:text-green-400" />
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Subtotal</span>
+          <span className="font-mono font-medium">
+            {formatCurrency(summary.subtotal)}
+          </span>
         </div>
-        <div className="flex-1">
-          <h3 className="text-base font-semibold">Bill Summary</h3>
-          <p className="text-xs text-muted-foreground">Total breakdown</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <SyncStatusIndicator compact={compact} />
-          <BillStatusIndicator showSelector={false} compact={true} />
-        </div>
-      </div>
-      
-      <div className="rounded-lg border bg-card p-4 space-y-3">
-        <div className="space-y-2">
+
+        {summary.tax > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span className="font-mono font-medium">
-              {formatCurrency(summary.subtotal)}
-            </span>
+            <span className="text-muted-foreground">Tax</span>
+            <span className="font-mono font-medium">{formatCurrency(summary.tax)}</span>
           </div>
+        )}
 
-          {summary.tax > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax</span>
-              <span className="font-mono font-medium">{formatCurrency(summary.tax)}</span>
-            </div>
-          )}
+        {summary.tip > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Tip</span>
+            <span className="font-mono font-medium">{formatCurrency(summary.tip)}</span>
+          </div>
+        )}
+      </div>
 
-          {summary.tip > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tip</span>
-              <span className="font-mono font-medium">{formatCurrency(summary.tip)}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="border-t pt-3">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold">Total</span>
-            <div className="text-right">
-              <div className="font-mono text-xl font-bold text-green-600 dark:text-green-400">
-                <AnimatedNumber 
-                  value={summary.total}
-                  formatFn={(v) => formatCurrency(v)}
-                />
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {summary.personTotals.length} {summary.personTotals.length === 1 ? 'person' : 'people'}
-              </div>
-            </div>
+      <div className="border-t pt-3">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">Total</span>
+          <div className="font-mono text-xl font-bold text-green-600 dark:text-green-400">
+            <AnimatedNumber 
+              value={summary.total}
+              formatFn={(v) => formatCurrency(v)}
+            />
           </div>
         </div>
       </div>
