@@ -100,9 +100,9 @@ export function SyncStatusIndicator({ compact = false, className }: SyncStatusIn
               />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="bg-popover text-popover-foreground border shadow-lg">
             <div className="text-center">
-              <div className="font-medium">{config.label}</div>
+              <div className="font-medium text-foreground">{config.label}</div>
               <div className="text-xs text-muted-foreground">{config.description}</div>
               {state.lastSyncTime && state.syncStatus === "synced" && (
                 <div className="text-xs text-muted-foreground mt-1">

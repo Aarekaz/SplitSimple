@@ -134,7 +134,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
           {showText && <span>Share</span>}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-[95vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
@@ -145,7 +145,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-4 p-2 sm:p-0">
           {isStoring && (
             <Alert>
               <AlertDescription className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
             <Label htmlFor="share-url" className="text-sm font-medium">
               Shareable Link
             </Label>
-            <div className="flex gap-2">
+            <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
               <Input
                 id="share-url"
                 value={shareUrl}
@@ -177,30 +177,32 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
                 onClick={(e) => (e.target as HTMLInputElement).select()}
                 placeholder={isStoring ? "Generating link..." : ""}
               />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleCopyUrl}
-                disabled={isStoring || !shareUrl}
-                className="flex-shrink-0"
-                title="Copy link"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleOpenInNewTab}
-                disabled={isStoring || !shareUrl}
-                className="flex-shrink-0"
-                title="Open in new tab"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2 justify-center sm:justify-start">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyUrl}
+                  disabled={isStoring || !shareUrl}
+                  className="flex-shrink-0"
+                  title="Copy link"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleOpenInNewTab}
+                  disabled={isStoring || !shareUrl}
+                  className="flex-shrink-0"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -215,12 +217,12 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
           <div className="border-t pt-4 space-y-3">
             <Label className="text-sm font-medium">Export Options</Label>
             <div className="space-y-2">
-              <ReceiptView 
-                variant="outline" 
-                size="sm" 
-                showText={true}
-              />
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <ReceiptView 
+                  variant="outline" 
+                  size="sm" 
+                  showText={true}
+                />
                 <Button
                   variant="outline"
                   size="sm"
@@ -245,14 +247,14 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" onClick={() => handleOpenDialog(false)}>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => handleOpenDialog(false)} className="w-full sm:w-auto">
               Close
             </Button>
             <Button 
               onClick={handleCopyUrl} 
               disabled={isStoring || !shareUrl}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
             >
               <Share2 className="h-4 w-4" />
               {isStoring ? "Preparing..." : "Copy & Share"}
