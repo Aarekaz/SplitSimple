@@ -4,11 +4,11 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Share2, Copy, Check, ExternalLink } from "lucide-react"
+import { Share2, Copy, Check, ExternalLink, FileText, Download, Separator } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useBill } from "@/contexts/BillContext"
-import { copyToClipboard } from "@/lib/export"
+import { copyToClipboard, generateItemBreakdownText, downloadCSV } from "@/lib/export"
 import { useToast } from "@/hooks/use-toast"
 import { storeBillInCloud, generateCloudShareUrl } from "@/lib/sharing"
 
@@ -73,6 +73,58 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
     window.open(shareUrl, '_blank')
   }
 
+  const handleCopyBreakdown = async () => {
+    if (state.currentBill.items.length === 0) {
+      toast({
+        title: "No items to copy",
+        description: "Add items to generate a breakdown",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const breakdownText = generateItemBreakdownText(state.currentBill)
+    const success = await copyToClipboard(breakdownText)
+
+    if (success) {
+      toast({
+        title: "Breakdown copied!",
+        description: "Item breakdown has been copied to your clipboard",
+      })
+    } else {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy to clipboard. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleExportCSV = async () => {
+    if (state.currentBill.items.length === 0) {
+      toast({
+        title: "No data to export",
+        description: "Add items to export CSV files",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      downloadCSV(state.currentBill)
+      toast({
+        title: "CSV exported!",
+        description: "Items and totals CSV files have been downloaded",
+      })
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Unable to export CSV files. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenDialog}>
       <DialogTrigger asChild>
@@ -85,10 +137,10 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
-            Share "{state.currentBill.title}"
+            Share & Export "{state.currentBill.title}"
           </DialogTitle>
           <DialogDescription>
-            Anyone with this link can view your bill. Bills are stored securely and expire after 30 days.
+            Share a link with anyone or export your bill data. Bills are stored securely and expire after 30 days.
           </DialogDescription>
         </DialogHeader>
         
@@ -157,6 +209,33 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
               Bills are stored securely in the cloud.
             </AlertDescription>
           </Alert>
+
+          {/* Export Options */}
+          <div className="border-t pt-4 space-y-3">
+            <Label className="text-sm font-medium">Export Options</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyBreakdown}
+                disabled={state.currentBill.items.length === 0}
+                className="flex items-center gap-2 text-xs"
+              >
+                <FileText className="h-4 w-4" />
+                Copy Breakdown
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+                disabled={state.currentBill.items.length === 0}
+                className="flex items-center gap-2 text-xs"
+              >
+                <Download className="h-4 w-4" />
+                Download CSV
+              </Button>
+            </div>
+          </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={() => handleOpenDialog(false)}>

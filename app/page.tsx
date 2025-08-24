@@ -5,11 +5,10 @@ import type React from "react"
 import { CollapsibleItemsTable } from "@/components/CollapsibleItemsTable"
 import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
-import { ExportActions } from "@/components/ExportActions"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Receipt, Plus, Copy, Upload } from "lucide-react"
+import { Receipt, Plus, Copy } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
@@ -138,18 +137,7 @@ export default function HomePage() {
                   <TooltipContent className="lg:hidden">Copy Summary</TooltipContent>
                 </Tooltip>
 
-                {/* Export Button */}
-                <ExportActions>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8">
-                        <Upload className="h-4 w-4 lg:mr-2" />
-                        <span className="hidden lg:inline">Export</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="lg:hidden">Export</TooltipContent>
-                  </Tooltip>
-                </ExportActions>
+
 
                 {/* New Bill Button */}
                 <Tooltip>
