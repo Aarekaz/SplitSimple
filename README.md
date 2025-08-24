@@ -1,28 +1,70 @@
 # SplitSimple
 
-A simple, fast, and modern web app for splitting bills with friends.
+A modern, collaborative bill-splitting app with real-time sync and universal sharing. Split bills with friends effortlessly, whether you're dining out, sharing expenses, or planning group activities.
 
-## Getting Started
+## ✨ Key Features
 
-To get a local copy up and running, follow these simple steps.
+### 🔗 **Universal Sharing & Collaboration**
+*   **Shareable Links**: Generate unique URLs that work for anyone, anywhere
+*   **Real-time Collaboration**: Multiple people can edit the same bill simultaneously
+*   **Cloud Sync**: Automatic syncing with visual status indicators
+*   **No Accounts Required**: Anonymous, temporary bill storage (30-day expiration)
 
-1.  **Install dependencies:**
+### 💰 **Smart Bill Management**
+*   **Intelligent Status System**: Draft → Active → Closed workflow with contextual actions
+*   **Flexible Splitting**: Split items evenly, by shares, percentage, or exact amounts
+*   **Tax & Tip Allocation**: Distribute proportionally or evenly among participants
+*   **Accurate Calculations**: Precision math to avoid "penny problems"
+
+### 🎨 **Modern User Experience**
+*   **Clean Interface**: Simplified item entry and intuitive controls
+*   **Drag & Drop**: Reorder items with smooth animations
+*   **Auto-collapse**: Focus on active items while keeping interface clean
+*   **Responsive Design**: Optimized for both desktop and mobile devices
+
+### ⚡ **Power Features**
+*   **Keyboard Shortcuts**: `Enter` to add items, `Cmd/Ctrl+D` to duplicate, arrow navigation
+*   **Export Options**: Copy text summaries or download CSV files
+*   **Visual Feedback**: Success animations, hover effects, and smooth transitions
+*   **Persistent State**: Never lose your work with automatic local storage
+
+## 🚀 Getting Started
+
+### Prerequisites
+*   Node.js 18+ and pnpm
+
+### Local Development
+1.  **Clone and install:**
     ```sh
+    git clone https://github.com/aarekaz/splitsimple
+    cd splitsimple
     pnpm install
     ```
-2.  **Run the development server:**
+
+2.  **Set up Redis (for sharing features):**
+    ```sh
+    # Create .env.local with your Redis URL
+    echo 'REDIS_URL="your-redis-url-here"' > .env.local
+    ```
+
+3.  **Run the development server:**
     ```sh
     pnpm dev
     ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4.  **Open [http://localhost:3000](http://localhost:3000)** in your browser
 
-## Features
+### Deployment
+Deploy to Vercel with Redis KV for full sharing functionality:
+1. Connect your GitHub repo to Vercel
+2. Add a Redis database from Vercel's marketplace
+3. Deploy - sharing and collaboration work automatically!
 
-*   **Easy Bill Management**: Add people and items to your bill effortlessly.
-*   **Flexible Splitting**: Split items evenly, by shares, by percentage, or by exact amounts. Tax and tip can be split proportionally or evenly.
-*   **Accurate Calculations**: All math is handled carefully to avoid "penny problems" and ensure the totals are always correct.
-*   **Power-User Shortcuts**: Use keyboard shortcuts for common actions like adding items (`Enter`), duplicating items (`Cmd/Ctrl+D`), and navigating the item list with arrow keys.
-*   **Drag & Drop**: Easily reorder items by dragging them into place.
-*   **Fully Responsive**: Works beautifully on desktop and mobile devices.
-*   **Persistent State**: Your current bill is automatically saved to your browser's local storage, so you can pick up where you left off.
+## 🎯 Perfect For
+
+*   **Restaurant bills** - Split dinner costs among friends
+*   **Group trips** - Track shared expenses and settlements
+*   **Roommate expenses** - Fairly divide household costs
+*   **Event planning** - Manage group purchases and contributions
+
+Built with **Next.js**, **TypeScript**, **Tailwind CSS**, and **Redis** for a fast, reliable experience.
