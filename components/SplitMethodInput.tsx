@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
+import { validateCurrencyInput, validatePercentage, validateShares } from "@/lib/validation"
 import type { Person, Item } from "@/contexts/BillContext"
 
 interface SplitMethodInputProps {
@@ -23,11 +24,29 @@ export function SplitMethodInput({ item, people, onCustomSplitsChange }: SplitMe
   }, [item.customSplits])
 
   const handleSplitChange = (personId: string, value: string) => {
-    const numValue = Number.parseFloat(value) || 0
-    const newSplits = { ...customSplits, [personId]: numValue }
-    setCustomSplits(newSplits)
-    onCustomSplitsChange(newSplits)
-    validateSplits(newSplits)
+    let validation
+    
+    switch (item.method) {
+      case 'shares':
+        validation = validateShares(value)
+        break
+      case 'percent':
+        validation = validatePercentage(value)
+        break
+      case 'exact':
+        validation = validateCurrencyInput(value)
+        break
+      default:
+        validation = { isValid: true, value: value, error: undefined }
+    }
+    
+    if (validation.isValid) {
+      const numValue = Number.parseFloat(validation.value.toString()) || 0
+      const newSplits = { ...customSplits, [personId]: numValue }
+      setCustomSplits(newSplits)
+      onCustomSplitsChange(newSplits)
+      validateSplits(newSplits)
+    }
   }
 
   const validateSplits = (splits: Record<string, number>) => {
@@ -52,8 +71,9 @@ export function SplitMethodInput({ item, people, onCustomSplitsChange }: SplitMe
         break
 
       case "exact":
-        if (Math.abs(total - item.price) > 0.01) {
-          setValidationError(`Amounts must total $${item.price.toFixed(2)} (currently $${total.toFixed(2)})`)
+        const itemPrice = parseFloat(item.price || '0')
+        if (Math.abs(total - itemPrice) > 0.01) {
+          setValidationError(`Amounts must total $${itemPrice.toFixed(2)} (currently $${total.toFixed(2)})`)
         } else {
           setValidationError("")
         }

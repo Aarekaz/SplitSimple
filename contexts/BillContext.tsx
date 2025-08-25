@@ -470,6 +470,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
       return () => clearTimeout(timeoutId)
     }
+    return undefined
   }, [state.currentBill, state.syncStatus])
 
   return <BillContext.Provider value={{ state, dispatch, canUndo, canRedo, syncToCloud }}>{children}</BillContext.Provider>

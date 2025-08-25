@@ -58,13 +58,11 @@ export default function HomePage() {
   }
 
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number.parseFloat(e.target.value) || 0
-    dispatch({ type: "SET_TAX", payload: value })
+    dispatch({ type: "SET_TAX", payload: e.target.value })
   }
 
   const handleTipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number.parseFloat(e.target.value) || 0
-    dispatch({ type: "SET_TIP", payload: value })
+    dispatch({ type: "SET_TIP", payload: e.target.value })
   }
 
   const handleNewBill = () => {

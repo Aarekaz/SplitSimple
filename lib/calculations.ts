@@ -1,4 +1,5 @@
 import type { Bill, Person, Item } from "@/contexts/BillContext"
+import { Parser } from 'expr-eval'
 
 export interface PersonTotal {
   personId: string
@@ -16,6 +17,8 @@ export interface ItemBreakdown {
   splits: Record<string, number> // personId -> amount
 }
 
+const mathParser = new Parser()
+
 // Evaluate math expressions in price input (e.g., "7.48/2", "2*3.49")
 export function evaluatePrice(input: string): number {
   try {
@@ -24,8 +27,9 @@ export function evaluatePrice(input: string): number {
       return Number.parseFloat(input) || 0
     }
 
-    // Use Function constructor for safer evaluation than eval
-    const result = new Function("return " + input)()
+    // Use safe math expression parser
+    const expr = mathParser.parse(input)
+    const result = expr.evaluate()
     return typeof result === "number" && !isNaN(result) ? Math.round(result * 100) / 100 : 0
   } catch {
     return Number.parseFloat(input) || 0

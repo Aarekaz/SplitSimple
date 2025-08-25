@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { BillProvider } from "@/contexts/BillContext"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@vercel/analytics/react"
 
@@ -26,11 +27,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${jetbrainsMono.variable} antialiased`}>
       <body>
-        <BillProvider>
-          <div className="flex flex-col min-h-screen">
-            <main className="flex-grow">{children}</main>
-            <Toaster />
-            <footer className="flex-shrink-0 container mx-auto max-w-6xl px-4 py-6 text-center text-sm text-muted-foreground">
+        <ErrorBoundary>
+          <BillProvider>
+            <div className="flex flex-col min-h-screen">
+              <main className="flex-grow">{children}</main>
+              <Toaster />
+              <footer className="flex-shrink-0 container mx-auto max-w-6xl px-4 py-6 text-center text-sm text-muted-foreground">
               <span>
                 Crafted by{" "}
                 <a
@@ -55,9 +57,10 @@ export default function RootLayout({
                 </a>
               </span>
             </footer>
-          </div>
-          <Analytics />
-        </BillProvider>
+            </div>
+            <Analytics />
+          </BillProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )

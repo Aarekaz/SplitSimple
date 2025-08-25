@@ -12,6 +12,7 @@ import { PersonSelector } from "./PersonSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
 import type { Item, Person } from "@/contexts/BillContext"
 import { calculateItemSplits, evaluatePrice } from "@/lib/calculations"
+import { validateCurrencyInput, validateItemName } from "@/lib/validation"
 
 interface ItemRowProps {
   item: Item
@@ -32,7 +33,7 @@ export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
     const input = e.target.value
     setPriceInput(input)
     const evaluatedPrice = evaluatePrice(input)
-    onUpdate({ ...item, price: evaluatedPrice })
+    onUpdate({ ...item, price: evaluatedPrice.toString() })
   }
 
   const handleSplitWithChange = (selectedIds: string[]) => {
@@ -63,7 +64,7 @@ export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
                   placeholder="Item name"
                   className="h-9 text-sm font-medium"
                 />
-                <div className="text-xs text-muted-foreground whitespace-nowrap">${item.price.toFixed(2)}</div>
+                <div className="text-xs text-muted-foreground whitespace-nowrap">${parseFloat(item.price || '0').toFixed(2)}</div>
               </div>
               {!isExpanded && selectedPeople.length > 0 && (
                 <div className="flex items-center gap-1 mt-1">
@@ -115,7 +116,7 @@ export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
                     <Calculator className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   </div>
                   {priceInput !== item.price.toString() && (
-                    <div className="text-xs text-muted-foreground mt-1">= ${item.price.toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground mt-1">= ${parseFloat(item.price || '0').toFixed(2)}</div>
                   )}
                 </div>
 
@@ -149,7 +150,7 @@ export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
               )}
 
               {/* Per-Person Amounts */}
-              {selectedPeople.length > 0 && item.price > 0 && (
+              {selectedPeople.length > 0 && parseFloat(item.price || '0') > 0 && (
                 <div className="pt-4 border-t">
                   <label className="text-xs font-medium text-muted-foreground mb-2 block">Per Person</label>
                   <div className="flex flex-wrap gap-2">

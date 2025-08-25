@@ -5,7 +5,7 @@ import { getBillSummary, getItemBreakdowns } from "./calculations"
 export function generateSummaryText(bill: Bill): string {
   const summary = getBillSummary(bill)
   const itemBreakdowns = getItemBreakdowns(bill)
-  const currencySymbol = getCurrencySymbol(bill.currency)
+  const currencySymbol = "$"
 
   let text = `${bill.title}\n`
   text += "=".repeat(bill.title.length) + "\n\n"
@@ -68,7 +68,7 @@ export function generateSummaryText(bill: Bill): string {
 // Generate per-item breakdown text
 export function generateItemBreakdownText(bill: Bill): string {
   const itemBreakdowns = getItemBreakdowns(bill)
-  const currencySymbol = getCurrencySymbol(bill.currency)
+  const currencySymbol = "$"
 
   let text = `${bill.title} - Item Breakdown\n`
   text += "=".repeat(`${bill.title} - Item Breakdown`.length) + "\n\n"
@@ -175,17 +175,3 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-// Get currency symbol
-function getCurrencySymbol(currency: string): string {
-  switch (currency) {
-    case "USD":
-    case "CAD":
-      return "$"
-    case "EUR":
-      return "€"
-    case "GBP":
-      return "£"
-    default:
-      return "$"
-  }
-}

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check, MoreHorizontal, Copy } from "lucide-react"
+import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -22,7 +22,6 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -33,6 +32,7 @@ import { SplitMethodSelector } from "./SplitMethodSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
 import { TaxTipSection } from "./TaxTipSection"
 import { calculateItemSplits } from "@/lib/calculations"
+import { validateCurrencyInput } from "@/lib/validation"
 import type { Item, Person } from "@/contexts/BillContext"
 import { AddPersonForm } from "./AddPersonForm"
 
@@ -106,22 +106,14 @@ export function CollapsibleItemsTable() {
   const people = state.currentBill.people
   const { tax, tip, taxTipAllocation } = state.currentBill
 
-  const sanitizeNumericInput = (value: string) => {
-    // Allow only one decimal point, and only numbers.
-    let sanitized = value.replace(/[^0-9.]/g, "")
-    const parts = sanitized.split(".")
-    if (parts.length > 2) {
-      sanitized = `${parts[0]}.${parts.slice(1).join("")}`
-    }
-    return sanitized
-  }
-
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch({ type: "SET_TAX", payload: sanitizeNumericInput(e.target.value) })
+    const validation = validateCurrencyInput(e.target.value)
+    dispatch({ type: "SET_TAX", payload: validation.value.toString() })
   }
 
   const handleTipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch({ type: "SET_TIP", payload: sanitizeNumericInput(e.target.value) })
+    const validation = validateCurrencyInput(e.target.value)
+    dispatch({ type: "SET_TIP", payload: validation.value.toString() })
   }
 
   const handleTaxTipAllocationChange = (value: "proportional" | "even") => {
@@ -186,7 +178,7 @@ export function CollapsibleItemsTable() {
         price: "",
         splitWith: people.map((p) => p.id),
         method: "even" as const,
-        customSplits: {},
+        customSplits: undefined,
       },
     })
     
@@ -199,19 +191,6 @@ export function CollapsibleItemsTable() {
     }
   }
 
-  const handleDuplicateItem = (itemToDuplicate: Item) => {
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        name: `${itemToDuplicate.name} (copy)`,
-        price: itemToDuplicate.price,
-        splitWith: itemToDuplicate.splitWith,
-        method: itemToDuplicate.method,
-        customSplits: itemToDuplicate.customSplits,
-      },
-    })
-    setFocusNewItem(true)
-  }
 
   const handleUpdateItem = (itemId: string, updates: any) => {
     const item = items.find((i) => i.id === itemId)
@@ -252,21 +231,20 @@ export function CollapsibleItemsTable() {
     if (e.key === "Enter") {
       e.preventDefault()
       handleAddItem(true)
-    } else if ((e.metaKey || e.ctrlKey) && e.key === "d") {
-      e.preventDefault()
-      handleDuplicateItem(item)
     } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault()
       const nextIndex = e.key === "ArrowUp" ? index - 1 : index + 1
       if (nextIndex >= 0 && nextIndex < items.length) {
         const nextItem = items[nextIndex]
-        const targetInput = e.target as HTMLInputElement
-        const currentField =
-          targetInput === itemInputRefs.current[item.id]?.name
-            ? "name"
-            : "price"
-        itemInputRefs.current[nextItem.id]?.[currentField]?.focus()
-        itemInputRefs.current[nextItem.id]?.[currentField]?.select()
+        if (nextItem) {
+          const targetInput = e.target as HTMLInputElement
+          const currentField =
+            targetInput === itemInputRefs.current[item.id]?.name
+              ? "name"
+              : "price"
+          itemInputRefs.current[nextItem.id]?.[currentField]?.focus()
+          itemInputRefs.current[nextItem.id]?.[currentField]?.select()
+        }
       }
     } else if (e.key === "Escape") {
       ;(e.target as HTMLInputElement).blur()
@@ -386,7 +364,7 @@ export function CollapsibleItemsTable() {
                                           min="0"
                                           value={item.price}
                                           onChange={(e) =>
-                                            handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
+                                            handleUpdateItem(item.id, { price: validateCurrencyInput(e.target.value).value.toString() })
                                           }
                                           onFocus={(e) => e.target.select()}
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
@@ -397,23 +375,15 @@ export function CollapsibleItemsTable() {
                               
                               {/* Actions */}
                               <div className="flex items-center gap-1">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleDuplicateItem(item)}>
-                                      <Copy className="mr-2 h-4 w-4" />
-                                      <span>Duplicate</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDeleteItem(item.id)} className="text-destructive">
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      <span>Delete</span>
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleDeleteItem(item.id)} 
+                                  className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                                  title="Delete item"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                                     </div>
                                       </div>
 
@@ -541,7 +511,7 @@ export function CollapsibleItemsTable() {
                                   min="0"
                                   value={item.price}
                                   onChange={(e) =>
-                                handleUpdateItem(item.id, { price: sanitizeNumericInput(e.target.value) })
+                                handleUpdateItem(item.id, { price: validateCurrencyInput(e.target.value).value.toString() })
                                   }
                               onFocus={(e) => e.target.select()}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
