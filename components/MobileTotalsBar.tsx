@@ -47,7 +47,24 @@ export function MobileTotalsBar() {
               </div>
 
               <div className="flex items-center gap-2">
-                <SyncStatusIndicator compact />
+                <div className="flex flex-col items-end">
+                  <SyncStatusIndicator compact />
+                  {state.syncStatus === "synced" && state.lastSyncTime && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {(() => {
+                        const now = Date.now()
+                        const diff = now - state.lastSyncTime
+                        const minutes = Math.floor(diff / 60000)
+                        if (minutes < 1) return "Just synced"
+                        if (minutes < 60) return `${minutes}m ago`
+                        const hours = Math.floor(minutes / 60)
+                        if (hours < 24) return `${hours}h ago`
+                        const days = Math.floor(hours / 24)
+                        return `${days}d ago`
+                      })()}
+                    </div>
+                  )}
+                </div>
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant="outline" size="sm">

@@ -54,6 +54,16 @@ A modern, collaborative bill-splitting app with real-time sync and universal sha
 
 4.  **Open [http://localhost:3000](http://localhost:3000)** in your browser
 
+### Development Commands
+*   `pnpm dev` - Start development server
+*   `pnpm build` - Build for production
+*   `pnpm start` - Start production server
+*   `pnpm test` - Run all tests
+*   `pnpm test:watch` - Run tests in watch mode
+*   `pnpm test:coverage` - Run tests with coverage report
+*   `pnpm lint` - Check code style
+*   `pnpm type-check` - Run TypeScript checks
+
 ### Deployment
 Deploy to Vercel with Redis KV for full sharing functionality:
 1. Connect your GitHub repo to Vercel
@@ -66,5 +76,55 @@ Deploy to Vercel with Redis KV for full sharing functionality:
 *   **Group trips** - Track shared expenses and settlements
 *   **Roommate expenses** - Fairly divide household costs
 *   **Event planning** - Manage group purchases and contributions
+
+## 🏗️ Architecture
+
+### Core Technologies
+*   **Next.js 15** - React framework with App Router
+*   **TypeScript** - Type-safe development with strict mode
+*   **Tailwind CSS v4** - Modern utility-first styling
+*   **Redis** - Cloud storage for bill sharing
+*   **shadcn/ui** - High-quality component library
+
+### State Management
+*   **React Context + useReducer** - Predictable state management
+*   **Local Storage** - Persistent bill data
+*   **Real-time Sync** - Automatic cloud synchronization
+*   **Undo/Redo System** - Full history tracking (50 actions)
+
+### Key Features Implementation
+*   **Mathematical Precision** - Cent-based calculations to avoid floating-point errors
+*   **XSS Prevention** - Input sanitization and validation
+*   **Drag & Drop** - Smooth item reordering with @dnd-kit
+*   **Responsive Design** - Mobile-first approach with adaptive layouts
+
+## 🧪 Testing & Quality Assurance
+
+### Testing Stack
+*   **Jest** - Test framework with 70% coverage targets
+*   **React Testing Library** - Component testing utilities
+*   **MSW** - API mocking for integration tests
+*   **GitHub Actions** - Automated CI/CD pipeline
+
+### Test Coverage
+*   **98% calculations.ts** - Business logic validation
+*   **96% validation.ts** - Input sanitization and security
+*   **95% BillContext.tsx** - State management integrity
+*   **79 passing tests** - Comprehensive test suite
+
+### Running Tests
+```sh
+# Run all tests
+pnpm test
+
+# Watch mode for development
+pnpm test:watch
+
+# Generate coverage report
+pnpm test:coverage
+
+# Run specific test file
+pnpm test calculations
+```
 
 Built with **Next.js**, **TypeScript**, **Tailwind CSS**, and **Redis** for a fast, reliable experience.

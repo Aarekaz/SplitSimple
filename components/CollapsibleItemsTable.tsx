@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check } from "lucide-react"
+import { ChevronDown, ChevronUp, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -464,6 +464,15 @@ export function CollapsibleItemsTable() {
                 <div key={item.id} className="rounded-lg border bg-card hover:shadow-sm transition-all group">
                   {/* Mobile Row */}
                   <div className="p-3 space-y-3">
+                    {/* Expandable hint */}
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xs text-muted-foreground">
+                        {isExpanded ? "Split settings visible" : "Tap 'Details' for split settings"}
+                      </div>
+                      <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                        isExpanded ? 'bg-primary scale-125' : 'bg-muted hover:bg-muted-foreground'
+                      }`} />
+                    </div>
                     <div className="flex items-start gap-3">
                       {/* Item Name */}
                     <div className="flex-1 min-w-0">
@@ -521,7 +530,7 @@ export function CollapsibleItemsTable() {
                           </div>
                       
                       {/* Split info and expand button */}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         {selectedPeople.length > 0 ? (
                            <AvatarStack people={selectedPeople} />
                         ) : (
@@ -529,13 +538,24 @@ export function CollapsibleItemsTable() {
                             No one
                           </Badge>
                         )}
-                        <button
-                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => toggleItemExpansion(item.id)}
+                          className="h-8 px-3 text-xs shrink-0"
                         >
-                          <span>Details</span>
-                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                        </button>
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="h-3 w-3 mr-1" />
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-3 w-3 mr-1" />
+                              Details
+                            </>
+                          )}
+                        </Button>
                       </div>
                         </div>
                           </div>
