@@ -176,6 +176,7 @@ export function CollapsibleItemsTable() {
       payload: {
         name: "",
         price: "",
+        quantity: 1,
         splitWith: people.map((p) => p.id),
         method: "even" as const,
         customSplits: undefined,
@@ -373,6 +374,25 @@ export function CollapsibleItemsTable() {
                                         />
                                       </div>
                               
+                              {/* Quantity */}
+                              {(item.quantity > 1 || isExpanded) && (
+                                <div className="w-20">
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="999"
+                                    value={item.quantity || 1}
+                                    onChange={(e) =>
+                                      handleUpdateItem(item.id, { quantity: Math.max(1, parseInt(e.target.value) || 1) })
+                                    }
+                                    onFocus={(e) => e.target.select()}
+                                    onKeyDown={(e) => handleKeyDown(e, item, index)}
+                                    className="h-9 border-none bg-transparent focus-visible:ring-1 text-center text-sm"
+                                    title="Quantity"
+                                  />
+                                </div>
+                              )}
+                              
                               {/* Actions */}
                               <div className="flex items-center gap-1">
                                 <Button 
@@ -505,29 +525,50 @@ export function CollapsibleItemsTable() {
                     </div>
 
                     <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
                           {/* Price */}
-                      <div className="w-28">
-                                <Input
-                              ref={(el) => {
-                                if (!itemInputRefs.current[item.id])
-                                  itemInputRefs.current[item.id] = { name: null, price: null }
-                                itemInputRefs.current[item.id]!.price = el
-                              }}
-                              type="text"
-                              inputMode="decimal"
-                              pattern="[0-9]*\\.?[0-9]*"
-                                  step="0.01"
-                                  min="0"
-                                  value={item.price}
-                                  onChange={(e) =>
-                                handleUpdateItem(item.id, { price: validateCurrencyInput(e.target.value).value.toString() })
-                                  }
+                        <div className="w-28">
+                                  <Input
+                                ref={(el) => {
+                                  if (!itemInputRefs.current[item.id])
+                                    itemInputRefs.current[item.id] = { name: null, price: null }
+                                  itemInputRefs.current[item.id]!.price = el
+                                }}
+                                type="text"
+                                inputMode="decimal"
+                                pattern="[0-9]*\\.?[0-9]*"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.price}
+                                    onChange={(e) =>
+                                  handleUpdateItem(item.id, { price: validateCurrencyInput(e.target.value).value.toString() })
+                                    }
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleKeyDown(e, item, index)}
+                                    placeholder="0.00"
+                            className="font-mono h-9 border-none bg-transparent focus-visible:ring-1 text-right font-semibold"
+                              />
+                        </div>
+                        
+                        {/* Quantity */}
+                        {(item.quantity > 1 || isExpanded) && (
+                          <div className="w-16">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="999"
+                              value={item.quantity || 1}
+                              onChange={(e) =>
+                                handleUpdateItem(item.id, { quantity: Math.max(1, parseInt(e.target.value) || 1) })
+                              }
                               onFocus={(e) => e.target.select()}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                  placeholder="0.00"
-                          className="font-mono h-9 border-none bg-transparent focus-visible:ring-1 text-right font-semibold"
+                              className="h-9 border-none bg-transparent focus-visible:ring-1 text-center text-sm"
+                              title="Quantity"
                             />
                           </div>
+                        )}
+                      </div>
                       
                       {/* Split info and expand button */}
                       <div className="flex items-center gap-2">

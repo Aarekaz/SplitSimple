@@ -32,6 +32,7 @@ export const createMockItem = (overrides: Partial<Item> = {}): Item => ({
   id: `item-${Math.random().toString(36).substr(2, 9)}`,
   name: 'Test Item',
   price: '10.00',
+  quantity: 1,
   splitWith: [],
   method: 'even',
   ...overrides,

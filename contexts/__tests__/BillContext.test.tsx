@@ -126,6 +126,7 @@ describe('BillContext', () => {
           payload: {
             name: 'Pizza',
             price: '20.00',
+            quantity: 1,
             splitWith: [personId],
             method: 'even'
           }
@@ -170,6 +171,7 @@ describe('BillContext', () => {
           payload: {
             name: 'Pizza',
             price: '20.00',
+            quantity: 1,
             splitWith: [],
             method: 'even'
           }
@@ -192,6 +194,7 @@ describe('BillContext', () => {
           payload: {
             name: 'Pizza',
             price: '20.00',
+            quantity: 1,
             splitWith: [],
             method: 'even'
           }
@@ -208,6 +211,7 @@ describe('BillContext', () => {
             id: itemId,
             name: 'Large Pizza',
             price: '25.00',
+            quantity: 2,
             splitWith: [],
             method: 'even'
           }
@@ -228,6 +232,7 @@ describe('BillContext', () => {
           payload: {
             name: 'Pizza',
             price: '20.00',
+            quantity: 1,
             splitWith: [],
             method: 'even'
           }
@@ -251,19 +256,19 @@ describe('BillContext', () => {
       act(() => {
         result.current.dispatch({
           type: 'ADD_ITEM',
-          payload: { name: 'Item 1', price: '10.00', splitWith: [], method: 'even' }
+          payload: { name: 'Item 1', price: '10.00', quantity: 1, splitWith: [], method: 'even' }
         })
       })
       act(() => {
         result.current.dispatch({
           type: 'ADD_ITEM',
-          payload: { name: 'Item 2', price: '20.00', splitWith: [], method: 'even' }
+          payload: { name: 'Item 2', price: '20.00', quantity: 1, splitWith: [], method: 'even' }
         })
       })
       act(() => {
         result.current.dispatch({
           type: 'ADD_ITEM',
-          payload: { name: 'Item 3', price: '30.00', splitWith: [], method: 'even' }
+          payload: { name: 'Item 3', price: '30.00', quantity: 1, splitWith: [], method: 'even' }
         })
       })
       

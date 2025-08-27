@@ -17,6 +17,7 @@ export interface Item {
   id: string
   name: string
   price: string
+  quantity: number
   splitWith: string[] // person IDs
   method: "even" | "shares" | "percent" | "exact"
   customSplits?: Record<string, number> // person ID -> amount/share/percent
@@ -399,6 +400,11 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             if (!cloudResult.bill.discount) {
               cloudResult.bill.discount = ""
             }
+            // Add quantity field to items that don't have it
+            cloudResult.bill.items = cloudResult.bill.items.map(item => ({
+              ...item,
+              quantity: item.quantity || 1
+            }))
             dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
             return
           }
@@ -416,6 +422,11 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             if (!localSharedBill.discount) {
               localSharedBill.discount = ""
             }
+            // Add quantity field to items that don't have it
+            localSharedBill.items = localSharedBill.items.map(item => ({
+              ...item,
+              quantity: item.quantity || 1
+            }))
             dispatch({ type: "LOAD_BILL", payload: localSharedBill })
             return
           }
@@ -438,6 +449,11 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           if (!bill.discount) {
             bill.discount = ""
           }
+          // Add quantity field to items that don't have it
+          bill.items = bill.items.map(item => ({
+            ...item,
+            quantity: item.quantity || 1
+          }))
           dispatch({ type: "LOAD_BILL", payload: bill })
         }
       } catch (error) {

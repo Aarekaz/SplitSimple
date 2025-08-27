@@ -22,7 +22,10 @@ export function generateSummaryText(bill: Bill): string {
         itemBreakdowns.forEach((breakdown) => {
           const personShare = breakdown.splits[person.id]
           if (personShare && personShare > 0) {
-            text += `  • ${breakdown.itemName}: ${currencySymbol}${personShare.toFixed(2)}\n`
+            const item = bill.items.find(i => i.id === breakdown.itemId)
+            const quantity = item?.quantity || 1
+            const displayName = quantity > 1 ? `${breakdown.itemName} (×${quantity})` : breakdown.itemName
+            text += `  • ${displayName}: ${currencySymbol}${personShare.toFixed(2)}\n`
           }
         })
 
@@ -74,7 +77,10 @@ export function generateItemBreakdownText(bill: Bill): string {
   text += "=".repeat(`${bill.title} - Item Breakdown`.length) + "\n\n"
 
   itemBreakdowns.forEach((breakdown) => {
-    text += `${breakdown.itemName} ${currencySymbol}${breakdown.itemPrice.toFixed(2)} → `
+    const item = bill.items.find(i => i.id === breakdown.itemId)
+    const quantity = item?.quantity || 1
+    const displayName = quantity > 1 ? `${breakdown.itemName} (×${quantity})` : breakdown.itemName
+    text += `${displayName} ${currencySymbol}${breakdown.itemPrice.toFixed(2)} → `
 
     const splits = Object.entries(breakdown.splits)
       .map(([personId, amount]) => {
@@ -103,7 +109,9 @@ export function generateCSV(bill: Bill): { itemsCSV: string; totalsCSV: string }
 
   itemBreakdowns.forEach((breakdown) => {
     const item = bill.items.find((i) => i.id === breakdown.itemId)
-    itemsCSV += `"${breakdown.itemName}",${breakdown.itemPrice.toFixed(2)},${item?.method || "even"}`
+    const quantity = item?.quantity || 1
+    const displayName = quantity > 1 ? `${breakdown.itemName} (×${quantity})` : breakdown.itemName
+    itemsCSV += `"${displayName}",${breakdown.itemPrice.toFixed(2)},${item?.method || "even"}`
 
     bill.people.forEach((person) => {
       const amount = breakdown.splits[person.id] || 0

@@ -47,7 +47,9 @@ export function calculateItemSplits(item: Item, people: Person[]): Record<string
 
   let totalAmountSplit = 0
   const itemPrice = parseFloat(item.price) || 0
-  const priceInCents = Math.round(itemPrice * 100)
+  const quantity = item.quantity || 1
+  const totalPrice = itemPrice * quantity
+  const priceInCents = Math.round(totalPrice * 100)
 
   switch (item.method) {
     case "even": {
@@ -220,7 +222,7 @@ export function getItemBreakdowns(bill: Bill): ItemBreakdown[] {
   return bill.items.map((item) => ({
     itemId: item.id,
     itemName: item.name,
-    itemPrice: parseFloat(item.price) || 0,
+    itemPrice: (parseFloat(item.price) || 0) * (item.quantity || 1),
     splits: calculateItemSplits(item, bill.people),
   }))
 }

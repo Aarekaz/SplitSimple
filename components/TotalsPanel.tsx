@@ -156,14 +156,20 @@ export function TotalsPanel({
                   <div className="pt-3 space-y-2 text-xs">
                     {itemBreakdowns
                       .filter((breakdown) => breakdown.splits[person.id] > 0)
-                      .map((breakdown) => (
-                        <div key={breakdown.itemId} className="flex justify-between items-center py-1">
-                          <span className="font-medium">{breakdown.itemName}</span>
-                          <span className="receipt-subtotal text-muted-foreground">
-                            {formatCurrency(breakdown.splits[person.id])}
-                          </span>
-                        </div>
-                      ))}
+                      .map((breakdown) => {
+                        const item = state.currentBill.items.find(i => i.id === breakdown.itemId)
+                        const quantity = item?.quantity || 1
+                        const displayName = quantity > 1 ? `${breakdown.itemName} (×${quantity})` : breakdown.itemName
+                        
+                        return (
+                          <div key={breakdown.itemId} className="flex justify-between items-center py-1">
+                            <span className="font-medium">{displayName}</span>
+                            <span className="receipt-subtotal text-muted-foreground">
+                              {formatCurrency(breakdown.splits[person.id])}
+                            </span>
+                          </div>
+                        )
+                      })}
                     
                     <div className="border-t pt-2 mt-2 space-y-1">
                       <div className="flex justify-between">
