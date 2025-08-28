@@ -43,3 +43,5 @@ coverage/
 # MSW
 public/mockServiceWorker.js
 
+
+.env.local

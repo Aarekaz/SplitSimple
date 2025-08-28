@@ -13,6 +13,7 @@ import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
 import { useState, useEffect, useRef } from "react"
+import { useBillAnalytics } from "@/hooks/use-analytics"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -23,11 +24,13 @@ import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
 export default function HomePage() {
   const { state, dispatch } = useBill()
   const { toast } = useToast()
+  const analytics = useBillAnalytics()
   const [isAddingPerson, setIsAddingPerson] = useState(false)
   const personInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const isMobile = useIsMobile()
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [previousTitle, setPreviousTitle] = useState(state.currentBill.title)
 
   const isNewBillFlow =
     isInitialLoad && state.currentBill.title === "New Bill" && state.currentBill.people.length === 0
@@ -47,8 +50,25 @@ export default function HomePage() {
   }, [isAddingPerson])
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch({ type: "SET_BILL_TITLE", payload: e.target.value })
+    const newTitle = e.target.value
+    dispatch({ type: "SET_BILL_TITLE", payload: newTitle })
+    
+    // Track title changes (debounced via useEffect)
+    if (newTitle !== previousTitle) {
+      setPreviousTitle(newTitle)
+    }
   }
+
+  // Track title changes with debouncing
+  useEffect(() => {
+    if (previousTitle !== state.currentBill.title && previousTitle !== "New Bill") {
+      const timeoutId = setTimeout(() => {
+        analytics.trackTitleChanged(state.currentBill.title)
+      }, 1000) // 1 second debounce
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [state.currentBill.title, previousTitle, analytics])
 
   const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -67,6 +87,8 @@ export default function HomePage() {
 
   const handleNewBill = () => {
     dispatch({ type: "NEW_BILL" })
+    analytics.trackBillCreated()
+    analytics.trackFeatureUsed("new_bill")
   }
 
   const handleCopySummary = async () => {
@@ -76,6 +98,7 @@ export default function HomePage() {
         description: "Add people and items to generate a summary",
         variant: "destructive",
       })
+      analytics.trackError("copy_summary_failed", "No data to copy")
       return
     }
 
@@ -87,14 +110,18 @@ export default function HomePage() {
         title: "Summary copied!",
         description: "Bill summary has been copied to your clipboard",
       })
+      analytics.trackBillSummaryCopied()
+      analytics.trackFeatureUsed("copy_summary")
     } else {
       toast({
         title: "Copy failed",
         description: "Unable to copy to clipboard. Please try again.",
         variant: "destructive",
       })
+      analytics.trackError("copy_summary_failed", "Clipboard API failed")
     }
   }
+
 
   return (
     <div className="bg-background">

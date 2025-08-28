@@ -4,6 +4,7 @@ import React, { useState, forwardRef } from "react"
 import { useBill } from "@/contexts/BillContext"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useBillAnalytics } from "@/hooks/use-analytics"
 
 interface AddPersonFormProps {
   onPersonAdded?: () => void
@@ -17,6 +18,7 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
   ref
 ) {
   const { dispatch } = useBill()
+  const analytics = useBillAnalytics()
   const [newPersonName, setNewPersonName] = useState("")
 
   const handleAddPerson = () => {
@@ -25,6 +27,8 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
         type: "ADD_PERSON",
         payload: { name: newPersonName.trim(), color: "" },
       })
+      // Track person addition
+      analytics.trackPersonAdded("manual")
       setNewPersonName("")
       if (onPersonAdded) {
         onPersonAdded()

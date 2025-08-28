@@ -9,6 +9,7 @@ import { Calculator, Users, Receipt, Plus, X, ChevronDown } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { getBillSummary, getItemBreakdowns } from "@/lib/calculations"
 import { Button } from "@/components/ui/button"
+import { useBillAnalytics } from "@/hooks/use-analytics"
 import { Input } from "@/components/ui/input"
 import { AddPersonForm } from "./AddPersonForm"
 import { useEffect, forwardRef } from "react"
@@ -31,6 +32,7 @@ export function TotalsPanel({
   personInputRef,
 }: TotalsPanelProps) {
   const { state, dispatch } = useBill()
+  const analytics = useBillAnalytics()
   const summary = getBillSummary(state.currentBill)
   const [expandedPeople, setExpandedPeople] = useState<Set<string>>(new Set())
 
@@ -50,10 +52,14 @@ export function TotalsPanel({
       const confirmed = window.confirm(
         `${person.name} is assigned to ${itemCount} item${itemCount > 1 ? 's' : ''}. Are you sure you want to remove them? This will unassign them from all items.`
       )
-      if (!confirmed) return
+      if (!confirmed) {
+        analytics.trackFeatureUsed("remove_person_cancelled", { had_items_assigned: true })
+        return
+      }
     }
     
     dispatch({ type: "REMOVE_PERSON", payload: personId })
+    analytics.trackPersonRemoved(hasItems)
   }
 
   const togglePersonExpansion = (personId: string) => {

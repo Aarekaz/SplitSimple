@@ -2,6 +2,7 @@
 
 import { Scale, Percent, Calculator, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useBillAnalytics } from "@/hooks/use-analytics"
 
 export type SplitMethod = "even" | "shares" | "percent" | "exact"
 
@@ -43,9 +44,38 @@ interface SplitMethodSelectorProps {
   value: SplitMethod
   onValueChange: (value: SplitMethod) => void
   className?: string
+  itemId?: string
+  peopleCount?: number
+  assignedPeopleCount?: number
 }
 
-export function SplitMethodSelector({ value, onValueChange, className }: SplitMethodSelectorProps) {
+export function SplitMethodSelector({ 
+  value, 
+  onValueChange, 
+  className,
+  itemId,
+  peopleCount = 0,
+  assignedPeopleCount = 0
+}: SplitMethodSelectorProps) {
+  const analytics = useBillAnalytics()
+
+  const handleMethodChange = (newMethod: SplitMethod) => {
+    const oldMethod = value
+    onValueChange(newMethod)
+    
+    // Track split method changes for popularity analytics
+    if (itemId && newMethod !== oldMethod) {
+      analytics.trackSplitMethodChanged(itemId, oldMethod, newMethod, assignedPeopleCount)
+    }
+    
+    // Track feature usage
+    analytics.trackFeatureUsed("split_method_selector", {
+      old_method: oldMethod,
+      new_method: newMethod,
+      people_count: peopleCount,
+      assigned_people_count: assignedPeopleCount,
+    })
+  }
   return (
     <div className={cn("space-y-2", className)}>
       <label className="text-xs font-medium text-muted-foreground">Split Method</label>
@@ -58,7 +88,7 @@ export function SplitMethodSelector({ value, onValueChange, className }: SplitMe
             <button
               key={option.value}
               type="button"
-              onClick={() => onValueChange(option.value)}
+              onClick={() => handleMethodChange(option.value)}
               className={cn(
                 "flex items-center justify-center gap-1.5 py-2 px-3 rounded-md transition-all text-xs font-medium",
                 "hover:bg-background hover:shadow-sm",

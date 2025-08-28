@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useBill } from "@/contexts/BillContext"
 import { copyToClipboard, generateItemBreakdownText, downloadCSV } from "@/lib/export"
 import { useToast } from "@/hooks/use-toast"
+import { useBillAnalytics } from "@/hooks/use-analytics"
 import { storeBillInCloud, generateCloudShareUrl } from "@/lib/sharing"
 import { ReceiptView } from "./ReceiptView"
 
@@ -22,6 +23,7 @@ interface ShareBillProps {
 export function ShareBill({ variant = "outline", size = "sm", showText = true }: ShareBillProps) {
   const { state } = useBill()
   const { toast } = useToast()
+  const analytics = useBillAnalytics()
   const [isOpen, setIsOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [isStoring, setIsStoring] = useState(false)
@@ -32,6 +34,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
   const handleOpenDialog = async (open: boolean) => {
     setIsOpen(open)
     if (open) {
+      analytics.trackShareBillClicked("link")
       const url = generateCloudShareUrl(state.currentBill.id)
       setShareUrl(url)
       
@@ -60,6 +63,8 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         title: "Link copied!",
         description: "The shareable link has been copied to your clipboard.",
       })
+      analytics.trackShareBillClicked("copy")
+      analytics.trackFeatureUsed("share_bill_copy_link")
       setTimeout(() => setCopied(false), 2000)
     } else {
       toast({
@@ -67,6 +72,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         description: "Could not copy the link. Please copy it manually.",
         variant: "destructive",
       })
+      analytics.trackError("share_bill_copy_failed", "Clipboard API failed")
     }
   }
 
@@ -81,6 +87,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         description: "Add items to generate a breakdown",
         variant: "destructive",
       })
+      analytics.trackError("copy_breakdown_failed", "No items to copy")
       return
     }
 
@@ -92,12 +99,14 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         title: "Breakdown copied!",
         description: "Item breakdown has been copied to your clipboard",
       })
+      analytics.trackFeatureUsed("copy_breakdown")
     } else {
       toast({
         title: "Copy failed",
         description: "Unable to copy to clipboard. Please try again.",
         variant: "destructive",
       })
+      analytics.trackError("copy_breakdown_failed", "Clipboard API failed")
     }
   }
 
@@ -108,6 +117,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         description: "Add items to export CSV files",
         variant: "destructive",
       })
+      analytics.trackError("export_csv_failed", "No data to export")
       return
     }
 
@@ -117,12 +127,14 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         title: "CSV exported!",
         description: "Items and totals CSV files have been downloaded",
       })
+      analytics.trackFeatureUsed("export_csv")
     } catch (error) {
       toast({
         title: "Export failed",
         description: "Unable to export CSV files. Please try again.",
         variant: "destructive",
       })
+      analytics.trackError("export_csv_failed", error instanceof Error ? error.message : "Unknown error")
     }
   }
 
