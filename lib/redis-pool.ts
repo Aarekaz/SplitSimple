@@ -27,10 +27,15 @@ class RedisPool {
       socket: {
         reconnectStrategy: (retries) => Math.min(retries * 50, 500),
         connectTimeout: 5000,
+        // Limit max listeners to prevent memory leak warning
+        maxRetriesPerRequest: 3,
       },
       // Connection pool settings
       pingInterval: 30000, // Ping every 30 seconds to keep connection alive
     }) as RedisClientType
+
+    // Set max listeners to prevent memory leak warnings
+    client.setMaxListeners(20)
 
     // Error handling
     client.on('error', (err) => {

@@ -5,6 +5,8 @@ import type React from "react"
 import { CollapsibleItemsTable } from "@/components/CollapsibleItemsTable"
 import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
+import { MobileFirstUI } from "@/components/MobileFirstUI"
+import { MobileActionButton, MobileActionSpacer } from "@/components/MobileActionButton"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -123,6 +125,17 @@ export default function HomePage() {
     }
   }
 
+  const handleAddPerson = () => {
+    setIsAddingPerson(true)
+    analytics.trackFeatureUsed("mobile_add_person")
+  }
+
+  const handleAddItem = () => {
+    // Focus on the add item functionality
+    analytics.trackFeatureUsed("mobile_add_item")
+    // This would trigger the add item flow
+  }
+
 
   return (
     <div className="bg-background">
@@ -184,7 +197,10 @@ export default function HomePage() {
       <main className="container mx-auto px-4 py-4 lg:py-6 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
           <div className="lg:col-span-2 space-y-4 lg:space-y-6">
-            {state.currentBill.people.length > 0 ? (
+            {/* Mobile-first UI for empty state */}
+            {isMobile && state.currentBill.people.length === 0 ? (
+              <MobileFirstUI />
+            ) : state.currentBill.people.length > 0 ? (
               <CollapsibleItemsTable />
             ) : (
               <Card>
@@ -215,6 +231,17 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        
+        {/* Mobile Action Button */}
+        {state.currentBill.people.length > 0 && (
+          <MobileActionButton
+            onAddPerson={handleAddPerson}
+            onAddItem={handleAddItem}
+            onViewReceipt={handleCopySummary}
+          />
+        )}
+        
+        <MobileActionSpacer />
       </main>
 
       <MobileTotalsBar />

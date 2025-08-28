@@ -20,6 +20,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+// Temporarily comment out mobile drag drop to isolate issues
+// import { MobileDragDrop, MobileSortableItem } from "./MobileDragDrop"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -27,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useBill } from "@/contexts/BillContext"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { PersonSelector } from "./PersonSelector"
 import { SplitMethodSelector } from "./SplitMethodSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
@@ -90,6 +93,7 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
 
 export function CollapsibleItemsTable() {
   const { state, dispatch } = useBill()
+  const isMobile = useIsMobile()
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [focusNewItem, setFocusNewItem] = useState(false)
