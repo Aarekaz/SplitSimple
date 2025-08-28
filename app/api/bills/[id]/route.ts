@@ -1,26 +1,7 @@
-import { createClient } from "redis"
 import { NextRequest, NextResponse } from "next/server"
 import type { Bill } from "@/contexts/BillContext"
-
-// Create Redis client
-const getRedisClient = async () => {
-  if (!process.env.REDIS_URL) {
-    throw new Error("REDIS_URL environment variable is not set")
-  }
-  
-  const client = createClient({ 
-    url: process.env.REDIS_URL,
-    socket: {
-      reconnectStrategy: (retries) => Math.min(retries * 50, 500)
-    }
-  })
-  
-  if (!client.isOpen) {
-    await client.connect()
-  }
-  
-  return client
-}
+import { executeRedisOperation } from "@/lib/redis-pool"
+import { validateEnvironment } from "@/lib/env-validation"
 
 // GET /api/bills/[id] - Retrieve a shared bill
 export async function GET(
@@ -28,6 +9,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Validate environment before proceeding
+    const envValidation = validateEnvironment()
+    if (!envValidation.isValid) {
+      console.error("Environment validation failed:", envValidation.errors)
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      )
+    }
+
     const { id: billId } = await params
     
     if (!billId || typeof billId !== 'string') {
@@ -37,12 +28,10 @@ export async function GET(
       )
     }
 
-    const redis = await getRedisClient()
-    
-    // Get bill from Redis with key prefix
-    const billData = await redis.get(`bill:${billId}`)
-    
-    await redis.disconnect()
+    // Use connection pool for Redis operation
+    const billData = await executeRedisOperation(async (client) => {
+      return await client.get(`bill:${billId}`)
+    })
 
     if (!billData) {
       return NextResponse.json(
@@ -71,6 +60,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Validate environment before proceeding
+    const envValidation = validateEnvironment()
+    if (!envValidation.isValid) {
+      console.error("Environment validation failed:", envValidation.errors)
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      )
+    }
+
     const { id: billId } = await params
     
     if (!billId || typeof billId !== 'string') {
@@ -90,16 +89,15 @@ export async function POST(
       )
     }
 
-    const redis = await getRedisClient()
-    
-    // Store bill in Redis with 30-day expiration (2,592,000 seconds)
-    await redis.setEx(
-      `bill:${billId}`,
-      30 * 24 * 60 * 60, // 30 days in seconds
-      JSON.stringify(bill)
-    )
-    
-    await redis.disconnect()
+    // Use connection pool for Redis operation
+    await executeRedisOperation(async (client) => {
+      // Store bill in Redis with 30-day expiration (2,592,000 seconds)
+      await client.setEx(
+        `bill:${billId}`,
+        30 * 24 * 60 * 60, // 30 days in seconds
+        JSON.stringify(bill)
+      )
+    })
 
     return NextResponse.json({ 
       success: true,

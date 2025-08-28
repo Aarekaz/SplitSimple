@@ -68,6 +68,7 @@ export default function HomePage() {
       
       return () => clearTimeout(timeoutId)
     }
+    return undefined
   }, [state.currentBill.title, previousTitle, analytics])
 
   const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

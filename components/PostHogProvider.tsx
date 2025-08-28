@@ -17,7 +17,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       capture_pageleave: true,
       session_recording: {
         maskAllInputs: true, // Mask sensitive input data
-        maskTextSelectors: ['.receipt-title'], // Mask bill titles for privacy
+        maskTextSelector: '.receipt-title', // Mask bill titles for privacy
       },
       loaded: (posthog) => {
         console.log('✅ PostHog loaded successfully!')

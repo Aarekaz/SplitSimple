@@ -401,7 +401,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
               cloudResult.bill.discount = ""
             }
             // Add quantity field to items that don't have it
-            cloudResult.bill.items = cloudResult.bill.items.map(item => ({
+            cloudResult.bill.items = cloudResult.bill.items.map((item: any) => ({
               ...item,
               quantity: item.quantity || 1
             }))
@@ -423,7 +423,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
               localSharedBill.discount = ""
             }
             // Add quantity field to items that don't have it
-            localSharedBill.items = localSharedBill.items.map(item => ({
+            localSharedBill.items = localSharedBill.items.map((item: any) => ({
               ...item,
               quantity: item.quantity || 1
             }))
@@ -450,7 +450,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             bill.discount = ""
           }
           // Add quantity field to items that don't have it
-          bill.items = bill.items.map(item => ({
+          bill.items = bill.items.map((item: any) => ({
             ...item,
             quantity: item.quantity || 1
           }))

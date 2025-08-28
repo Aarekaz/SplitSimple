@@ -2,11 +2,12 @@
 
 // Mock environment variables
 process.env.REDIS_URL = 'redis://localhost:6379'
-process.env.NODE_ENV = 'test'
 
 // Polyfill for Node.js environment
 import { TextEncoder, TextDecoder } from 'util'
+// @ts-ignore
 global.TextEncoder = TextEncoder
+// @ts-ignore  
 global.TextDecoder = TextDecoder
 
 // Clear all mocks after each test
