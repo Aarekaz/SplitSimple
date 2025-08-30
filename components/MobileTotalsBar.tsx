@@ -31,7 +31,7 @@ export function MobileTotalsBar() {
   return (
     <>
       {/* Mobile Bottom Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-40">
         <Card className="rounded-none border-0 border-t">
           <CardContent className="p-4">
             {/* Collapsed View */}

@@ -12,8 +12,25 @@ export async function storeBillInCloud(bill: Bill): Promise<{ success: boolean; 
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Failed to store bill')
+      let errorMessage = 'Failed to store bill'
+      
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorMessage
+      } catch (parseError) {
+        // Handle non-JSON error responses
+        if (response.status === 413) {
+          errorMessage = 'Bill is too large to store'
+        } else if (response.status === 429) {
+          errorMessage = 'Too many requests, please try again later'
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error, please try again later'
+        } else {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        }
+      }
+      
+      throw new Error(errorMessage)
     }
 
     return { success: true }
@@ -21,7 +38,7 @@ export async function storeBillInCloud(bill: Bill): Promise<{ success: boolean; 
     console.error('Error storing bill in cloud:', error)
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     }
   }
 }
@@ -40,16 +57,42 @@ export async function getBillFromCloud(billId: string): Promise<{ bill?: Bill; e
       if (response.status === 404) {
         return { error: 'Bill not found or expired' }
       }
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Failed to retrieve bill')
+      
+      let errorMessage = 'Failed to retrieve bill'
+      
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorMessage
+      } catch (parseError) {
+        // Handle non-JSON error responses
+        if (response.status === 429) {
+          errorMessage = 'Too many requests, please try again later'
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error, please try again later'
+        } else {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        }
+      }
+      
+      throw new Error(errorMessage)
     }
 
-    const data = await response.json()
+    let data
+    try {
+      data = await response.json()
+    } catch (parseError) {
+      throw new Error('Invalid response format from server')
+    }
+    
+    if (!data.bill) {
+      throw new Error('Bill data is missing from response')
+    }
+    
     return { bill: data.bill }
   } catch (error) {
     console.error('Error retrieving bill from cloud:', error)
     return { 
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     }
   }
 }

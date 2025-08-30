@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { ChevronDown, ChevronUp, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check } from "lucide-react"
 import {
   DndContext,
@@ -80,6 +80,17 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
         {...listeners} 
         className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-md cursor-grab hover:bg-muted/50 opacity-0 group-hover:opacity-100 transition-all z-10 bg-background/80 backdrop-blur-sm border border-border/50"
         title="Drag to reorder"
+        aria-label="Drag item to reorder"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            // Focus management for keyboard users
+            const nextElement = e.currentTarget.nextElementSibling?.querySelector('input')
+            nextElement?.focus()
+          }
+        }}
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </div>
@@ -141,6 +152,24 @@ export function CollapsibleItemsTable() {
     }
   }, [focusNewItem, items, expandedItems])
 
+  const handleAddItem = useCallback((focus = false) => {
+    const newItem: Omit<Item, "id"> = {
+      name: "",
+      price: "",
+      quantity: 1,
+      splitWith: people.map((p) => p.id),
+      method: "even",
+    }
+
+    dispatch({ type: "ADD_ITEM", payload: newItem })
+    setFocusNewItem(focus)
+    
+    if (focus) {
+      setShowAddSuccess(true)
+      setTimeout(() => setShowAddSuccess(false), 2000)
+    }
+  }, [people, dispatch])
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -159,80 +188,30 @@ export function CollapsibleItemsTable() {
 
     document.addEventListener('keydown', handleGlobalKeyDown)
     return () => document.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [people])
+  }, [people, handleAddItem])
 
-  const toggleItemExpansion = (itemId: string) => {
-    const newExpanded = new Set(expandedItems)
-    if (newExpanded.has(itemId)) {
-      newExpanded.delete(itemId)
-    } else {
-      newExpanded.add(itemId)
-    }
-    setExpandedItems(newExpanded)
-  }
-
-  const handleAddItem = (focus = false) => {
-    // Auto-collapse all currently expanded items
-    setExpandedItems(new Set())
-    
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        name: "",
-        price: "",
-        quantity: 1,
-        splitWith: people.map((p) => p.id),
-        method: "even" as const,
-        customSplits: undefined,
-      },
-    })
-    
-    // Show success feedback
-    setShowAddSuccess(true)
-    setTimeout(() => setShowAddSuccess(false), 600)
-    
-    if (focus) {
-      setFocusNewItem(true)
-    }
-  }
-
-
-  const handleUpdateItem = (itemId: string, updates: any) => {
-    const item = items.find((i) => i.id === itemId)
-    if (!item) return
-
-    dispatch({
-      type: "UPDATE_ITEM",
-      payload: { ...item, ...updates },
-    })
-  }
-
-  const handleDeleteItem = (itemId: string) => {
-    dispatch({ type: "REMOVE_ITEM", payload: itemId })
-  }
-
-  const getItemSplits = (itemId: string) => {
+  const getItemSplits = useCallback((itemId: string) => {
     const item = items.find((i) => i.id === itemId)
     if (!item) return {}
     return calculateItemSplits(item, people)
-  }
+  }, [items, people])
 
-  const getSelectedPeople = (itemId: string) => {
+  const getSelectedPeople = useCallback((itemId: string) => {
     const item = items.find((i) => i.id === itemId)
     if (!item) return []
     return people.filter((person) => item.splitWith.includes(person.id))
-  }
+  }, [items, people])
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
     if (over && active.id !== over.id) {
       const oldIndex = items.findIndex((item) => item.id === active.id)
       const newIndex = items.findIndex((item) => item.id === over.id)
       dispatch({ type: "REORDER_ITEMS", payload: { startIndex: oldIndex, endIndex: newIndex } })
     }
-  }
+  }, [items, dispatch])
 
-  const handleKeyDown = (e: React.KeyboardEvent, item: Item, index: number) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, item: Item, index: number) => {
     if (e.key === "Enter") {
       e.preventDefault()
       handleAddItem(true)
@@ -254,7 +233,35 @@ export function CollapsibleItemsTable() {
     } else if (e.key === "Escape") {
       ;(e.target as HTMLInputElement).blur()
     }
-  }
+  }, [items, handleAddItem])
+
+  const toggleItemExpansion = useCallback((itemId: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId)
+      } else {
+        newSet.add(itemId)
+      }
+      return newSet
+    })
+  }, [])
+
+  const handleUpdateItem = useCallback((itemId: string, updates: any) => {
+    const item = items.find((i) => i.id === itemId)
+    if (!item) return
+
+    dispatch({
+      type: "UPDATE_ITEM",
+      payload: { ...item, ...updates },
+    })
+  }, [items, dispatch])
+
+  const handleDeleteItem = useCallback((itemId: string) => {
+    dispatch({ type: "REMOVE_ITEM", payload: itemId })
+  }, [dispatch])
+
+
 
   if (items.length === 0) {
     return (
@@ -403,12 +410,13 @@ export function CollapsibleItemsTable() {
                                   variant="ghost" 
                                   size="icon" 
                                   onClick={() => handleDeleteItem(item.id)} 
-                                  className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                                  className="h-11 w-11 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
                                   title="Delete item"
+                                  aria-label={`Delete ${item.name || 'item'}`}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
-                                    </div>
+                              </div>
                                       </div>
 
                             {/* Expanded Row */}

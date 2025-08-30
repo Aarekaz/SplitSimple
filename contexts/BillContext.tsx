@@ -474,19 +474,44 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
       saveBillToLocalStorage(state.currentBill)
     } catch (error) {
       console.error("Failed to save bill to localStorage:", error)
+      
+      // Try to save with a smaller payload if the bill is too large
+      try {
+        const minimalBill = {
+          ...state.currentBill,
+          items: state.currentBill.items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            splitWith: item.splitWith,
+            method: item.method,
+            customSplits: item.customSplits
+          }))
+        }
+        localStorage.setItem("splitSimple_currentBill", JSON.stringify(minimalBill))
+      } catch (fallbackError) {
+        console.error("Failed to save even minimal bill:", fallbackError)
+        // At this point, we've exhausted our options - could show a user notification
+      }
     }
   }, [state.currentBill])
 
   // Debounced auto-sync to cloud when bill changes
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | undefined
+    
     if (state.syncStatus === "never_synced") {
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         syncToCloud()
       }, 2000) // 2-second debounce
-
-      return () => clearTimeout(timeoutId)
     }
-    return undefined
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
   }, [state.currentBill, state.syncStatus])
 
   return <BillContext.Provider value={{ state, dispatch, canUndo, canRedo, syncToCloud }}>{children}</BillContext.Provider>
