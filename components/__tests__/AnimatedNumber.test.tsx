@@ -49,11 +49,12 @@ describe('AnimatedNumber', () => {
     const { rerender } = render(<AnimatedNumber value={0} />)
     expect(screen.getByText('0.00')).toBeInTheDocument()
 
-    // Change value - should eventually show new value
-    rerender(<AnimatedNumber value={100} />)
-    
-    // Wait for animation to settle
-    await new Promise(resolve => setTimeout(resolve, 300))
+    // Change value - wrap in act to handle async state updates
+    await act(async () => {
+      rerender(<AnimatedNumber value={100} />)
+      // Wait for animation to settle
+      await new Promise(resolve => setTimeout(resolve, 300))
+    })
     
     expect(screen.getByText('100.00')).toBeInTheDocument()
   })
@@ -78,10 +79,10 @@ describe('AnimatedNumber', () => {
     jest.useFakeTimers()
     
     const { rerender } = render(<AnimatedNumber value={0} duration={2000} />)
-    rerender(<AnimatedNumber value={100} duration={2000} />)
-
-    // Complete animation
-    act(() => {
+    
+    await act(async () => {
+      rerender(<AnimatedNumber value={100} duration={2000} />)
+      // Complete animation
       jest.advanceTimersByTime(3000) // Give extra time
     })
 
@@ -97,13 +98,13 @@ describe('AnimatedNumber', () => {
     
     const { rerender } = render(<AnimatedNumber value={0} />)
     
-    // Rapid changes
-    rerender(<AnimatedNumber value={50} />)
-    rerender(<AnimatedNumber value={100} />)
-    rerender(<AnimatedNumber value={75} />)
+    await act(async () => {
+      // Rapid changes
+      rerender(<AnimatedNumber value={50} />)
+      rerender(<AnimatedNumber value={100} />)
+      rerender(<AnimatedNumber value={75} />)
 
-    // Should eventually settle on final value
-    act(() => {
+      // Should eventually settle on final value
       jest.advanceTimersByTime(2000)
     })
 

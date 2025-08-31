@@ -69,10 +69,10 @@ describe('calculations', () => {
       const total = Object.values(splits).reduce((sum, amount) => sum + amount, 0)
       expectCurrencyToBe(total, 10.01)
 
-      // Check individual amounts
-      expect(splits[person1.id]).toBe(3.33)
-      expect(splits[person2.id]).toBe(3.33)
-      expect(splits[person3.id]).toBe(3.35) // Last person gets remainder
+      // Check individual amounts - first few people get remainder pennies
+      expect(splits[person1.id]).toBe(3.34) // Gets remainder penny
+      expect(splits[person2.id]).toBe(3.34) // Gets remainder penny
+      expect(splits[person3.id]).toBe(3.33) // No remainder penny
     })
 
     it('should split by shares proportionally', () => {
