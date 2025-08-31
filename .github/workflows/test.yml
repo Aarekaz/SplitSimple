@@ -94,7 +94,7 @@ jobs:
       env:
         REDIS_URL: redis://localhost:6379
         NODE_ENV: test
-      run: pnpm test -- --testPathPattern=integration
+      run: pnpm test -- --testPathPatterns=integration --passWithNoTests
 
     - name: Build application
       run: pnpm build

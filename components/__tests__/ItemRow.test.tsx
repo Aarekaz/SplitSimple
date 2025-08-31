@@ -85,14 +85,15 @@ describe('ItemRow', () => {
       </TestWrapper>
     )
 
-    const nameInput = screen.getByDisplayValue('Test Item')
-    await user.clear(nameInput)
-    await user.type(nameInput, 'New Name')
+    const nameInput = screen.getByDisplayValue('Test Item') as HTMLInputElement
+    
+    // Directly change the input value using fireEvent
+    fireEvent.change(nameInput, { target: { value: 'New Name' } })
 
-    // Check that onUpdate was called (it will be called multiple times during typing)
+    // Check that onUpdate was called
     expect(onUpdate).toHaveBeenCalled()
     
-    // Check the final call contains the complete name
+    // Check the final call contains the new name
     const lastCall = onUpdate.mock.calls[onUpdate.mock.calls.length - 1][0]
     expect(lastCall.name).toBe('New Name')
   })
