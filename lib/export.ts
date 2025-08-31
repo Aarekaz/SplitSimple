@@ -10,6 +10,18 @@ export function generateSummaryText(bill: Bill): string {
   let text = `${bill.title}\n`
   text += "=".repeat(bill.title.length) + "\n\n"
 
+  // Items section with total prices
+  if (bill.items.length > 0) {
+    text += "ITEMS:\n"
+    bill.items.forEach((item) => {
+      const quantity = item.quantity || 1
+      const displayName = quantity > 1 ? `${item.name} (×${quantity})` : item.name
+      const price = parseFloat(item.price) || 0
+      text += `${displayName}: ${currencySymbol}${price.toFixed(2)}\n`
+    })
+    text += "\n"
+  }
+
   // Person totals
   if (summary.personTotals.length > 0) {
     text += "INDIVIDUAL BREAKDOWN:\n"

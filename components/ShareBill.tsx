@@ -8,7 +8,7 @@ import { Share2, Copy, Check, ExternalLink, FileText, Download, Receipt } from "
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useBill } from "@/contexts/BillContext"
-import { copyToClipboard, generateItemBreakdownText, downloadCSV } from "@/lib/export"
+import { copyToClipboard, generateSummaryText, downloadCSV } from "@/lib/export"
 import { useToast } from "@/hooks/use-toast"
 import { useBillAnalytics } from "@/hooks/use-analytics"
 import { storeBillInCloud, generateCloudShareUrl } from "@/lib/sharing"
@@ -81,32 +81,32 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
   }
 
   const handleCopyBreakdown = async () => {
-    if (state.currentBill.items.length === 0) {
+    if (state.currentBill.people.length === 0) {
       toast({
-        title: "No items to copy",
-        description: "Add items to generate a breakdown",
+        title: "No data to copy",
+        description: "Add people and items to generate a summary",
         variant: "destructive",
       })
-      analytics.trackError("copy_breakdown_failed", "No items to copy")
+      analytics.trackError("copy_summary_failed", "No data to copy")
       return
     }
 
-    const breakdownText = generateItemBreakdownText(state.currentBill)
-    const success = await copyToClipboard(breakdownText)
+    const summaryText = generateSummaryText(state.currentBill)
+    const success = await copyToClipboard(summaryText)
 
     if (success) {
       toast({
-        title: "Breakdown copied!",
-        description: "Item breakdown has been copied to your clipboard",
+        title: "Summary copied!",
+        description: "Bill summary has been copied to your clipboard",
       })
-      analytics.trackFeatureUsed("copy_breakdown")
+      analytics.trackFeatureUsed("copy_summary")
     } else {
       toast({
         title: "Copy failed",
         description: "Unable to copy to clipboard. Please try again.",
         variant: "destructive",
       })
-      analytics.trackError("copy_breakdown_failed", "Clipboard API failed")
+      analytics.trackError("copy_summary_failed", "Clipboard API failed")
     }
   }
 
@@ -239,11 +239,11 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
                   variant="outline"
                   size="sm"
                   onClick={handleCopyBreakdown}
-                  disabled={state.currentBill.items.length === 0}
+                  disabled={state.currentBill.people.length === 0}
                   className="flex items-center gap-2 text-xs"
                 >
                   <FileText className="h-4 w-4" />
-                  Copy Breakdown
+                  Copy Summary
                 </Button>
                 <Button
                   variant="outline"
