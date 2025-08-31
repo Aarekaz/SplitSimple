@@ -17,16 +17,15 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('AddPersonForm', () => {
   const defaultProps = {
-    isOpen: true,
-    onClose: jest.fn(),
-    inputRef: { current: null },
+    onPersonAdded: jest.fn(),
+    onCancel: jest.fn(),
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
-  it('renders form when open', () => {
+  it('renders form', () => {
     render(
       <TestWrapper>
         <AddPersonForm {...defaultProps} />
@@ -34,47 +33,48 @@ describe('AddPersonForm', () => {
     )
 
     expect(screen.getByPlaceholderText('Enter name')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /add person/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument()
   })
 
-  it('does not render when closed', () => {
+  it('renders with show button disabled', () => {
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} isOpen={false} />
+        <AddPersonForm {...defaultProps} showButton={false} />
       </TestWrapper>
     )
 
-    expect(screen.queryByPlaceholderText('Enter name')).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Enter name')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /add/i })).not.toBeInTheDocument()
   })
 
   it('adds person with valid name', async () => {
     const user = userEvent.setup()
-    const onClose = jest.fn()
+    const onPersonAdded = jest.fn()
 
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} onClose={onClose} />
+        <AddPersonForm {...defaultProps} onPersonAdded={onPersonAdded} />
       </TestWrapper>
     )
 
     const input = screen.getByPlaceholderText('Enter name')
-    const submitButton = screen.getByRole('button', { name: /add person/i })
+    const submitButton = screen.getByRole('button', { name: /add/i })
 
     await user.type(input, 'Alice')
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(onClose).toHaveBeenCalled()
+      expect(onPersonAdded).toHaveBeenCalled()
     })
   })
 
   it('handles form submission with Enter key', async () => {
     const user = userEvent.setup()
-    const onClose = jest.fn()
+    const onPersonAdded = jest.fn()
 
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} onClose={onClose} />
+        <AddPersonForm {...defaultProps} onPersonAdded={onPersonAdded} />
       </TestWrapper>
     )
 
@@ -83,60 +83,60 @@ describe('AddPersonForm', () => {
     await user.keyboard('{Enter}')
 
     await waitFor(() => {
-      expect(onClose).toHaveBeenCalled()
+      expect(onPersonAdded).toHaveBeenCalled()
     })
   })
 
   it('validates empty name', async () => {
     const user = userEvent.setup()
-    const onClose = jest.fn()
+    const onPersonAdded = jest.fn()
 
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} onClose={onClose} />
+        <AddPersonForm {...defaultProps} onPersonAdded={onPersonAdded} />
       </TestWrapper>
     )
 
-    const submitButton = screen.getByRole('button', { name: /add person/i })
+    const submitButton = screen.getByRole('button', { name: /add/i })
     await user.click(submitButton)
 
-    // Should not close form with empty name
-    expect(onClose).not.toHaveBeenCalled()
+    // Should not call onPersonAdded with empty name
+    expect(onPersonAdded).not.toHaveBeenCalled()
   })
 
   it('trims whitespace from name', async () => {
     const user = userEvent.setup()
-    const onClose = jest.fn()
+    const onPersonAdded = jest.fn()
 
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} onClose={onClose} />
+        <AddPersonForm {...defaultProps} onPersonAdded={onPersonAdded} />
       </TestWrapper>
     )
 
     const input = screen.getByPlaceholderText('Enter name')
-    const submitButton = screen.getByRole('button', { name: /add person/i })
+    const submitButton = screen.getByRole('button', { name: /add/i })
 
     await user.type(input, '  Charlie  ')
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(onClose).toHaveBeenCalled()
+      expect(onPersonAdded).toHaveBeenCalled()
     })
   })
 
   it('clears form after successful submission', async () => {
     const user = userEvent.setup()
-    const onClose = jest.fn()
+    const onPersonAdded = jest.fn()
 
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} onClose={onClose} />
+        <AddPersonForm {...defaultProps} onPersonAdded={onPersonAdded} />
       </TestWrapper>
     )
 
     const input = screen.getByPlaceholderText('Enter name')
-    const submitButton = screen.getByRole('button', { name: /add person/i })
+    const submitButton = screen.getByRole('button', { name: /add/i })
 
     await user.type(input, 'David')
     await user.click(submitButton)
@@ -148,11 +148,11 @@ describe('AddPersonForm', () => {
 
   it('handles escape key to close', async () => {
     const user = userEvent.setup()
-    const onClose = jest.fn()
+    const onCancel = jest.fn()
 
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} onClose={onClose} />
+        <AddPersonForm {...defaultProps} onCancel={onCancel} />
       </TestWrapper>
     )
 
@@ -160,15 +160,13 @@ describe('AddPersonForm', () => {
     await user.type(input, 'Eve')
     await user.keyboard('{Escape}')
 
-    expect(onClose).toHaveBeenCalled()
+    expect(onCancel).toHaveBeenCalled()
   })
 
-  it('focuses input when opened', () => {
-    const inputRef = React.createRef<HTMLInputElement>()
-
+  it('focuses input when rendered', () => {
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} inputRef={inputRef} />
+        <AddPersonForm {...defaultProps} />
       </TestWrapper>
     )
 
@@ -178,16 +176,16 @@ describe('AddPersonForm', () => {
 
   it('validates name length', async () => {
     const user = userEvent.setup()
-    const onClose = jest.fn()
+    const onPersonAdded = jest.fn()
 
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} onClose={onClose} />
+        <AddPersonForm {...defaultProps} onPersonAdded={onPersonAdded} />
       </TestWrapper>
     )
 
     const input = screen.getByPlaceholderText('Enter name')
-    const submitButton = screen.getByRole('button', { name: /add person/i })
+    const submitButton = screen.getByRole('button', { name: /add/i })
 
     // Test very long name
     const longName = 'a'.repeat(100)
@@ -196,28 +194,28 @@ describe('AddPersonForm', () => {
 
     // Should still work with long names (validation handles this)
     await waitFor(() => {
-      expect(onClose).toHaveBeenCalled()
+      expect(onPersonAdded).toHaveBeenCalled()
     })
   })
 
   it('handles special characters in name', async () => {
     const user = userEvent.setup()
-    const onClose = jest.fn()
+    const onPersonAdded = jest.fn()
 
     render(
       <TestWrapper>
-        <AddPersonForm {...defaultProps} onClose={onClose} />
+        <AddPersonForm {...defaultProps} onPersonAdded={onPersonAdded} />
       </TestWrapper>
     )
 
     const input = screen.getByPlaceholderText('Enter name')
-    const submitButton = screen.getByRole('button', { name: /add person/i })
+    const submitButton = screen.getByRole('button', { name: /add/i })
 
     await user.type(input, "O'Reilly")
     await user.click(submitButton)
 
     await waitFor(() => {
-      expect(onClose).toHaveBeenCalled()
+      expect(onPersonAdded).toHaveBeenCalled()
     })
   })
 })

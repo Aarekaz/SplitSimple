@@ -119,7 +119,7 @@ describe('ErrorBoundary', () => {
 
   it('logs error information in development mode', () => {
     const originalNodeEnv = process.env.NODE_ENV
-    process.env.NODE_ENV = 'development'
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true })
 
     render(
       <ErrorBoundary>
@@ -129,12 +129,12 @@ describe('ErrorBoundary', () => {
 
     expect(console.error).toHaveBeenCalled()
 
-    process.env.NODE_ENV = originalNodeEnv
+    Object.defineProperty(process.env, 'NODE_ENV', { value: originalNodeEnv, writable: true })
   })
 
   it('shows technical details in development mode', () => {
     const originalNodeEnv = process.env.NODE_ENV
-    process.env.NODE_ENV = 'development'
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', writable: true })
 
     render(
       <ErrorBoundary>
@@ -144,12 +144,12 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText(/Technical Details/)).toBeInTheDocument()
 
-    process.env.NODE_ENV = originalNodeEnv
+    Object.defineProperty(process.env, 'NODE_ENV', { value: originalNodeEnv, writable: true })
   })
 
   it('does not show technical details in production mode', () => {
     const originalNodeEnv = process.env.NODE_ENV
-    process.env.NODE_ENV = 'production'
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true })
 
     render(
       <ErrorBoundary>
@@ -159,7 +159,7 @@ describe('ErrorBoundary', () => {
 
     expect(screen.queryByText(/Technical Details/)).not.toBeInTheDocument()
 
-    process.env.NODE_ENV = originalNodeEnv
+    Object.defineProperty(process.env, 'NODE_ENV', { value: originalNodeEnv, writable: true })
   })
 
   it('generates unique error ID', () => {

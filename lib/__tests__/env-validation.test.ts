@@ -29,7 +29,7 @@ describe('env-validation', () => {
     delete process.env.REDIS_URL
     delete process.env.NEXT_PUBLIC_POSTHOG_KEY
     delete process.env.NEXT_PUBLIC_POSTHOG_HOST
-    process.env.NODE_ENV = 'test'
+    Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true })
   })
 
   describe('validateEnvironment', () => {
@@ -37,7 +37,7 @@ describe('env-validation', () => {
       process.env.REDIS_URL = 'redis://localhost:6379'
       process.env.NEXT_PUBLIC_POSTHOG_KEY = 'test-key'
       process.env.NEXT_PUBLIC_POSTHOG_HOST = 'https://app.posthog.com'
-      process.env.NODE_ENV = 'production'
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true })
 
       const result = validateEnvironment()
 
@@ -74,7 +74,7 @@ describe('env-validation', () => {
 
     it('warns about non-standard NODE_ENV', () => {
       process.env.REDIS_URL = 'redis://localhost:6379'
-      process.env.NODE_ENV = 'staging'
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'staging', writable: true })
 
       const result = validateEnvironment()
 
@@ -83,7 +83,7 @@ describe('env-validation', () => {
     })
 
     it('handles missing NODE_ENV gracefully', () => {
-      delete process.env.NODE_ENV
+      Object.defineProperty(process.env, 'NODE_ENV', { value: undefined, writable: true })
       process.env.REDIS_URL = 'redis://localhost:6379'
 
       const result = validateEnvironment()
