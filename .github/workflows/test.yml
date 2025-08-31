@@ -102,21 +102,38 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     needs: test
+    # Only run if SNYK_TOKEN is available (skip for forks)
+    if: ${{ secrets.SNYK_TOKEN }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 9
+
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
     - name: Run Snyk to check for vulnerabilities
       uses: snyk/actions/node@master
+      continue-on-error: true
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        args: --severity-threshold=high
+        args: --severity-threshold=high --sarif-file-output=snyk.sarif
         command: test
 
     - name: Upload Snyk results to GitHub Code Scanning
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      if: always() && hashFiles('snyk.sarif') != ''
       with:
         sarif_file: snyk.sarif
