@@ -161,7 +161,14 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
   
   // Validate inputs
   if (isNaN(tax) || isNaN(tip) || isNaN(discount)) {
-    console.warn('Invalid tax, tip, or discount values detected')
+    console.warn('Invalid tax, tip, or discount values detected', { tax, tip, discount })
+    // Return totals with zero tax/tip/discount to prevent NaN errors
+    totals.forEach(total => {
+      total.tax = 0
+      total.tip = 0
+      total.discount = 0
+      total.total = Math.round(total.subtotal * 100) / 100
+    })
     return totals
   }
   
