@@ -76,19 +76,33 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
   return (
     <div ref={setNodeRef} style={style} {...attributes} className="relative group">
       {/* Drag Handle - appears on hover */}
-      <div 
-        {...listeners} 
-        className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-md cursor-grab hover:bg-muted/50 opacity-0 group-hover:opacity-100 transition-all z-10 bg-background/80 backdrop-blur-sm border border-border/50"
-        title="Drag to reorder"
-        aria-label="Drag item to reorder"
+      <div
+        {...listeners}
+        className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-md cursor-grab hover:bg-muted/50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all z-10 bg-background/80 backdrop-blur-sm border border-border/50"
+        title="Drag to reorder or press Enter to focus item"
+        aria-label="Drag handle for item reordering. Press Enter to focus item controls."
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
-            // Focus management for keyboard users
-            const nextElement = e.currentTarget.nextElementSibling?.querySelector('input')
-            nextElement?.focus()
+            // Focus the item name input for better keyboard navigation
+            const itemContent = e.currentTarget.parentElement?.querySelector('[data-item-input="name"]') as HTMLInputElement
+            itemContent?.focus()
+          } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault()
+            // Navigate between drag handles with arrow keys
+            const allDragHandles = document.querySelectorAll('[aria-label*="Drag handle"]')
+            const currentIndex = Array.from(allDragHandles).indexOf(e.currentTarget as Element)
+
+            let nextIndex: number
+            if (e.key === 'ArrowUp') {
+              nextIndex = currentIndex > 0 ? currentIndex - 1 : allDragHandles.length - 1
+            } else {
+              nextIndex = currentIndex < allDragHandles.length - 1 ? currentIndex + 1 : 0
+            }
+
+            (allDragHandles[nextIndex] as HTMLElement)?.focus()
           }
         }}
       >
@@ -204,10 +218,23 @@ export function CollapsibleItemsTable() {
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
-    if (over && active.id !== over.id) {
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    try {
       const oldIndex = items.findIndex((item) => item.id === active.id)
       const newIndex = items.findIndex((item) => item.id === over.id)
+
+      if (oldIndex === -1 || newIndex === -1) {
+        console.warn('Invalid drag operation: item not found')
+        return
+      }
+
       dispatch({ type: "REORDER_ITEMS", payload: { startIndex: oldIndex, endIndex: newIndex } })
+    } catch (error) {
+      console.error('Error during drag operation:', error)
     }
   }, [items, dispatch])
 
@@ -247,15 +274,36 @@ export function CollapsibleItemsTable() {
     })
   }, [])
 
-  const handleUpdateItem = useCallback((itemId: string, updates: any) => {
+  const handleUpdateItem = useCallback((itemId: string, updates: Partial<Item>) => {
     const item = items.find((i) => i.id === itemId)
-    if (!item) return
+    if (!item) {
+      console.warn(`Attempted to update non-existent item with ID: ${itemId}`)
+      return
+    }
 
-    dispatch({
-      type: "UPDATE_ITEM",
-      payload: { ...item, ...updates },
-    })
-  }, [items, dispatch])
+    // Validate updates to prevent invalid data
+    const validatedUpdates = { ...updates }
+
+    // Ensure quantity is always positive
+    if (validatedUpdates.quantity !== undefined) {
+      validatedUpdates.quantity = Math.max(1, Math.min(999, validatedUpdates.quantity || 1))
+    }
+
+    // Ensure splitWith only contains valid person IDs
+    if (validatedUpdates.splitWith !== undefined) {
+      const validPersonIds = people.map(p => p.id)
+      validatedUpdates.splitWith = validatedUpdates.splitWith.filter(id => validPersonIds.includes(id))
+    }
+
+    try {
+      dispatch({
+        type: "UPDATE_ITEM",
+        payload: { ...item, ...validatedUpdates },
+      })
+    } catch (error) {
+      console.error(`Failed to update item ${itemId}:`, error)
+    }
+  }, [items, people, dispatch])
 
   const handleDeleteItem = useCallback((itemId: string) => {
     dispatch({ type: "REMOVE_ITEM", payload: itemId })
@@ -348,6 +396,7 @@ export function CollapsibleItemsTable() {
                                           onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
                                           placeholder="Add your item..."
+                                          data-item-input="name"
                                     className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm"
                                   />
                                   {/* Split info as subtle badge */}

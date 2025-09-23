@@ -401,10 +401,12 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
               cloudResult.bill.discount = ""
             }
             // Add quantity field to items that don't have it
-            cloudResult.bill.items = cloudResult.bill.items.map((item: any) => ({
-              ...item,
-              quantity: item.quantity || 1
-            }))
+            if (cloudResult.bill.items) {
+              cloudResult.bill.items = cloudResult.bill.items.map((item: any) => ({
+                ...item,
+                quantity: item.quantity || 1
+              }))
+            }
             dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
             return
           }
@@ -423,10 +425,12 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
               localSharedBill.discount = ""
             }
             // Add quantity field to items that don't have it
-            localSharedBill.items = localSharedBill.items.map((item: any) => ({
-              ...item,
-              quantity: item.quantity || 1
-            }))
+            if (localSharedBill.items) {
+              localSharedBill.items = localSharedBill.items.map((item: any) => ({
+                ...item,
+                quantity: item.quantity || 1
+              }))
+            }
             dispatch({ type: "LOAD_BILL", payload: localSharedBill })
             return
           }
@@ -450,10 +454,12 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             bill.discount = ""
           }
           // Add quantity field to items that don't have it
-          bill.items = bill.items.map((item: any) => ({
-            ...item,
-            quantity: item.quantity || 1
-          }))
+          if (bill.items) {
+            bill.items = bill.items.map((item: any) => ({
+              ...item,
+              quantity: item.quantity || 1
+            }))
+          }
           dispatch({ type: "LOAD_BILL", payload: bill })
         }
       } catch (error) {
