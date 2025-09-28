@@ -26,7 +26,12 @@ import {
   ChevronRight,
   ArrowUpDown,
   BarChart3,
-  Package
+  Package,
+  DollarSign,
+  Target,
+  Activity,
+  Percent,
+  Share2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -70,6 +75,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
+import { formatCurrency } from '@/lib/utils'
 
 interface BillMetadata {
   id: string
@@ -80,6 +86,7 @@ interface BillMetadata {
   accessCount: number
   size: number
   shareUrl: string
+  totalAmount: number
 }
 
 interface AdminStats {
@@ -91,6 +98,21 @@ interface AdminStats {
   totalPeople: number
   totalStorageSize: number
   averageBillSize: number
+  // Phase 1 enhancements
+  totalMoneyProcessed: number
+  averageBillValue: number
+  largestBill: number
+  billsCreatedToday: number
+  billsCreatedThisWeek: number
+  billsCreatedThisMonth: number
+  completionRate: number
+  shareRate: number
+  averageItemsPerBill: number
+  averagePeoplePerBill: number
+  popularSplitMethods: Array<{method: string, count: number, percentage: number}>
+  totalTaxCollected: number
+  totalTipsProcessed: number
+  totalDiscountsGiven: number
 }
 
 export default function AdminPage() {
@@ -396,61 +418,140 @@ export default function AdminPage() {
       </div>
 
       <div className="p-6">
-        {/* Statistics Cards */}
+        {/* Enhanced Statistics Cards - Phase 1 */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Bills</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalBills}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.activeBills} active, {stats.closedBills} closed
-                </p>
-              </CardContent>
-            </Card>
+          <>
+            {/* Row 1: Core Financial & Usage Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(stats.totalMoneyProcessed)}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Avg: {formatCurrency(stats.averageBillValue)} per bill
+                  </p>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalItems}</div>
-                <p className="text-xs text-muted-foreground">
-                  Across all bills
-                </p>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Bills</CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalBills}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.activeBills} active • {Math.round(stats.completionRate)}% completion rate
+                  </p>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total People</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalPeople}</div>
-                <p className="text-xs text-muted-foreground">
-                  Unique participants
-                </p>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.billsCreatedToday}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.billsCreatedThisWeek} this week • {stats.billsCreatedThisMonth} this month
+                  </p>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Storage Used</CardTitle>
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatBytes(stats.totalStorageSize)}</div>
-                <p className="text-xs text-muted-foreground">
-                  Avg: {formatBytes(stats.averageBillSize)} per bill
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Engagement</CardTitle>
+                  <Share2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{Math.round(stats.shareRate)}%</div>
+                  <p className="text-xs text-muted-foreground">
+                    Bills shared • {stats.averagePeoplePerBill.toFixed(1)} avg people
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 2: Detailed Analytics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Largest Bill</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(stats.largestBill)}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.averageItemsPerBill.toFixed(1)} avg items per bill
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Tax & Tips</CardTitle>
+                  <Percent className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(stats.totalTaxCollected + stats.totalTipsProcessed)}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(stats.totalTaxCollected)} tax • {formatCurrency(stats.totalTipsProcessed)} tips
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Participants</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalPeople}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.totalItems} total items
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Storage</CardTitle>
+                  <Database className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatBytes(stats.totalStorageSize)}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {formatCurrency(stats.totalDiscountsGiven)} total discounts
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 3: Split Methods Breakdown */}
+            {stats.popularSplitMethods && stats.popularSplitMethods.length > 0 && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-lg font-medium">Popular Split Methods</CardTitle>
+                  <CardDescription>How users prefer to split their bills</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {stats.popularSplitMethods.map((method) => (
+                      <div key={method.method} className="text-center p-4 bg-muted/50 rounded-lg">
+                        <div className="text-2xl font-bold text-primary">{method.count}</div>
+                        <div className="text-sm font-medium capitalize">{method.method}</div>
+                        <div className="text-xs text-muted-foreground">{method.percentage.toFixed(1)}%</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
 
         {/* Main Content */}
@@ -519,6 +620,7 @@ export default function AdminPage() {
                   <SelectItem value="createdAt">Created Date</SelectItem>
                   <SelectItem value="title">Title</SelectItem>
                   <SelectItem value="status">Status</SelectItem>
+                  <SelectItem value="total">Total Amount</SelectItem>
                   <SelectItem value="size">Size</SelectItem>
                   <SelectItem value="items">Items Count</SelectItem>
                   <SelectItem value="people">People Count</SelectItem>
@@ -544,6 +646,7 @@ export default function AdminPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>People</TableHead>
                     <TableHead>Items</TableHead>
+                    <TableHead>Total</TableHead>
                     <TableHead>Last Modified</TableHead>
                     <TableHead>Expires</TableHead>
                     <TableHead>Size</TableHead>
@@ -559,6 +662,7 @@ export default function AdminPage() {
                       <TableCell>{getStatusBadge(bill.bill.status)}</TableCell>
                       <TableCell>{bill.bill.people?.length || 0}</TableCell>
                       <TableCell>{bill.bill.items?.length || 0}</TableCell>
+                      <TableCell className="font-medium">{formatCurrency(bill.totalAmount)}</TableCell>
                       <TableCell>{formatDate(bill.lastModified)}</TableCell>
                       <TableCell>
                         {bill.expiresAt === 'Never' ? (
@@ -710,6 +814,10 @@ export default function AdminPage() {
                     <div>
                       <Label>Title</Label>
                       <p>{selectedBill.bill.title || 'Untitled'}</p>
+                    </div>
+                    <div>
+                      <Label>Total Amount</Label>
+                      <p className="font-medium text-lg">{formatCurrency(selectedBill.totalAmount)}</p>
                     </div>
                     <div>
                       <Label>Tax/Tip Allocation</Label>
