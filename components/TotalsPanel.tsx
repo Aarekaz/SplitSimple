@@ -17,6 +17,8 @@ import { formatCurrency } from "@/lib/utils"
 import { AnimatedNumber } from "./AnimatedNumber"
 import { BillStatusIndicator } from "./BillStatusIndicator"
 import { SyncStatusIndicator } from "./SyncStatusIndicator"
+import { EmptyPeopleState } from "./EmptyStates"
+import { ProgressIndicator, BillHealthIndicator } from "./ui/visual-feedback"
 
 interface TotalsPanelProps {
   compact?: boolean

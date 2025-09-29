@@ -161,22 +161,67 @@
 
 /* Enhanced Typography & Interaction System */
 @layer utilities {
-  /* Enhanced Typography Scale */
+  /* Enhanced Typography Scale with Visual Hierarchy */
   .text-display {
-    @apply text-4xl font-extrabold tracking-tight;
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
+    font-weight: 800;
     line-height: 1.1;
     letter-spacing: -0.025em;
+    text-wrap: balance;
+    background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--foreground))/0.85 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
   
   .text-headline {
-    @apply text-2xl font-bold tracking-tight;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
     line-height: 1.2;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
   }
   
   .text-title {
-    @apply text-xl font-semibold tracking-tight;
+    font-size: clamp(1.25rem, 3vw, 1.5rem);
+    font-weight: 600;
     line-height: 1.3;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  
+  .text-subtitle {
+    @apply text-lg font-medium;
+    line-height: 1.4;
+    color: hsl(var(--muted-foreground));
+  }
+  
+  .text-body-large {
+    @apply text-base font-normal;
+    line-height: 1.6;
+  }
+  
+  .text-caption {
+    @apply text-sm font-medium;
+    line-height: 1.4;
+    color: hsl(var(--muted-foreground));
+  }
+  
+  /* Visual Hierarchy Helpers */
+  .surface-elevated {
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)/0.2) 100%);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+  
+  .surface-accent {
+    background: linear-gradient(135deg, hsl(var(--primary)/0.05) 0%, hsl(var(--primary)/0.02) 100%);
+    border: 1px solid hsl(var(--primary)/0.2);
+  }
+  
+  .surface-success {
+    background: linear-gradient(135deg, hsl(142 76% 36% / 0.05) 0%, hsl(142 76% 36% / 0.02) 100%);
+    border: 1px solid hsl(142 76% 36% / 0.2);
   }
   
   /* Professional Receipt Typography */
@@ -302,13 +347,59 @@
     border-color: var(--primary-500);
   }
   
-  /* Success States */
+  /* Enhanced Visual Feedback States */
   .success-glow {
-    box-shadow: 0 0 0 3px var(--success-glow);
+    box-shadow: 0 0 0 3px hsl(142 76% 36% / 0.2);
   }
   
   .success-pulse {
     animation: success-pulse 0.6s var(--ease-out-cubic);
+  }
+  
+  .success-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .success-ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, hsl(142 76% 36% / 0.3) 0%, transparent 70%);
+    transform: scale(0);
+    animation: ripple-success 0.6s ease-out;
+  }
+  
+  .error-shake {
+    animation: error-shake 0.5s ease-in-out;
+  }
+  
+  .progress-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .progress-shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shine 1.5s ease-in-out;
+  }
+  
+  .bill-complete-celebration {
+    animation: celebration-bounce 0.8s ease-out;
+  }
+  
+  .item-added-slide {
+    animation: slide-in-success 0.4s ease-out;
+  }
+  
+  .person-added-scale {
+    animation: scale-in-success 0.3s ease-out;
   }
   
   /* Loading States */
@@ -323,11 +414,61 @@
   }
 }
 
-/* Custom Animations */
+/* Enhanced Custom Animations */
 @keyframes success-pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.05); box-shadow: 0 0 20px var(--success-glow); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px hsl(142 76% 36% / 0.3); }
   100% { transform: scale(1); }
+}
+
+@keyframes ripple-success {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes error-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes celebration-bounce {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(5deg); }
+  50% { transform: scale(1.2) rotate(-3deg); }
+  75% { transform: scale(1.05) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes slide-in-success {
+  0% { 
+    transform: translateY(20px) scale(0.95); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateY(0) scale(1); 
+    opacity: 1; 
+  }
+}
+
+@keyframes scale-in-success {
+  0% { 
+    transform: scale(0.8); 
+    opacity: 0; 
+  }
+  50% { 
+    transform: scale(1.05); 
+    opacity: 0.8; 
+  }
+  100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
 }
 
 @keyframes skeleton-shimmer {

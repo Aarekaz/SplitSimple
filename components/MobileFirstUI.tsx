@@ -10,6 +10,8 @@ import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { useBillAnalytics } from "@/hooks/use-analytics"
 import { validatePersonName } from "@/lib/validation"
+import { OnboardingFlow } from "@/components/EmptyStates"
+import { SuccessRipple } from "@/components/ui/visual-feedback"
 import { cn } from "@/lib/utils"
 
 interface QuickStartCardProps {
@@ -148,47 +150,48 @@ export function MobileFirstUI() {
   const hasPeople = state.currentBill.people.length > 0
   const hasItems = state.currentBill.items.length > 0
 
-  const handleQuickStart = (type: "dinner" | "trip" | "manual") => {
+  const handleQuickStart = (type: "restaurant" | "groceries" | "trip" | "utilities" | "custom") => {
     analytics.trackFeatureUsed(`quick_start_${type}`)
     
-    switch (type) {
-      case "dinner":
-        setShowPersonForm(true)
-        break
-      case "trip":
-        setShowPersonForm(true)
-        break
-      case "manual":
-        setShowPersonForm(true)
-        break
-    }
+    // All quick start options lead to adding the first person
+    setShowPersonForm(true)
   }
 
   if (showPersonForm) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-            <UserPlus className="h-8 w-8 text-primary" />
+      <div className="p-6 space-y-8 max-w-md mx-auto">
+        <div className="text-center space-y-4">
+          <div className="relative inline-block">
+            <div className="w-20 h-20 bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl flex items-center justify-center mb-4 surface-elevated">
+              <UserPlus className="w-9 h-9 text-primary" />
+            </div>
+            {/* Success indicator */}
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
+              <Plus className="w-3 h-3 text-white" />
+            </div>
           </div>
-          <h2 className="text-2xl font-bold">Add First Person</h2>
-          <p className="text-muted-foreground">
-            Who's splitting this bill with you?
-          </p>
+          <div>
+            <h2 className="text-headline mb-2">Add First Person</h2>
+            <p className="text-subtitle">
+              Who's splitting this bill with you?
+            </p>
+          </div>
         </div>
         
-        <MobilePersonForm 
-          onSuccess={() => setShowPersonForm(false)}
-          autoFocus={true}
-        />
+        <SuccessRipple>
+          <MobilePersonForm 
+            onSuccess={() => setShowPersonForm(false)}
+            autoFocus={true}
+          />
+        </SuccessRipple>
         
         <Button 
           variant="ghost" 
           size="lg" 
-          className="w-full"
+          className="w-full smooth-hover"
           onClick={() => setShowPersonForm(false)}
         >
-          Back
+          Back to Quick Start
         </Button>
       </div>
     )
@@ -196,59 +199,12 @@ export function MobileFirstUI() {
 
   if (!hasPeople) {
     return (
-      <div className="p-6 space-y-8">
-        {/* Hero Section */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-primary/70 rounded-full mb-4">
-            <Receipt className="h-10 w-10 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Split the Bill</h1>
-            <p className="text-lg text-muted-foreground">
-              Share expenses fairly with friends and family
-            </p>
-          </div>
-        </div>
-
-        {/* Quick Start Options */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Quick Start</h2>
-          
-          <QuickStartCard
-            icon={<DollarSign className="h-6 w-6" />}
-            title="Split Restaurant Bill"
-            description="Add people and divide the check"
-            action={() => handleQuickStart("dinner")}
-            variant="primary"
-          />
-          
-          <QuickStartCard
-            icon={<Users className="h-6 w-6" />}
-            title="Trip Expenses"
-            description="Track shared costs for group trips"
-            action={() => handleQuickStart("trip")}
-          />
-          
-          <QuickStartCard
-            icon={<Calculator className="h-6 w-6" />}
-            title="Custom Split"
-            description="Manually add people and items"
-            action={() => handleQuickStart("manual")}
-          />
-        </div>
-
-        {/* Direct Action Button */}
-        <div className="pt-4">
-          <Button 
-            size="lg" 
-            className="w-full h-14 text-lg"
-            onClick={() => setShowPersonForm(true)}
-          >
-            <Plus className="h-6 w-6 mr-3" />
-            Add First Person
-          </Button>
-        </div>
-      </div>
+      <SuccessRipple trigger={showPersonForm}>
+        <OnboardingFlow
+          onQuickStart={handleQuickStart}
+          onAddPerson={() => setShowPersonForm(true)}
+        />
+      </SuccessRipple>
     )
   }
 

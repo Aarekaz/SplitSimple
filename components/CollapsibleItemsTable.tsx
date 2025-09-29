@@ -38,6 +38,7 @@ import { calculateItemSplits } from "@/lib/calculations"
 import { validateCurrencyInput } from "@/lib/validation"
 import type { Item, Person } from "@/contexts/BillContext"
 import { AddPersonForm } from "./AddPersonForm"
+import { EmptyItemsState } from "./EmptyStates"
 
 function AvatarStack({ people }: { people: Person[] }) {
   const maxAvatars = 4
@@ -313,15 +314,12 @@ export function CollapsibleItemsTable() {
 
   if (items.length === 0) {
     return (
-      <Card className="text-center">
-        <CardContent className="pt-8 pb-8">
-          <Calculator className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <CardTitle className="mb-2 font-mono">No items added yet</CardTitle>
-          <p className="text-muted-foreground mb-4">Add items to start splitting expenses</p>
-          <Button onClick={() => handleAddItem(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Your First Item
-          </Button>
+      <Card className="surface-elevated">
+        <CardContent className="p-0">
+          <EmptyItemsState 
+            onAddItem={() => handleAddItem(true)}
+            hasPeople={state.currentBill.people.length > 0}
+          />
         </CardContent>
       </Card>
     )
@@ -530,7 +528,7 @@ export function CollapsibleItemsTable() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleAddItem(true)}
-                    className="w-full justify-start text-muted-foreground hover:text-foreground h-9"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground h-9 smooth-hover item-added-slide"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add item
