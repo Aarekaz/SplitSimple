@@ -87,6 +87,7 @@ interface BillMetadata {
   size: number
   shareUrl: string
   totalAmount: number
+  lastAccessed?: string
 }
 
 interface AdminStats {
@@ -398,242 +399,424 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b">
+      {/* Clean, Minimal Header */}
+      <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Shield className="h-8 w-8 text-primary" />
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Bill Management System</p>
+                <h1 className="text-xl font-semibold text-gray-900">Admin Dashboard</h1>
+                <p className="text-sm text-gray-500">Real-time system overview</p>
               </div>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+            
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 px-2 py-1 bg-green-50 rounded-full border border-green-200">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <span className="text-xs font-medium text-green-700">Live</span>
+              </div>
+              
+              <Button variant="outline" onClick={handleLogout} className="gap-2">
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="p-6">
-        {/* Enhanced Statistics Cards - Phase 1 */}
+        {/* Revolutionary Flowing Dashboard */}
         {stats && (
-          <>
-            {/* Row 1: Core Financial & Usage Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(stats.totalMoneyProcessed)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Avg: {formatCurrency(stats.averageBillValue)} per bill
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Bills</CardTitle>
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalBills}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.activeBills} active • {Math.round(stats.completionRate)}% completion rate
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
-                  <Activity className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.billsCreatedToday}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.billsCreatedThisWeek} this week • {stats.billsCreatedThisMonth} this month
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Engagement</CardTitle>
-                  <Share2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{Math.round(stats.shareRate)}%</div>
-                  <p className="text-xs text-muted-foreground">
-                    Bills shared • {stats.averagePeoplePerBill.toFixed(1)} avg people
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Row 2: Detailed Analytics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Largest Bill</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(stats.largestBill)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.averageItemsPerBill.toFixed(1)} avg items per bill
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Tax & Tips</CardTitle>
-                  <Percent className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(stats.totalTaxCollected + stats.totalTipsProcessed)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(stats.totalTaxCollected)} tax • {formatCurrency(stats.totalTipsProcessed)} tips
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Participants</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalPeople}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.totalItems} total items
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Storage</CardTitle>
-                  <Database className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{formatBytes(stats.totalStorageSize)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(stats.totalDiscountsGiven)} total discounts
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Row 3: Split Methods Breakdown */}
-            {stats.popularSplitMethods && stats.popularSplitMethods.length > 0 && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="text-lg font-medium">Popular Split Methods</CardTitle>
-                  <CardDescription>How users prefer to split their bills</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {stats.popularSplitMethods.map((method) => (
-                      <div key={method.method} className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-primary">{method.count}</div>
-                        <div className="text-sm font-medium capitalize">{method.method}</div>
-                        <div className="text-xs text-muted-foreground">{method.percentage.toFixed(1)}%</div>
+          <div className="space-y-6 mb-6">
+            
+            {/* Hero Revenue Section - Full Width, Breathing */}
+            <Card className="bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border border-emerald-200/50 shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <DollarSign className="w-6 h-6 text-white" />
                       </div>
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">Cash Flow</h2>
+                        <p className="text-sm text-gray-600">{stats.totalBills} bills processed</p>
+                      </div>
+                      <div className={`ml-auto flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                        stats.weeklyGrowth > 0 ? 'bg-green-100 text-green-700' : 
+                        stats.weeklyGrowth < 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        <TrendingUp className="w-4 h-4" />
+                        {stats.weeklyGrowth > 0 ? '+' : ''}{stats.weeklyGrowth.toFixed(1)}% this week
+                      </div>
+                    </div>
+                    
+                    <div className="text-4xl font-bold text-gray-900 mb-2">
+                      {formatCurrency(stats.totalMoneyProcessed)}
+                    </div>
+                    <p className="text-gray-600">
+                      {formatCurrency(stats.averageBillValue)} average • {formatCurrency(stats.largestBill)} highest bill
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 lg:gap-6">
+                    <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                      <div className="text-xl font-bold text-gray-900">{formatCurrency(stats.totalTaxCollected)}</div>
+                      <div className="text-sm text-gray-500">Tax</div>
+                      <div className="text-xs text-emerald-600 mt-1">{stats.billsWithTax || 0} bills</div>
+                    </div>
+                    <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                      <div className="text-xl font-bold text-gray-900">{formatCurrency(stats.totalTipsProcessed)}</div>
+                      <div className="text-sm text-gray-500">Tips</div>
+                      <div className="text-xs text-blue-600 mt-1">{stats.billsWithTips || 0} bills</div>
+                    </div>
+                    <div className="text-center p-4 bg-white rounded-lg border border-gray-200">
+                      <div className="text-xl font-bold text-gray-900">{formatCurrency(stats.medianBillValue || 0)}</div>
+                      <div className="text-sm text-gray-500">Median</div>
+                      <div className="text-xs text-purple-600 mt-1">vs avg</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Flexible Grid - Adapts to Content */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              
+              {/* Activity Card */}
+              <Card className="bg-blue-50 border border-blue-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Activity className="w-5 h-5 text-blue-600" />
+                    <h3 className="font-semibold text-gray-900">Activity</h3>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse ml-auto" />
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Today</span>
+                      <span className="text-2xl font-bold text-gray-900">{stats.billsCreatedToday}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">This Week</span>
+                      <span className="text-lg font-semibold text-gray-800">{stats.billsCreatedThisWeek}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">This Month</span>
+                      <span className="text-base font-medium text-gray-700">{stats.billsCreatedThisMonth}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Engagement Card */}
+              <Card className="bg-purple-50 border border-purple-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="w-5 h-5 text-purple-600" />
+                    <h3 className="font-semibold text-gray-900">Engagement</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm text-gray-600">Completion Rate</span>
+                        <span className="text-sm font-semibold text-gray-900">{Math.round(stats.completionRate)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-purple-500 h-2 rounded-full transition-all duration-700" 
+                          style={{ width: `${Math.round(stats.completionRate)}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm text-gray-600">Share Rate</span>
+                        <span className="text-sm font-semibold text-gray-900">{Math.round(stats.shareRate)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-500 h-2 rounded-full transition-all duration-700" 
+                          style={{ width: `${Math.round(stats.shareRate)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Items Card */}
+              <Card className="bg-indigo-50 border border-indigo-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-5 h-5 text-indigo-600" />
+                      <h3 className="font-semibold text-gray-900">Items</h3>
+                    </div>
+                    <span className="text-xs font-medium text-indigo-600 bg-indigo-100 px-2 py-1 rounded">
+                      {stats.averageItemsPerBill.toFixed(1)} avg
+                    </span>
+                  </div>
+                  
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{stats.totalItems}</div>
+                  <p className="text-sm text-gray-600">Total items across all bills</p>
+                  
+                  <div className="flex items-center gap-1 mt-3">
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className={`w-1.5 h-3 rounded ${
+                          i < Math.min(5, Math.floor(stats.averageItemsPerBill)) ? 'bg-indigo-400' : 'bg-indigo-200'
+                        }`} />
+                      ))}
+                    </div>
+                    <span className="text-xs text-indigo-600 ml-2">items per bill</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* People Card */}
+              <Card className="bg-pink-50 border border-pink-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="w-5 h-5 text-pink-600" />
+                    <h3 className="font-semibold text-gray-900">People</h3>
+                  </div>
+                  
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{stats.totalPeople}</div>
+                  <p className="text-sm text-gray-600">{stats.averagePeoplePerBill.toFixed(1)} average collaboration</p>
+                  
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="w-8 h-8 relative">
+                      <div className="absolute inset-0 rounded-full border-2 border-pink-200" />
+                      <div className="absolute inset-0 rounded-full border-2 border-pink-500 border-t-transparent animate-spin" style={{animationDuration: '3s'}} />
+                    </div>
+                    <span className="text-xs text-pink-600">Active collaboration</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Split Method Card */}
+              <Card className="bg-amber-50 border border-amber-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-5 h-5 text-amber-600" />
+                      <h3 className="font-semibold text-gray-900">Split Method</h3>
+                    </div>
+                    <div className="w-6 h-6 bg-amber-500 rounded-full relative">
+                      <div className="absolute inset-1 bg-amber-300 rounded-full" />
+                    </div>
+                  </div>
+                  
+                  <div className="text-2xl font-bold text-gray-900 capitalize mb-1">
+                    {stats.popularSplitMethods && stats.popularSplitMethods[0]?.method || 'Even'}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {stats.popularSplitMethods && stats.popularSplitMethods[0]?.percentage.toFixed(0) || '0'}% of users prefer this method
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Storage Card */}
+              <Card className="bg-gray-50 border border-gray-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Database className="w-5 h-5 text-gray-600" />
+                      <h3 className="font-semibold text-gray-900">Storage</h3>
+                    </div>
+                    <span className="text-xs text-gray-500">KB</span>
+                  </div>
+                  
+                  <div className="text-2xl font-bold text-gray-900 mb-2">
+                    {(stats.totalStorageSize / 1024).toFixed(1)} KB
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {(stats.averageBillSize / 1024).toFixed(1)} KB average per bill
+                  </p>
+                  
+                  <div className="flex items-end gap-1 mt-3 h-4">
+                    {[...Array(8)].map((_, i) => (
+                      <div key={i} className={`w-2 bg-gray-400 rounded-t ${
+                        i < 6 ? 'h-full' : i < 7 ? 'h-3/4' : 'h-1/2'
+                      }`} />
                     ))}
                   </div>
                 </CardContent>
               </Card>
-            )}
-          </>
+
+              {/* Active Bills Card */}
+              <Card className="bg-green-50 border border-green-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <h3 className="font-semibold text-gray-900">Active Bills</h3>
+                    </div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+                  </div>
+                  
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{stats.activeBills}</div>
+                  <p className="text-sm text-gray-600">Currently active</p>
+                  
+                  <div className="flex items-center gap-2 mt-3">
+                    <div className="flex-1 bg-green-200 rounded-full h-2">
+                      <div className="bg-green-500 h-2 rounded-full transition-all duration-500" style={{
+                        width: `${Math.min(100, (stats.activeBills / stats.totalBills) * 100)}%`
+                      }} />
+                    </div>
+                    <span className="text-xs text-green-600">of {stats.totalBills} total</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Shared Bills Card */}
+              <Card className="bg-cyan-50 border border-cyan-200/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Share2 className="w-5 h-5 text-cyan-600" />
+                      <h3 className="font-semibold text-gray-900">Shared Bills</h3>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-cyan-400 rounded-full" />
+                      <div className="w-1 h-3 bg-cyan-300" />
+                      <div className="w-2 h-2 bg-cyan-500 rounded-full" />
+                    </div>
+                  </div>
+                  
+                  <div className="text-3xl font-bold text-gray-900 mb-2">{stats.sharedBills}</div>
+                  <p className="text-sm text-gray-600">
+                    {Math.round((stats.sharedBills / stats.totalBills) * 100)}% collaboration rate
+                  </p>
+                </CardContent>
+              </Card>
+
+            </div>
+          </div>
         )}
 
-        {/* Main Content */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <CardTitle>Bills Management</CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
+        {/* Enhanced Bills Management Section */}
+        <Card className="border-slate-200 bg-gradient-to-r from-white to-slate-50">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+              <div>
+                <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-slate-600" />
+                  Bills Command Center
+                </CardTitle>
+                <CardDescription className="text-slate-600">
+                  Complete control and monitoring of all system bills
+                </CardDescription>
+              </div>
+              
+              {/* Enhanced Action Bar */}
+              <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-xs font-medium text-slate-700">Live</span>
+                  <span className="text-xs text-slate-500">• {bills.length} total</span>
+                </div>
+                
+                <Button 
+                  onClick={() => fetchBills()} 
+                  variant="outline" 
                   size="sm"
-                  onClick={() => fetchBills()}
+                  className="gap-1 btn-smooth border-slate-200 hover:border-slate-300"
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
+                  <RefreshCw className="h-4 w-4" />
+                  Sync
                 </Button>
+                
+                <div className="flex items-center">
+                  <Button 
+                    onClick={() => handleExport('json')} 
+                    variant="outline" 
+                    size="sm"
+                    className="gap-1 btn-smooth border-slate-200 hover:border-slate-300 rounded-r-none"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
+                  <Button 
+                    onClick={() => handleExport('csv')} 
+                    variant="outline" 
+                    size="sm"
+                    className="gap-1 btn-smooth border-slate-200 hover:border-slate-300 rounded-l-none border-l-0"
+                  >
+                    CSV
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Enhanced Search and Filter Bar */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search bills by title, ID, or amount..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="draft">Draft</option>
+                  <option value="closed">Closed</option>
+                </select>
+                
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="lastModified">Last Modified</option>
+                  <option value="createdAt">Created</option>
+                  <option value="totalAmount">Amount</option>
+                  <option value="accessCount">Access Count</option>
+                </select>
+                
                 <Button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   variant="outline"
                   size="sm"
-                  onClick={() => handleExport('json')}
+                  className="px-2 btn-smooth border-slate-200 hover:border-slate-300"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export JSON
+                  <ArrowUpDown className="h-4 w-4" />
                 </Button>
+                
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  onClick={() => handleExport('csv')}
+                  className="px-2 text-slate-500 hover:text-slate-700"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setStatusFilter('all')
+                    setSortBy('lastModified')
+                    setSortOrder('desc')
+                  }}
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                  <XCircle className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search bills..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lastModified">Last Modified</SelectItem>
-                  <SelectItem value="createdAt">Created Date</SelectItem>
-                  <SelectItem value="title">Title</SelectItem>
-                  <SelectItem value="status">Status</SelectItem>
-                  <SelectItem value="total">Total Amount</SelectItem>
-                  <SelectItem value="size">Size</SelectItem>
-                  <SelectItem value="items">Items Count</SelectItem>
-                  <SelectItem value="people">People Count</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              >
-                <ArrowUpDown className="h-4 w-4" />
-              </Button>
-            </div>
           </CardHeader>
 
           <CardContent>

@@ -139,13 +139,13 @@ export default function HomePage() {
 
   return (
     <div className="bg-background">
-      <header className="bg-card border-b border-border px-4 py-3 sticky top-0 z-10">
+      <header className="bg-card/95 backdrop-blur-sm border-b border-border px-4 py-3 sticky top-0 z-10 transition-all duration-300">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">SplitSimple</span>
+              <div className="flex items-center gap-2 smooth-hover rounded-lg px-2 py-1">
+                <Receipt className="h-5 w-5 text-primary transition-transform duration-300 hover:scale-110" />
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline transition-colors duration-300">SplitSimple</span>
               </div>
               <Input
                 ref={titleInputRef}
@@ -153,7 +153,7 @@ export default function HomePage() {
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
                 placeholder="Untitled Bill"
-                className="receipt-title h-8 w-36 sm:w-48 border-0 bg-transparent text-foreground px-2 focus:ring-0 focus:outline-none hover:bg-muted focus:bg-input transition-colors rounded-md"
+                className="receipt-title h-8 w-36 sm:w-48 border-0 bg-transparent text-foreground px-2 input-smooth hover:bg-muted/50 focus:bg-input rounded-md"
               />
             </div>
 

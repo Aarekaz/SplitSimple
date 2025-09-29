@@ -34,6 +34,10 @@ export interface Bill {
   notes: string
   people: Person[]
   items: Item[]
+  createdAt?: string
+  lastModified?: string
+  accessCount?: number
+  lastAccessed?: string
 }
 
 // State and Actions

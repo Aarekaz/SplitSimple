@@ -15,6 +15,7 @@ interface BillMetadata {
   size: number
   shareUrl: string
   totalAmount: number
+  lastAccessed?: string
 }
 
 // Helper function to get the correct base URL
@@ -65,16 +66,22 @@ async function getAllBillsHandler(req: NextRequest) {
       if (billData) {
         const id = key.replace('bill:', '')
         const billSummary = getBillSummary(billData)
+        // For bills without timestamps, estimate based on Redis key order or use a reasonable fallback
+        const estimatedCreatedAt = billData.createdAt || 
+          (ttl > 0 ? new Date(Date.now() - (30 * 24 * 60 * 60 * 1000 - ttl * 1000)).toISOString() : 
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Default to 1 week ago
+          
         const metadata: BillMetadata = {
           id,
           bill: billData,
-          createdAt: billData.createdAt || new Date().toISOString(),
-          lastModified: billData.lastModified || new Date().toISOString(),
+          createdAt: estimatedCreatedAt,
+          lastModified: billData.lastModified || estimatedCreatedAt,
           expiresAt: ttl > 0 ? new Date(Date.now() + ttl * 1000).toISOString() : 'Never',
           accessCount: billData.accessCount || 0,
           size: JSON.stringify(billData).length,
           shareUrl: `${getBaseUrl(req)}?share=${id}`,
-          totalAmount: billSummary.total
+          totalAmount: billSummary.total,
+          lastAccessed: billData.lastAccessed
         }
         return metadata
       }
@@ -139,11 +146,13 @@ async function getAllBillsHandler(req: NextRequest) {
     const endIndex = startIndex + limit
     const paginatedBills = bills.slice(startIndex, endIndex)
 
-    // Calculate enhanced statistics - Phase 1
+    // Enhanced Statistics Calculation with Accuracy Fixes
     const now = new Date()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastWeekStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     
     // Basic counts
     const totalBills = bills.length
@@ -151,31 +160,98 @@ async function getAllBillsHandler(req: NextRequest) {
     const draftBills = bills.filter(b => b.bill.status === 'draft').length
     const closedBills = bills.filter(b => b.bill.status === 'closed').length
     
-    // Financial metrics
+    // Enhanced Financial metrics with proper calculations
     const totalMoneyProcessed = bills.reduce((sum, b) => sum + b.totalAmount, 0)
     const averageBillValue = totalBills > 0 ? totalMoneyProcessed / totalBills : 0
+    const medianBillValue = totalBills > 0 ? getMedian(bills.map(b => b.totalAmount)) : 0
     const largestBill = bills.reduce((max, b) => Math.max(max, b.totalAmount), 0)
+    const smallestBill = totalBills > 0 ? bills.reduce((min, b) => Math.min(min, b.totalAmount), Infinity) : 0
+    
+    // Accurate tax/tip/discount calculations
     const totalTaxCollected = bills.reduce((sum, b) => sum + (parseFloat(b.bill.tax) || 0), 0)
     const totalTipsProcessed = bills.reduce((sum, b) => sum + (parseFloat(b.bill.tip) || 0), 0)
-    const totalDiscountsGiven = bills.reduce((sum, b) => sum + (parseFloat(b.bill.discount) || 0), 0)
+    const totalDiscountsApplied = bills.reduce((sum, b) => sum + (parseFloat(b.bill.discount) || 0), 0)
     
-    // Time-based analytics
-    const billsCreatedToday = bills.filter(b => new Date(b.createdAt) >= todayStart).length
-    const billsCreatedThisWeek = bills.filter(b => new Date(b.createdAt) >= weekStart).length
-    const billsCreatedThisMonth = bills.filter(b => new Date(b.createdAt) >= monthStart).length
+    // Revenue breakdown
+    const subtotalRevenue = totalMoneyProcessed - totalTaxCollected - totalTipsProcessed + totalDiscountsApplied
+    const taxRevenue = totalTaxCollected
+    const tipRevenue = totalTipsProcessed
     
-    // Engagement metrics
-    const sharedBills = bills.filter(b => b.accessCount > 0).length
+    // Time-based analytics with trends (fixed date handling)
+    const billsCreatedToday = bills.filter(b => {
+      if (!b.createdAt) return false
+      const created = new Date(b.createdAt)
+      return !isNaN(created.getTime()) && created >= todayStart
+    }).length
+    
+    const billsCreatedThisWeek = bills.filter(b => {
+      if (!b.createdAt) return false
+      const created = new Date(b.createdAt)
+      return !isNaN(created.getTime()) && created >= weekStart
+    }).length
+    
+    const billsCreatedThisMonth = bills.filter(b => {
+      if (!b.createdAt) return false
+      const created = new Date(b.createdAt)
+      return !isNaN(created.getTime()) && created >= monthStart
+    }).length
+    
+    const billsCreatedLastWeek = bills.filter(b => {
+      if (!b.createdAt) return false
+      const created = new Date(b.createdAt)
+      return !isNaN(created.getTime()) && created >= lastWeekStart && created < weekStart
+    }).length
+    
+    const billsCreatedLastMonth = bills.filter(b => {
+      if (!b.createdAt) return false
+      const created = new Date(b.createdAt)
+      return !isNaN(created.getTime()) && created >= lastMonthStart && created < monthStart
+    }).length
+    
+    // Growth calculations
+    const weeklyGrowth = billsCreatedLastWeek > 0 ? 
+      ((billsCreatedThisWeek - billsCreatedLastWeek) / billsCreatedLastWeek) * 100 : 
+      billsCreatedThisWeek > 0 ? 100 : 0
+    const monthlyGrowth = billsCreatedLastMonth > 0 ? 
+      ((billsCreatedThisMonth - billsCreatedLastMonth) / billsCreatedLastMonth) * 100 : 
+      billsCreatedThisMonth > 0 ? 100 : 0
+    
+    // Enhanced engagement metrics (fixed logic)
+    // A bill is considered "shared" if it has people (collaborative) or has been accessed multiple times
+    const sharedBills = bills.filter(b => {
+      const hasMultiplePeople = (b.bill.people?.length || 0) > 1
+      const hasMultipleAccesses = (b.accessCount || 0) > 1
+      const hasItems = (b.bill.items?.length || 0) > 0
+      return hasItems && (hasMultiplePeople || hasMultipleAccesses)
+    }).length
+    
     const shareRate = totalBills > 0 ? (sharedBills / totalBills) * 100 : 0
-    const completionRate = totalBills > 0 ? (closedBills / totalBills) * 100 : 0
     
-    // Averages
+    // A bill is "completed" if it has items, people, and is marked as closed OR has significant activity
+    const completedBills = bills.filter(b => {
+      const hasContent = (b.bill.items?.length || 0) > 0 && (b.bill.people?.length || 0) > 0
+      const isMarkedClosed = b.bill.status === 'closed'
+      const hasActivity = (b.accessCount || 0) > 0
+      return hasContent && (isMarkedClosed || hasActivity)
+    }).length
+    
+    const completionRate = totalBills > 0 ? (completedBills / totalBills) * 100 : 0
+    const averageAccessCount = totalBills > 0 ? bills.reduce((sum, b) => sum + (b.accessCount || 0), 0) / totalBills : 0
+    
+    // Usage analytics
     const totalItems = bills.reduce((sum, b) => sum + (b.bill.items?.length || 0), 0)
     const totalPeople = bills.reduce((sum, b) => sum + (b.bill.people?.length || 0), 0)
     const averageItemsPerBill = totalBills > 0 ? totalItems / totalBills : 0
     const averagePeoplePerBill = totalBills > 0 ? totalPeople / totalBills : 0
     
-    // Split method analysis
+    // Bills with various characteristics
+    const billsWithTax = bills.filter(b => parseFloat(b.bill.tax) > 0).length
+    const billsWithTips = bills.filter(b => parseFloat(b.bill.tip) > 0).length
+    const billsWithDiscounts = bills.filter(b => parseFloat(b.bill.discount) > 0).length
+    const complexBills = bills.filter(b => (b.bill.items?.length || 0) > 5).length
+    const largeBills = bills.filter(b => (b.bill.people?.length || 0) > 4).length
+    
+    // Split method analysis (corrected)
     const splitMethodCounts: Record<string, number> = {}
     let totalMethodCount = 0
     
@@ -196,8 +272,38 @@ async function getAllBillsHandler(req: NextRequest) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 4) // Top 4 methods
     
+    // Helper function for median calculation
+    function getMedian(values: number[]): number {
+      const sorted = [...values].sort((a, b) => a - b)
+      const mid = Math.floor(sorted.length / 2)
+      return sorted.length % 2 === 0 
+        ? (sorted[mid - 1] + sorted[mid]) / 2 
+        : sorted[mid]
+    }
+    
+    // Debug logging (remove in production)
+    console.log('Admin Stats Debug:', {
+      totalBills,
+      sampleBill: bills[0] ? {
+        id: bills[0].id,
+        createdAt: bills[0].createdAt,
+        status: bills[0].bill.status,
+        accessCount: bills[0].accessCount,
+        itemsCount: bills[0].bill.items?.length,
+        peopleCount: bills[0].bill.people?.length
+      } : null,
+      todayStart: todayStart.toISOString(),
+      weekStart: weekStart.toISOString(),
+      monthStart: monthStart.toISOString(),
+      billsCreatedToday,
+      billsCreatedThisWeek,
+      billsCreatedThisMonth,
+      sharedBills,
+      completedBills
+    })
+
     const stats = {
-      // Original stats
+      // Core metrics
       totalBills,
       activeBills,
       draftBills,
@@ -207,21 +313,51 @@ async function getAllBillsHandler(req: NextRequest) {
       totalStorageSize: bills.reduce((sum, b) => sum + b.size, 0),
       averageBillSize: totalBills > 0 ? Math.round(bills.reduce((sum, b) => sum + b.size, 0) / totalBills) : 0,
       
-      // Phase 1 enhancements
-      totalMoneyProcessed,
-      averageBillValue,
-      largestBill,
+      // Enhanced financial metrics
+      totalMoneyProcessed: Math.round(totalMoneyProcessed * 100) / 100,
+      averageBillValue: Math.round(averageBillValue * 100) / 100,
+      medianBillValue: Math.round(medianBillValue * 100) / 100,
+      largestBill: Math.round(largestBill * 100) / 100,
+      smallestBill: Math.round(smallestBill * 100) / 100,
+      subtotalRevenue: Math.round(subtotalRevenue * 100) / 100,
+      taxRevenue: Math.round(taxRevenue * 100) / 100,
+      tipRevenue: Math.round(tipRevenue * 100) / 100,
+      
+      // Tax/Tip/Discount breakdown
+      totalTaxCollected: Math.round(totalTaxCollected * 100) / 100,
+      totalTipsProcessed: Math.round(totalTipsProcessed * 100) / 100,
+      totalDiscountsApplied: Math.round(totalDiscountsApplied * 100) / 100,
+      billsWithTax,
+      billsWithTips,
+      billsWithDiscounts,
+      
+      // Time-based analytics with trends
       billsCreatedToday,
       billsCreatedThisWeek,
       billsCreatedThisMonth,
-      completionRate,
-      shareRate,
-      averageItemsPerBill,
-      averagePeoplePerBill,
-      popularSplitMethods,
-      totalTaxCollected,
-      totalTipsProcessed,
-      totalDiscountsGiven
+      billsCreatedLastWeek,
+      billsCreatedLastMonth,
+      weeklyGrowth: Math.round(weeklyGrowth * 10) / 10, // Round to 1 decimal
+      monthlyGrowth: Math.round(monthlyGrowth * 10) / 10,
+      
+      // Enhanced engagement metrics
+      completionRate: Math.round(completionRate * 10) / 10,
+      shareRate: Math.round(shareRate * 10) / 10,
+      averageAccessCount: Math.round(averageAccessCount * 10) / 10,
+      sharedBills,
+      completedBills,
+      
+      // Usage analytics
+      averageItemsPerBill: Math.round(averageItemsPerBill * 10) / 10,
+      averagePeoplePerBill: Math.round(averagePeoplePerBill * 10) / 10,
+      complexBills, // Bills with >5 items
+      largeBills,   // Bills with >4 people
+      
+      // Split method preferences
+      popularSplitMethods: popularSplitMethods.map(method => ({
+        ...method,
+        percentage: Math.round(method.percentage * 10) / 10
+      }))
     }
 
     return NextResponse.json({

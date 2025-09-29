@@ -30,7 +30,28 @@ export async function GET(
 
     // Use connection pool for Redis operation
     const billData = await executeRedisOperation(async (client) => {
-      return await client.get(`bill:${billId}`)
+      const data = await client.get(`bill:${billId}`)
+      
+      // Increment access count if bill exists
+      if (data) {
+        const bill = JSON.parse(data)
+        const updatedBill = {
+          ...bill,
+          accessCount: (bill.accessCount || 0) + 1,
+          lastAccessed: new Date().toISOString()
+        }
+        
+        // Update the bill with incremented access count
+        await client.setEx(
+          `bill:${billId}`,
+          30 * 24 * 60 * 60, // Maintain original TTL
+          JSON.stringify(updatedBill)
+        )
+        
+        return JSON.stringify(updatedBill)
+      }
+      
+      return data
     })
 
     if (!billData) {
@@ -89,13 +110,22 @@ export async function POST(
       )
     }
 
+    // Add metadata if not present
+    const now = new Date().toISOString()
+    const billWithMetadata = {
+      ...bill,
+      createdAt: bill.createdAt || now,
+      lastModified: bill.lastModified || now,
+      accessCount: bill.accessCount || 0
+    }
+
     // Use connection pool for Redis operation
     await executeRedisOperation(async (client) => {
       // Store bill in Redis with 30-day expiration (2,592,000 seconds)
       await client.setEx(
         `bill:${billId}`,
         30 * 24 * 60 * 60, // 30 days in seconds
-        JSON.stringify(bill)
+        JSON.stringify(billWithMetadata)
       )
     })
 

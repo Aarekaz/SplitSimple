@@ -108,7 +108,7 @@ export function TotalsPanel({
           const isExpanded = expandedPeople.has(person.id)
 
           return (
-            <div key={person.id} className="rounded-lg border bg-card transition-all hover:shadow-sm group">
+            <div key={person.id} className="rounded-lg border bg-card card-elevated group">
               <div
                 className="flex items-center justify-between p-3 cursor-pointer"
                 onClick={() => togglePersonExpansion(person.id)}
@@ -203,7 +203,7 @@ export function TotalsPanel({
         })}
         
         {isAddingPerson && (
-          <div className="rounded-lg border bg-card p-3">
+          <div className="rounded-lg border bg-card p-3 card-elevated">
             <AddPersonForm
               ref={personInputRef}
               onPersonAdded={() => setIsAddingPerson(false)}
@@ -226,7 +226,7 @@ export function TotalsPanel({
   )
 
   const BillSummaryPanel = () => (
-    <div className="rounded-lg border bg-card p-4 space-y-3">
+    <div className="rounded-lg border bg-card p-4 space-y-3 card-elevated">
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Subtotal</span>

@@ -38,6 +38,37 @@
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #84cc16;
   --font-jetbrains-mono: "JetBrains Mono", monospace;
+  
+  /* Enhanced Design System - Phase 1 */
+  --primary-50: #f0fdf4;
+  --primary-100: #dcfce7;
+  --primary-500: #22c55e;
+  --primary-600: #16a34a;
+  --primary-900: #14532d;
+  
+  /* Semantic glow colors */
+  --success-glow: rgba(34, 197, 94, 0.15);
+  --warning-glow: rgba(245, 158, 11, 0.15);
+  --error-glow: rgba(239, 68, 68, 0.15);
+  --primary-glow: rgba(22, 163, 74, 0.15);
+  
+  /* Elevation system */
+  --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --elevation-2: 0 3px 6px rgba(0, 0, 0, 0.12), 0 3px 6px rgba(0, 0, 0, 0.08);
+  --elevation-3: 0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 6px rgba(0, 0, 0, 0.10);
+  --elevation-4: 0 15px 25px rgba(0, 0, 0, 0.18), 0 10px 10px rgba(0, 0, 0, 0.12);
+  
+  /* Smooth easing curves */
+  --ease-out-cubic: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-cubic: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* Transition durations */
+  --duration-fast: 0.15s;
+  --duration-normal: 0.25s;
+  --duration-slow: 0.35s;
+  --duration-slower: 0.5s;
 }
 
 .dark {
@@ -128,14 +159,34 @@
   }
 }
 
-/* Professional Receipt Typography */
+/* Enhanced Typography & Interaction System */
 @layer utilities {
+  /* Enhanced Typography Scale */
+  .text-display {
+    @apply text-4xl font-extrabold tracking-tight;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+  }
+  
+  .text-headline {
+    @apply text-2xl font-bold tracking-tight;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+  
+  .text-title {
+    @apply text-xl font-semibold tracking-tight;
+    line-height: 1.3;
+  }
+  
+  /* Professional Receipt Typography */
   .receipt-title {
     @apply text-xl font-bold tracking-tight font-mono;
   }
   
   .receipt-amount {
     @apply font-mono font-semibold text-right tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
   }
   
   .receipt-item-name {
@@ -148,10 +199,12 @@
   
   .receipt-total {
     @apply text-lg font-bold font-mono tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
   }
   
   .receipt-subtotal {
     @apply font-mono font-medium tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
   }
   
   .receipt-section-title {
@@ -161,9 +214,123 @@
   /* Number formatting utilities */
   .numbers-aligned {
     @apply font-mono tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
   }
   
   .currency-display {
     @apply font-mono font-semibold tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
   }
+  
+  /* Smooth Interaction Classes */
+  .smooth-hover {
+    transition: all var(--duration-normal) var(--ease-out-cubic);
+  }
+  
+  .smooth-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--elevation-2);
+  }
+  
+  .smooth-press {
+    transition: all var(--duration-fast) var(--ease-in-out-cubic);
+  }
+  
+  .smooth-press:active {
+    transform: translateY(0px) scale(0.98);
+  }
+  
+  .smooth-focus {
+    transition: all var(--duration-normal) var(--ease-out-cubic);
+  }
+  
+  .smooth-focus:focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--primary-glow);
+  }
+  
+  /* Enhanced Card Treatments */
+  .card-elevated {
+    box-shadow: var(--elevation-1);
+    transition: all var(--duration-normal) var(--ease-out-cubic);
+  }
+  
+  .card-elevated:hover {
+    box-shadow: var(--elevation-2);
+    transform: translateY(-2px);
+  }
+  
+  .card-interactive {
+    box-shadow: var(--elevation-1);
+    transition: all var(--duration-normal) var(--ease-out-cubic);
+    cursor: pointer;
+  }
+  
+  .card-interactive:hover {
+    box-shadow: var(--elevation-3);
+    transform: translateY(-3px);
+  }
+  
+  .card-interactive:active {
+    transform: translateY(-1px) scale(0.995);
+    box-shadow: var(--elevation-2);
+  }
+  
+  /* Button Enhancements */
+  .btn-smooth {
+    transition: all var(--duration-normal) var(--ease-out-cubic);
+  }
+  
+  .btn-smooth:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--elevation-2);
+  }
+  
+  .btn-smooth:active {
+    transform: translateY(0px) scale(0.98);
+    transition-duration: var(--duration-fast);
+  }
+  
+  /* Input Enhancements */
+  .input-smooth {
+    transition: all var(--duration-normal) var(--ease-out-cubic);
+  }
+  
+  .input-smooth:focus {
+    box-shadow: 0 0 0 3px var(--primary-glow);
+    border-color: var(--primary-500);
+  }
+  
+  /* Success States */
+  .success-glow {
+    box-shadow: 0 0 0 3px var(--success-glow);
+  }
+  
+  .success-pulse {
+    animation: success-pulse 0.6s var(--ease-out-cubic);
+  }
+  
+  /* Loading States */
+  .skeleton-pulse {
+    background: linear-gradient(90deg, 
+      var(--muted) 25%, 
+      rgba(255,255,255,0.8) 50%, 
+      var(--muted) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+/* Custom Animations */
+@keyframes success-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 0 20px var(--success-glow); }
+  100% { transform: scale(1); }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }

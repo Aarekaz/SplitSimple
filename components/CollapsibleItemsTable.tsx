@@ -328,29 +328,41 @@ export function CollapsibleItemsTable() {
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden card-elevated">
       {/* Header */}
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setIsCollapsed(!isCollapsed)} className="h-6 w-6 p-0">
-              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsCollapsed(!isCollapsed)} 
+              className="h-6 w-6 p-0 btn-smooth"
+            >
+              <div 
+                className="transition-transform duration-300" 
+                style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+              >
+                <ChevronDown className="h-4 w-4" />
+              </div>
             </Button>
-            <CardTitle className="text-base font-mono">Items ({items.length})</CardTitle>
+            <CardTitle className="text-title">Items ({items.length})</CardTitle>
           </div>
           <div className="flex items-center gap-2">
             <Button 
               onClick={() => handleAddItem(true)} 
               size="sm"
-              className={`transition-all ${showAddSuccess ? 'bg-green-600 hover:bg-green-700' : ''}`}
+              className={`btn-smooth transition-all duration-300 ${showAddSuccess ? 'bg-green-600 hover:bg-green-700 success-pulse' : ''}`}
             >
-              {showAddSuccess ? (
-                <Check className="h-4 w-4 mr-1" />
-              ) : (
-            <Plus className="h-4 w-4 mr-1" />
-              )}
+              <div className="transition-transform duration-200">
+                {showAddSuccess ? (
+                  <Check className="h-4 w-4 mr-1" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-1 group-hover:scale-110" />
+                )}
+              </div>
               {showAddSuccess ? 'Added!' : 'Add Item'}
-          </Button>
+            </Button>
             <div className="text-xs text-muted-foreground hidden sm:block">
               <kbd className="px-1 py-0.5 bg-muted text-muted-foreground rounded text-xs">⌘</kbd>
               <kbd className="px-1 py-0.5 bg-muted text-muted-foreground rounded text-xs ml-0.5">↵</kbd>

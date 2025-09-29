@@ -67,9 +67,7 @@ async function updateBillHandler(
     updatedBill.lastModified = new Date().toISOString()
 
     await executeRedisOperation(async (redis) => {
-      await redis.set(key, JSON.stringify(updatedBill), {
-        EX: 30 * 24 * 60 * 60 // 30 days
-      })
+      await redis.setEx(key, 30 * 24 * 60 * 60, JSON.stringify(updatedBill))
     })
 
     return NextResponse.json({

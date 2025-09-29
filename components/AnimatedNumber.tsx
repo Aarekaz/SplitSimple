@@ -13,10 +13,11 @@ export function AnimatedNumber({
   value, 
   className = "", 
   formatFn = (v) => v.toFixed(2), 
-  duration = 200 
+  duration = 300 
 }: AnimatedNumberProps) {
   const [displayValue, setDisplayValue] = useState(value)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [shouldPulse, setShouldPulse] = useState(false)
 
   useEffect(() => {
     if (value === displayValue) return
@@ -25,13 +26,22 @@ export function AnimatedNumber({
     const startValue = displayValue
     const difference = value - startValue
     const startTime = Date.now()
+    
+    // Trigger pulse for significant changes
+    if (Math.abs(difference) > Math.abs(startValue) * 0.1) {
+      setShouldPulse(true)
+      setTimeout(() => setShouldPulse(false), 600)
+    }
 
     const animate = () => {
       const elapsed = Date.now() - startTime
       const progress = Math.min(elapsed / duration, 1)
       
-      // Ease-out animation
-      const eased = 1 - Math.pow(1 - progress, 3)
+      // Enhanced easing with spring-like feel
+      const eased = progress < 0.5 
+        ? 4 * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2
+      
       const currentValue = startValue + (difference * eased)
       
       setDisplayValue(currentValue)
@@ -49,9 +59,10 @@ export function AnimatedNumber({
 
   return (
     <span 
-      className={`${className} ${isAnimating ? 'transition-all' : ''}`}
+      className={`${className} ${isAnimating ? 'transition-all duration-300' : ''} ${shouldPulse ? 'success-pulse' : ''} currency-display`}
       style={{ 
-        fontFeatureSettings: '"tnum"', // Tabular numbers for consistent width
+        fontFeatureSettings: '"tnum" 1, "zero" 1', // Enhanced font features
+        fontVariantNumeric: 'tabular-nums',
       }}
     >
       {formatFn(displayValue)}
