@@ -114,6 +114,12 @@ interface AdminStats {
   totalTaxCollected: number
   totalTipsProcessed: number
   totalDiscountsGiven: number
+  weeklyGrowth: number
+  billsWithTax: number
+  billsWithTips: number
+  billsWithDiscounts: number
+  medianBillValue: number
+  sharedBills: number
 }
 
 export default function AdminPage() {

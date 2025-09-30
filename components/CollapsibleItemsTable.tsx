@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, useMemo, useCallback } from "react"
-import { ChevronDown, ChevronUp, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check } from "lucide-react"
+import { ChevronDown, ChevronUp, ChevronRight, Plus, Trash2, Calculator, Users, GripVertical, Check, AlertCircle, CheckCircle2 } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -66,6 +66,56 @@ function AvatarStack({ people }: { people: Person[] }) {
   )
 }
 
+function getSplitMethodLabel(method: "even" | "shares" | "percent" | "exact"): string {
+  const labels = {
+    even: "Even",
+    shares: "Shares",
+    percent: "Percent",
+    exact: "Exact"
+  }
+  return labels[method]
+}
+
+function getItemValidationStatus(item: Item): { isValid: boolean; warnings: string[] } {
+  const warnings: string[] = []
+  
+  // Check if item has a name
+  if (!item.name || item.name.trim() === "") {
+    warnings.push("Item name is missing")
+  }
+  
+  // Check if item has a price
+  if (!item.price || parseFloat(item.price) <= 0) {
+    warnings.push("Price is required")
+  }
+  
+  // Check if item has people assigned
+  if (item.splitWith.length === 0) {
+    warnings.push("No one assigned to this item")
+  }
+  
+  // Check custom splits for percent and exact methods
+  if (item.method === "percent" && item.customSplits) {
+    const totalPercent = Object.values(item.customSplits).reduce((sum, val) => sum + val, 0)
+    if (Math.abs(totalPercent - 100) > 0.01) {
+      warnings.push("Percentages must add up to 100%")
+    }
+  }
+  
+  if (item.method === "exact" && item.customSplits) {
+    const totalExact = Object.values(item.customSplits).reduce((sum, val) => sum + val, 0)
+    const itemTotal = parseFloat(item.price) * (item.quantity || 1)
+    if (Math.abs(totalExact - itemTotal) > 0.01) {
+      warnings.push("Exact amounts must equal item total")
+    }
+  }
+  
+  return {
+    isValid: warnings.length === 0,
+    warnings
+  }
+}
+
 function SortableItem({ id, children }: { id: string; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
 
@@ -76,10 +126,10 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} className="relative group">
-      {/* Drag Handle - appears on hover */}
+      {/* Drag Handle - subtle but always visible */}
       <div
         {...listeners}
-        className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-md cursor-grab hover:bg-muted/50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all z-10 bg-background/80 backdrop-blur-sm border border-border/50"
+        className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md cursor-grab hover:bg-primary/10 hover:border-primary/30 opacity-30 group-hover:opacity-100 focus:opacity-100 transition-all z-10 bg-background/60 backdrop-blur-sm border border-border/30"
         title="Drag to reorder or press Enter to focus item"
         aria-label="Drag handle for item reordering. Press Enter to focus item controls."
         role="button"
@@ -314,7 +364,7 @@ export function CollapsibleItemsTable() {
 
   if (items.length === 0) {
     return (
-      <Card className="surface-elevated">
+      <Card className="float-card border-0">
         <CardContent className="p-0">
           <EmptyItemsState 
             onAddItem={() => handleAddItem(true)}
@@ -326,16 +376,16 @@ export function CollapsibleItemsTable() {
   }
 
   return (
-    <Card className="overflow-hidden card-elevated">
+    <Card className="float-card-lg border-0 overflow-visible">
       {/* Header */}
-      <CardHeader className="pb-4">
+      <CardHeader className="pb-3 px-5 pt-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => setIsCollapsed(!isCollapsed)} 
-              className="h-6 w-6 p-0 btn-smooth"
+              className="h-8 w-8 p-0 rounded-xl hover:bg-muted/50"
             >
               <div 
                 className="transition-transform duration-300" 
@@ -346,25 +396,25 @@ export function CollapsibleItemsTable() {
             </Button>
             <CardTitle className="text-title">Items ({items.length})</CardTitle>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">⌘</kbd>
+              <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">↵</kbd>
+            </div>
             <Button 
               onClick={() => handleAddItem(true)} 
               size="sm"
-              className={`btn-smooth transition-all duration-300 ${showAddSuccess ? 'bg-green-600 hover:bg-green-700 success-pulse' : ''}`}
+              className={`btn-float rounded-xl transition-all duration-300 ${showAddSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80'} text-white font-medium h-9 px-4`}
             >
-              <div className="transition-transform duration-200">
+              <div className="transition-transform duration-200 flex items-center">
                 {showAddSuccess ? (
-                  <Check className="h-4 w-4 mr-1" />
+                  <Check className="h-4 w-4 mr-1.5" />
                 ) : (
-                  <Plus className="h-4 w-4 mr-1 group-hover:scale-110" />
+                  <Plus className="h-4 w-4 mr-1.5" />
                 )}
+                {showAddSuccess ? 'Added!' : 'Add Item'}
               </div>
-              {showAddSuccess ? 'Added!' : 'Add Item'}
             </Button>
-            <div className="text-xs text-muted-foreground hidden sm:block">
-              <kbd className="px-1 py-0.5 bg-muted text-muted-foreground rounded text-xs">⌘</kbd>
-              <kbd className="px-1 py-0.5 bg-muted text-muted-foreground rounded text-xs ml-0.5">↵</kbd>
-            </div>
           </div>
         </div>
       </CardHeader>
@@ -377,17 +427,18 @@ export function CollapsibleItemsTable() {
             {/* Table Body */}
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3 p-4">
+            <div className="space-y-3 px-5 pb-5">
                     {items.map((item, index) => {
                 const isExpanded = expandedItems.has(item.id)
                 const splits = getItemSplits(item.id)
                 const selectedPeople = getSelectedPeople(item.id)
+                const validationStatus = getItemValidationStatus(item)
 
                 return (
                         <SortableItem key={item.id} id={item.id}>
-                          <div className="rounded-lg border bg-card hover:shadow-sm transition-all group">
+                          <div className="float-card-sm border-0 hover:shadow-md transition-all duration-300 group">
                             {/* Modern Row */}
-                            <div className="flex items-center p-3 gap-4">
+                            <div className="flex items-center p-4 gap-4">
                               {/* Chevron */}
                                                             <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 transition-colors" onClick={() => toggleItemExpansion(item.id)}>
                                 <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
@@ -409,6 +460,12 @@ export function CollapsibleItemsTable() {
                                           data-item-input="name"
                                     className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm"
                                   />
+                                  {/* Split method badge */}
+                                  {!isExpanded && item.method !== "even" && (
+                                    <Badge variant="outline" className="text-xs px-2 py-0.5 border-primary/30 bg-primary/5 text-primary">
+                                      {getSplitMethodLabel(item.method)}
+                                    </Badge>
+                                  )}
                                   {/* Split info as subtle badge */}
                         {selectedPeople.length > 0 ? (
                                     <AvatarStack people={selectedPeople} />
@@ -463,6 +520,19 @@ export function CollapsibleItemsTable() {
                                 </div>
                               )}
                               
+                              {/* Validation Status */}
+                              {!isExpanded && (
+                                <div className="flex items-center" title={validationStatus.isValid ? "Item is complete" : validationStatus.warnings.join(', ')}>
+                                  {validationStatus.isValid ? (
+                                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                  ) : (
+                                    <AlertCircle 
+                                      className="h-4 w-4 text-amber-600 dark:text-amber-400" 
+                                    />
+                                  )}
+                                </div>
+                              )}
+                              
                               {/* Actions */}
                               <div className="flex items-center gap-1">
                                 <Button 
@@ -481,16 +551,35 @@ export function CollapsibleItemsTable() {
                             {/* Expanded Row */}
                             {isExpanded && (
                               <div className="border-t bg-muted/20 animate-in slide-in-from-top-2 fade-in duration-200">
-                                <div className="p-4 space-y-4">
-                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                                <div className="p-5 space-y-5">
+                                  {/* Validation warnings */}
+                                  {!validationStatus.isValid && (
+                                    <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                                      <div className="text-sm text-amber-900 dark:text-amber-100">
+                                        <p className="font-semibold mb-1.5">Please complete this item:</p>
+                                        <ul className="list-disc list-inside space-y-1 text-xs">
+                                          {validationStatus.warnings.map((warning, idx) => (
+                                            <li key={idx}>{warning}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                                     {/* Left Side: Method and Custom Inputs */}
                                     <div className="space-y-4">
-                                      <SplitMethodSelector
-                                        value={item.method}
-                                        onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
-                                      />
+                                      <div className="space-y-2">
+                                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Splitting Method</label>
+                                        <SplitMethodSelector
+                                          value={item.method}
+                                          onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
+                                        />
+                                      </div>
                                       {item.method !== "even" && (
-                                        <div className="pt-2">
+                                        <div className="pt-2 space-y-2">
+                                          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Custom Amounts</label>
                                           <SplitMethodInput
                                             item={item}
                                             people={people}
@@ -503,12 +592,14 @@ export function CollapsibleItemsTable() {
                                     </div>
 
                                     {/* Right Side: Split With */}
-                                    <PersonSelector
-                                      selectedPeople={item.splitWith}
-                                      onSelectionChange={(selected) =>
-                                        handleUpdateItem(item.id, { splitWith: selected })
-                                      }
-                                    />
+                                    <div className="space-y-2">
+                                      <PersonSelector
+                                        selectedPeople={item.splitWith}
+                                        onSelectionChange={(selected) =>
+                                          handleUpdateItem(item.id, { splitWith: selected })
+                                        }
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -522,37 +613,36 @@ export function CollapsibleItemsTable() {
               </DndContext>
 
               {/* Add Item Row */}
-              <div className="bg-background">
-                <div className="p-2">
+              <div className="px-5 pb-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleAddItem(true)}
-                    className="w-full justify-start text-muted-foreground hover:text-foreground h-9 smooth-hover item-added-slide"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground h-10 rounded-xl hover:bg-muted/50 transition-all duration-200"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add item
                   </Button>
-                </div>
               </div>
 
               </div>
 
             {/* Tax and Tip Section for Desktop */}
-            <div className="p-4">
+            <div className="px-5 pb-5">
               <TaxTipSection />
                         </div>
                       </div>
 
                     {/* Mobile View */}
-          <div className="lg:hidden p-4 space-y-3">
+          <div className="lg:hidden px-5 pb-5 space-y-3">
             {items.map((item, index) => {
               const isExpanded = expandedItems.has(item.id)
               const splits = getItemSplits(item.id)
               const selectedPeople = getSelectedPeople(item.id)
+              const validationStatus = getItemValidationStatus(item)
 
               return (
-                <div key={item.id} className="rounded-lg border bg-card hover:shadow-sm transition-all group">
+                <div key={item.id} className="float-card-sm border-0 hover:shadow-md transition-all duration-300 group">
                   {/* Mobile Row */}
                   <div className="p-3 space-y-3">
                     {/* Expandable hint */}
@@ -560,9 +650,20 @@ export function CollapsibleItemsTable() {
                       <div className="text-xs text-muted-foreground">
                         {isExpanded ? "Split settings visible" : "Tap 'Details' for split settings"}
                       </div>
-                      <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                        isExpanded ? 'bg-primary scale-125' : 'bg-muted hover:bg-muted-foreground'
-                      }`} />
+                      <div className="flex items-center gap-2">
+                        {!isExpanded && (
+                          <div title={validationStatus.isValid ? "Complete" : validationStatus.warnings.join(', ')}>
+                            {validationStatus.isValid ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                            ) : (
+                              <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                            )}
+                          </div>
+                        )}
+                        <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                          isExpanded ? 'bg-primary scale-125' : 'bg-muted hover:bg-muted-foreground'
+                        }`} />
+                      </div>
                     </div>
                     <div className="flex items-start gap-3">
                       {/* Item Name */}
@@ -580,6 +681,12 @@ export function CollapsibleItemsTable() {
                               placeholder="Add your item..."
                             className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm flex-1"
                           />
+                          {/* Split method badge for mobile */}
+                          {!isExpanded && item.method !== "even" && (
+                            <Badge variant="outline" className="text-xs px-2 py-0.5 border-primary/30 bg-primary/5 text-primary shrink-0">
+                              {getSplitMethodLabel(item.method)}
+                            </Badge>
+                          )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -673,41 +780,62 @@ export function CollapsibleItemsTable() {
                           </div>
 
                   {isExpanded && (
-                    <div className="border-t bg-muted/20 p-4 space-y-6 animate-in slide-in-from-top-2 fade-in duration-200">
-                      <div className="space-y-6">
+                    <div className="border-t bg-muted/20 p-4 space-y-5 animate-in slide-in-from-top-2 fade-in duration-200">
+                      {/* Validation warnings */}
+                      {!validationStatus.isValid && (
+                        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                          <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                          <div className="text-sm text-amber-900 dark:text-amber-100">
+                            <p className="font-semibold mb-1.5">Please complete:</p>
+                            <ul className="list-disc list-inside space-y-1 text-xs">
+                              {validationStatus.warnings.map((warning, idx) => (
+                                <li key={idx}>{warning}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="space-y-5">
                         {/* Split Method */}
-                        <SplitMethodSelector
-                                  value={item.method}
-                          onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
-                        />
+                        <div className="space-y-2">
+                          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Splitting Method</label>
+                          <SplitMethodSelector
+                            value={item.method}
+                            onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
+                          />
+                        </div>
 
-                          {/* Split With */}
-                                <PersonSelector
-                                  selectedPeople={item.splitWith}
-                                  onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
-                                />
-                          </div>
-
-                          {/* Custom Split Inputs */}
-                          {item.method !== "even" && (
-                      <div className="pt-2 border-t">
-                              <SplitMethodInput
-                                item={item}
-                                people={people}
-                          onCustomSplitsChange={(customSplits) =>
-                            handleUpdateItem(item.id, { customSplits })
-                          }
+                        {/* Split With */}
+                        <PersonSelector
+                          selectedPeople={item.splitWith}
+                          onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
                         />
-                          </div>
-                    )}
-                  </div>
-                    )}
+                      </div>
+
+                      {/* Custom Split Inputs */}
+                      {item.method !== "even" && (
+                        <div className="pt-2 border-t space-y-2">
+                          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Custom Amounts</label>
+                          <SplitMethodInput
+                            item={item}
+                            people={people}
+                            onCustomSplitsChange={(customSplits) =>
+                              handleUpdateItem(item.id, { customSplits })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                   </div>
                 )
               })}
 
-          {/* Tax and Tip Section */}
-          <TaxTipSection />
+          {/* Tax and Tip Section for Mobile */}
+          <div className="mt-4">
+            <TaxTipSection />
+          </div>
           </div>
         </CardContent>
       )}

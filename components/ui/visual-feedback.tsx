@@ -19,6 +19,7 @@ export function SuccessRipple({ children, trigger, className }: SuccessRipplePro
       const timer = setTimeout(() => setShowRipple(false), 600)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [trigger])
 
   return (
@@ -121,6 +122,7 @@ export function CelebrationOverlay({ show, onComplete, message = "Great job!" }:
       const timer = setTimeout(onComplete, 2000)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [show, onComplete])
 
   if (!show) return null
@@ -157,6 +159,7 @@ export function ErrorShake({ children, trigger, className }: ErrorShakeProps) {
       const timer = setTimeout(() => setShouldShake(false), 500)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [trigger])
 
   return (
