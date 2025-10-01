@@ -14,6 +14,7 @@ import {
   Trash2,
   Edit,
   Eye,
+  ExternalLink,
   Calendar,
   Clock,
   Database,
@@ -870,13 +871,23 @@ export default function AdminPage() {
                               setSelectedBill(bill)
                               setShowBillDialog(true)
                             }}
+                            title="View details"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => window.open(bill.shareUrl, '_blank')}
+                            title="Open in new tab"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => copyToClipboard(bill.shareUrl)}
+                            title="Copy share link"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -884,6 +895,7 @@ export default function AdminPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleExtendBill(bill.id)}
+                            title="Extend expiration"
                           >
                             <Clock className="h-4 w-4" />
                           </Button>
@@ -894,6 +906,7 @@ export default function AdminPage() {
                               setBillToDelete(bill.id)
                               setShowDeleteDialog(true)
                             }}
+                            title="Delete bill"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
