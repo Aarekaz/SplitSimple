@@ -7,6 +7,7 @@ import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { MobileFirstUI } from "@/components/MobileFirstUI"
 import { MobileActionButton, MobileActionSpacer } from "@/components/MobileActionButton"
+import { ShareBill } from "@/components/ShareBill"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -112,13 +113,6 @@ export default function HomePage() {
       })
       analytics.trackError("copy_summary_failed", "Clipboard API failed")
     }
-  }
-
-  const handleShareBill = () => {
-    toast({
-      title: "Share",
-      description: "Share functionality coming soon!",
-    })
   }
 
   const handleAddPerson = () => {
@@ -240,18 +234,7 @@ export default function HomePage() {
               <TooltipContent side="top">Copy Summary</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  onClick={handleShareBill}
-                  className="dock-item"
-                  aria-label="Share Bill"
-                >
-                  <Share2 className="h-5 w-5 text-foreground" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Share Bill</TooltipContent>
-            </Tooltip>
+            <ShareBill variant="ghost" size="sm" showText={false} />
 
             <div className="dock-divider" />
 

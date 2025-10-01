@@ -141,8 +141,12 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenDialog}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size} className="flex items-center gap-1.5 btn-smooth">
-          <Share2 className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+        <Button 
+          variant={variant} 
+          size={size} 
+          className={showText ? "flex items-center gap-1.5 btn-smooth" : "dock-item p-0 h-auto bg-transparent border-0 hover:bg-primary/10"}
+        >
+          <Share2 className={showText ? "h-4 w-4 transition-transform duration-200 group-hover:scale-110" : "h-5 w-5 text-foreground"} />
           {showText && <span>Share</span>}
         </Button>
       </DialogTrigger>
