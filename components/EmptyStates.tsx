@@ -1,9 +1,17 @@
 "use client"
 
 import React from "react"
-import { Plus, Users, ShoppingCart, Receipt, DollarSign, Calculator, Coffee, Plane, Home } from "lucide-react"
+import {
+  Users,
+  ShoppingCart,
+  Receipt,
+  DollarSign,
+  Coffee,
+  Plane,
+  Home,
+  Calculator,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 interface EmptyStateProps {
@@ -13,7 +21,7 @@ interface EmptyStateProps {
   action?: {
     label: string
     onClick: () => void
-    variant?: "default" | "outline"
+    variant?: "secondary" | "ghost"
   }
   secondaryAction?: {
     label: string
@@ -22,61 +30,53 @@ interface EmptyStateProps {
   className?: string
 }
 
-export function EmptyState({ 
-  title, 
-  description, 
-  icon, 
-  action, 
-  secondaryAction, 
-  className 
+export function EmptyState({
+  title,
+  description,
+  icon,
+  action,
+  secondaryAction,
+  className,
 }: EmptyStateProps) {
   return (
-    <div className={cn("text-center py-16 px-6", className)}>
-      <div className="relative mb-8">
-        <div className="w-28 h-28 mx-auto bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl flex items-center justify-center relative overflow-hidden shadow-lg">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-2xl" />
-          <div className="relative z-10">
-            {icon}
-          </div>
+    <div
+      className={cn(
+        "surface-card flex flex-col gap-4 rounded-lg border border-border p-8 text-left animate-fade-in-up",
+        className
+      )}
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-md border border-border bg-surface-2 text-foreground animate-scale-in">
+          {icon}
         </div>
-        
-        {/* Floating elements for visual interest */}
-        <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center animate-bounce delay-100 shadow-md">
-          <Plus className="w-4 h-4 text-primary" />
+        <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+          <h3 className="text-base font-semibold tracking-tight text-foreground">{title}</h3>
+          <p className="mt-1 text-sm text-card-foreground leading-relaxed">{description}</p>
         </div>
-        <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-lg animate-pulse delay-300 shadow-md" />
       </div>
-      
-      <div className="space-y-3 mb-8">
-        <h3 className="text-headline">{title}</h3>
-        <p className="text-subtitle max-w-sm mx-auto">
-          {description}
-        </p>
-      </div>
-      
+
       {(action || secondaryAction) && (
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          {action && (
-            <Button 
-              onClick={action.onClick} 
-              variant={action.variant || "default"}
-              size="lg"
-              className="gap-2 min-w-[160px] h-12 rounded-xl btn-float bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white font-medium"
+        <div className="flex flex-wrap items-center gap-3">
+          {action ? (
+            <Button
+              onClick={action.onClick}
+              variant={action.variant || "secondary"}
+              size="sm"
+              className="border border-border bg-surface-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em]"
             >
               {action.label}
             </Button>
-          )}
-          {secondaryAction && (
-            <Button 
-              onClick={secondaryAction.onClick} 
-              variant="outline"
-              size="lg"
-              className="gap-2 min-w-[160px] h-12 rounded-xl border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-all duration-200 font-medium"
+          ) : null}
+          {secondaryAction ? (
+            <Button
+              onClick={secondaryAction.onClick}
+              variant="ghost"
+              size="sm"
+              className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
             >
               {secondaryAction.label}
             </Button>
-          )}
+          ) : null}
         </div>
       )}
     </div>
@@ -88,50 +88,43 @@ interface QuickStartCardProps {
   title: string
   description: string
   onClick: () => void
-  variant?: "default" | "primary"
+  active?: boolean
   className?: string
 }
 
-export function QuickStartCard({ 
-  icon, 
-  title, 
-  description, 
-  onClick, 
-  variant = "default",
-  className 
+export function QuickStartCard({
+  icon,
+  title,
+  description,
+  onClick,
+  active = false,
+  className,
 }: QuickStartCardProps) {
-  const isPrimary = variant === "primary"
-  
   return (
-    <Card 
+    <button
+      onClick={onClick}
       className={cn(
-        "cursor-pointer transition-all duration-300 float-card-sm border-0 hover:shadow-md group",
-        isPrimary && "bg-gradient-to-br from-primary/5 to-primary/0",
+        "surface-card w-full text-left",
+        "rounded-lg border border-border px-4 py-3 transition-all-moderate",
+        "hover:border-border-strong hover:bg-surface-3 hover:shadow-md hover:scale-[1.02]",
+        "active:scale-[0.98]",
+        active && "border-border-strong bg-surface-3",
         className
       )}
-      onClick={onClick}
     >
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className={cn(
-            "p-3 rounded-xl transition-all duration-200 flex-shrink-0",
-            isPrimary 
-              ? "bg-gradient-to-br from-primary to-primary/90 text-white shadow-md group-hover:shadow-lg" 
-              : "bg-gradient-to-br from-muted to-muted/50 group-hover:from-muted/80 group-hover:to-muted/30"
-          )}>
-            {icon}
-          </div>
-          <div className="flex-1 space-y-1.5">
-            <h4 className="font-semibold text-base">{title}</h4>
-            <p className="text-caption text-left leading-relaxed">{description}</p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface-1 text-muted-foreground">
+          {icon}
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex-1 space-y-1">
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-xs text-card-foreground leading-relaxed">{description}</p>
+        </div>
+      </div>
+    </button>
   )
 }
 
-// Specific empty state components
 interface EmptyBillStateProps {
   onAddPerson: () => void
   onAddItem: () => void
@@ -140,16 +133,16 @@ interface EmptyBillStateProps {
 export function EmptyBillState({ onAddPerson, onAddItem }: EmptyBillStateProps) {
   return (
     <EmptyState
-      icon={<Receipt className="w-10 h-10 text-primary" />}
+      icon={<Receipt className="h-5 w-5" />}
       title="Ready to split?"
-      description="Add some people and items to get started with your bill splitting"
+      description="Add people and record the first line item to start balancing this bill."
       action={{
         label: "Add People",
-        onClick: onAddPerson
+        onClick: onAddPerson,
       }}
       secondaryAction={{
         label: "Add Items",
-        onClick: onAddItem
+        onClick: onAddItem,
       }}
     />
   )
@@ -161,19 +154,25 @@ interface EmptyItemsStateProps {
 }
 
 export function EmptyItemsState({ onAddItem, hasPeople }: EmptyItemsStateProps) {
+  if (!hasPeople) {
+    return (
+      <EmptyState
+        icon={<ShoppingCart className="h-5 w-5" />}
+        title="Almost there"
+        description="Invite at least one person before logging items so we know who to split with."
+      />
+    )
+  }
+
   return (
     <EmptyState
-      icon={<ShoppingCart className="w-10 h-10 text-blue-600" />}
-      title={hasPeople ? "Ready to add items?" : "Almost there!"}
-      description={
-        hasPeople 
-          ? "Add items from your receipt and we'll automatically split them among your group"
-          : "Add people first, then you can start adding items to split the costs fairly"
-      }
-      action={hasPeople ? {
+      icon={<ShoppingCart className="h-5 w-5" />}
+      title="No items recorded"
+      description="Log each item you need to split. Assign people and we’ll handle the math."
+      action={{
         label: "Add First Item",
-        onClick: onAddItem
-      } : undefined}
+        onClick: onAddItem,
+      }}
     />
   )
 }
@@ -185,119 +184,119 @@ interface EmptyPeopleStateProps {
 export function EmptyPeopleState({ onAddPerson }: EmptyPeopleStateProps) {
   return (
     <EmptyState
-      icon={<Users className="w-10 h-10 text-purple-600" />}
-      title="Let's get started!"
-      description="Add the first person to your group and we'll help you split costs fairly"
+      icon={<Users className="h-5 w-5" />}
+      title="Start with people"
+      description="Add the first participant so we can track who owes what."
       action={{
         label: "Add First Person",
-        onClick: onAddPerson
+        onClick: onAddPerson,
       }}
     />
   )
 }
 
-// Onboarding flow with quick start options
+type QuickStartType = "restaurant" | "groceries" | "trip" | "utilities" | "custom"
+
 interface OnboardingFlowProps {
-  onQuickStart: (type: "restaurant" | "groceries" | "trip" | "utilities" | "custom") => void
+  onQuickStart: (type: QuickStartType) => void
   onAddPerson: () => void
 }
 
+const QUICK_START_OPTIONS: Array<{
+  key: QuickStartType
+  label: string
+  description: string
+  icon: React.ReactNode
+}> = [
+  {
+    key: "restaurant",
+    label: "Restaurant",
+    description: "Divide shared dishes, drinks, and tips.",
+    icon: <Coffee className="h-4 w-4" />,
+  },
+  {
+    key: "groceries",
+    label: "Groceries",
+    description: "Track a shared basket or weekly haul.",
+    icon: <ShoppingCart className="h-4 w-4" />,
+  },
+  {
+    key: "trip",
+    label: "Trip",
+    description: "Keep travel costs fair for the group.",
+    icon: <Plane className="h-4 w-4" />,
+  },
+  {
+    key: "utilities",
+    label: "Utilities",
+    description: "Split rent, power, or internet evenly.",
+    icon: <Home className="h-4 w-4" />,
+  },
+  {
+    key: "custom",
+    label: "Custom",
+    description: "Start from a clean slate.",
+    icon: <Calculator className="h-4 w-4" />,
+  },
+]
+
 export function OnboardingFlow({ onQuickStart, onAddPerson }: OnboardingFlowProps) {
   return (
-    <div className="p-6 space-y-10 max-w-2xl mx-auto">
-      {/* Hero Section */}
-      <div className="text-center space-y-5">
-        <div className="relative inline-block">
-          <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/80 rounded-3xl flex items-center justify-center mb-4 relative overflow-hidden shadow-xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
-            <Receipt className="w-11 h-11 text-white relative z-10" />
-          </div>
-          {/* Floating decorations */}
-          <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-br from-success to-success/80 rounded-xl flex items-center justify-center animate-bounce shadow-md">
-            <DollarSign className="w-4 h-4 text-white" />
-          </div>
-          <div className="absolute -bottom-1 -left-1 w-5 h-5 bg-gradient-to-br from-secondary to-secondary/80 rounded-lg animate-pulse delay-500 shadow-md" />
-        </div>
-        
+    <section className="surface-card space-y-8 rounded-lg border border-border p-8">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-display mb-3">Split the Bill</h1>
-          <p className="text-subtitle">
-            Divide expenses fairly, track who owes what, and settle up effortlessly
+          <p className="micro-label text-muted-foreground">Getting started</p>
+          <h2 className="mt-2 text-lg font-semibold tracking-tight text-foreground">
+            Invite your first person
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            SplitSimple works best when everyone is in the room. Add a participant, then start logging
+            the items you are sharing.
           </p>
         </div>
-      </div>
-
-      {/* Quick Start Options */}
-      <div className="space-y-4">
-        <h2 className="text-title text-center mb-6">Quick Start</h2>
-        
-        <div className="grid gap-3">
-          <QuickStartCard
-            icon={<Coffee className="w-6 h-6" />}
-            title="Restaurant Bill"
-            description="Perfect for dining out with friends"
-            onClick={() => onQuickStart("restaurant")}
-            variant="primary"
-          />
-          
-          <QuickStartCard
-            icon={<ShoppingCart className="w-6 h-6" />}
-            title="Groceries & Shopping"
-            description="Split household or group shopping expenses"
-            onClick={() => onQuickStart("groceries")}
-          />
-          
-          <QuickStartCard
-            icon={<Plane className="w-6 h-6" />}
-            title="Trip Expenses"
-            description="Track shared costs for group travel"
-            onClick={() => onQuickStart("trip")}
-          />
-          
-          <QuickStartCard
-            icon={<Home className="w-6 h-6" />}
-            title="Utilities & Rent"
-            description="Split recurring household bills"
-            onClick={() => onQuickStart("utilities")}
-          />
-          
-          <QuickStartCard
-            icon={<Calculator className="w-6 h-6" />}
-            title="Custom Split"
-            description="Manually configure your bill splitting"
-            onClick={() => onQuickStart("custom")}
-          />
-        </div>
-      </div>
-
-      {/* Direct Action */}
-      <div className="pt-4 border-t border-border/50">
-        <Button 
-          size="lg" 
-          className="w-full h-14 text-lg gap-3 rounded-xl btn-float bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white font-semibold"
+        <Button
+          size="sm"
+          variant="secondary"
+          className="border border-border bg-surface-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em]"
           onClick={onAddPerson}
         >
-          <Plus className="w-5 h-5" />
-          Start with First Person
+          <Users className="mr-2 h-3.5 w-3.5" />
+          Add person
         </Button>
       </div>
-    </div>
-  )
-}
 
-// Loading skeleton for empty states
-export function EmptyStateLoading() {
-  return (
-    <div className="text-center py-12 px-6 animate-pulse">
-      <div className="w-24 h-24 mx-auto bg-muted rounded-2xl mb-6" />
-      <div className="space-y-3 mb-8">
-        <div className="h-8 bg-muted rounded w-48 mx-auto" />
-        <div className="h-4 bg-muted rounded w-64 mx-auto" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {QUICK_START_OPTIONS.map((option) => (
+          <QuickStartCard
+            key={option.key}
+            icon={option.icon}
+            title={option.label}
+            description={option.description}
+            onClick={() => onQuickStart(option.key)}
+          />
+        ))}
       </div>
-      <div className="flex gap-3 justify-center">
-        <div className="h-10 bg-muted rounded w-32" />
-        <div className="h-10 bg-muted rounded w-32" />
+
+      <div className="rounded-md border border-border bg-surface-2 p-5">
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface-1">
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">Two quick steps</p>
+            <ol className="space-y-2 text-sm text-card-foreground">
+              <li className="flex gap-2">
+                <span className="font-semibold text-muted-foreground">1.</span>
+                <span>Add everyone involved in the split.</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-semibold text-muted-foreground">2.</span>
+                <span>Log each item, assign people, and let SplitSimple compute totals.</span>
+              </li>
+            </ol>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   )
 }

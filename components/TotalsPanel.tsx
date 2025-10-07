@@ -1,25 +1,15 @@
 "use client"
 
-import React, { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Calculator, Users, Receipt, Plus, X, ChevronDown } from "lucide-react"
+import { useEffect, useState } from "react"
+import type React from "react"
+import { Users as UsersIcon, Plus, X, Calculator, Wallet } from "lucide-react"
+
 import { useBill } from "@/contexts/BillContext"
 import { getBillSummary, getItemBreakdowns } from "@/lib/calculations"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { useBillAnalytics } from "@/hooks/use-analytics"
-import { Input } from "@/components/ui/input"
-import { AddPersonForm } from "./AddPersonForm"
-import { useEffect, forwardRef } from "react"
 import { formatCurrency } from "@/lib/utils"
-import { AnimatedNumber } from "./AnimatedNumber"
-import { BillStatusIndicator } from "./BillStatusIndicator"
-import { SyncStatusIndicator } from "./SyncStatusIndicator"
-import { EmptyPeopleState } from "./EmptyStates"
-import { ProgressIndicator, BillHealthIndicator } from "./ui/visual-feedback"
+import { Button } from "@/components/ui/button"
+import { AddPersonForm } from "@/components/AddPersonForm"
+import { AnimatedNumber } from "@/components/AnimatedNumber"
 
 interface TotalsPanelProps {
   compact?: boolean
@@ -35,279 +25,214 @@ export function TotalsPanel({
   personInputRef,
 }: TotalsPanelProps) {
   const { state, dispatch } = useBill()
-  const analytics = useBillAnalytics()
   const summary = getBillSummary(state.currentBill)
-  const [expandedPeople, setExpandedPeople] = useState<Set<string>>(new Set())
-
   const itemBreakdowns = getItemBreakdowns(state.currentBill)
+  const [expandedPerson, setExpandedPerson] = useState<string | null>(null)
 
   useEffect(() => {
-    // Always start with collapsed people - user can expand manually
-    setExpandedPeople(new Set())
+    setExpandedPerson(null)
   }, [state.currentBill.people])
 
   const handleRemovePerson = (personId: string) => {
-    const person = state.currentBill.people.find(p => p.id === personId)
-    const hasItems = itemBreakdowns.some(breakdown => breakdown.splits[personId] > 0)
-    
-    if (hasItems && person) {
-      const itemCount = itemBreakdowns.filter(breakdown => breakdown.splits[personId] > 0).length
+    const person = state.currentBill.people.find((p) => p.id === personId)
+    const hasAssignments = itemBreakdowns.some((item) => item.splits[personId] > 0)
+
+    if (person && hasAssignments) {
+      const count = itemBreakdowns.filter((item) => item.splits[personId] > 0).length
       const confirmed = window.confirm(
-        `${person.name} is assigned to ${itemCount} item${itemCount > 1 ? 's' : ''}. Are you sure you want to remove them? This will unassign them from all items.`
+        `${person.name} is linked to ${count} item${count === 1 ? "" : "s"}. Remove and clear assignments?`
       )
-      if (!confirmed) {
-        analytics.trackFeatureUsed("remove_person_cancelled", { had_items_assigned: true })
-        return
-      }
+      if (!confirmed) return
     }
-    
+
     dispatch({ type: "REMOVE_PERSON", payload: personId })
-    analytics.trackPersonRemoved(hasItems)
   }
 
-  const togglePersonExpansion = (personId: string) => {
-    const newExpanded = new Set(expandedPeople)
-    if (newExpanded.has(personId)) {
-      newExpanded.delete(personId)
-    } else {
-      newExpanded.add(personId)
-    }
-    setExpandedPeople(newExpanded)
-  }
-
-  const getPerson = (personId: string) => {
-    return state.currentBill.people.find((p) => p.id === personId)
-  }
-
-  const peopleCount = state.currentBill.people.length
-  const hasLargeAmounts = summary.total > 1000
-
-  const PeoplePanel = () => (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
-            <Users className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">People</h3>
-            {peopleCount > 0 && (
-              <p className="text-xs text-muted-foreground">{peopleCount} member{peopleCount > 1 ? 's' : ''}</p>
-            )}
+  const totalsBlock = (
+    <section className="space-y-3 rounded-lg border border-border bg-surface-2 p-4">
+      <div className="flex items-center justify-between">
+        <span className="micro-label text-muted-foreground">Bill snapshot</span>
+        <span className="badge-outline capitalize">{state.currentBill.status}</span>
+      </div>
+      <div className="grid gap-2 text-sm">
+        <Row label="Subtotal" value={summary.subtotal} />
+        {summary.tax > 0 && <Row label="Tax" value={summary.tax} />}
+        {summary.tip > 0 && <Row label="Tip" value={summary.tip} />}
+        {summary.discount > 0 && (
+          <Row label="Discount" value={summary.discount * -1} tone="positive" />
+        )}
+      </div>
+      <div className="border-t border-border/70 pt-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Total</span>
+          <div className="text-lg font-semibold text-foreground">
+            <AnimatedNumber
+              value={summary.total}
+              duration={160}
+              formatFn={(value) => formatCurrency(value)}
+            />
           </div>
         </div>
+      </div>
+    </section>
+  )
+
+  const peopleBlock = (
+    <section className="space-y-3 rounded-lg border border-border bg-surface-2 p-4">
+      <div className="flex items-center justify-between">
+        <span className="micro-label text-muted-foreground">Participants</span>
         {!isAddingPerson && (
-          <Button 
-            size="sm" 
-            onClick={() => setIsAddingPerson(true)} 
-            className="h-9 px-4 btn-float rounded-xl bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white font-medium"
+          <Button
+            size="sm"
+            variant="secondary"
+            className="border border-border text-[0.68rem] font-semibold uppercase tracking-[0.18em]"
+            onClick={() => setIsAddingPerson(true)}
           >
-            <Plus className="h-4 w-4 mr-1.5" />
+            <Plus className="mr-2 h-3.5 w-3.5" />
             Add
           </Button>
         )}
       </div>
-      
-      <div className="space-y-2.5">
+
+      {state.currentBill.people.length === 0 && !isAddingPerson ? (
+        <div className="rounded-md border border-dashed border-border/70 bg-surface-1 p-4 text-center text-sm text-muted-foreground">
+          No people added yet
+        </div>
+      ) : null}
+
+      <div className="space-y-2">
         {summary.personTotals.map((personTotal) => {
-          const person = getPerson(personTotal.personId)
+          const person = state.currentBill.people.find((p) => p.id === personTotal.personId)
           if (!person) return null
-          const isExpanded = expandedPeople.has(person.id)
+          const isExpanded = expandedPerson === person.id
+          const assignments = itemBreakdowns.filter((item) => item.splits[person.id] > 0)
 
           return (
-            <div key={person.id} className="float-card-sm border-0 hover:shadow-md transition-all duration-300 group">
-              <div className="space-y-2">
-                <div
-                  className="flex items-center justify-between p-4 cursor-pointer"
-                  onClick={() => togglePersonExpansion(person.id)}
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
-                      style={{ 
-                        backgroundColor: person.color,
-                        boxShadow: `0 4px 12px ${person.color}30`
-                      }} 
-                    >
-                      {person.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">{person.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {itemBreakdowns.filter(breakdown => breakdown.splits[person.id] > 0).length} item{itemBreakdowns.filter(breakdown => breakdown.splits[person.id] > 0).length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRemovePerson(person.id)
-                      }}
-                      className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    <div className="text-right">
-                      <div className="receipt-amount text-sm font-bold">
-                        <AnimatedNumber 
-                          value={personTotal.total}
-                          formatFn={(v) => formatCurrency(v)}
-                          duration={150}
-                        />
-                      </div>
-                      <div className="text-xs text-muted-foreground font-medium">
-                        {summary.total > 0 ? `${((personTotal.total / summary.total) * 100).toFixed(0)}%` : '0%'}
-                      </div>
-                    </div>
-                    <ChevronDown
-                      className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
-                    />
+            <div
+              key={person.id}
+              className="rounded-md border border-border bg-surface-1/60 transition hover:border-accent/80"
+            >
+              <button
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm"
+                onClick={() => setExpandedPerson(isExpanded ? null : person.id)}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="flex h-6 w-6 items-center justify-center rounded-sm text-xs font-bold"
+                    style={{
+                      backgroundColor: `${person.color}22`,
+                      color: person.color,
+                    }}
+                  >
+                    {person.name.charAt(0).toUpperCase()}
+                  </span>
+                  <div>
+                    <p className="font-semibold leading-tight">{person.name}</p>
+                    <p className="text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">
+                      {assignments.length} item{assignments.length === 1 ? "" : "s"}
+                    </p>
                   </div>
                 </div>
-                {/* Progress bar */}
-                {summary.total > 0 && (
-                  <div className="px-4 pb-3">
-                    <Progress 
-                      value={(personTotal.total / summary.total) * 100} 
-                      className="h-2 rounded-full"
-                      style={{
-                        ['--progress-background' as any]: person.color,
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-              {isExpanded && (
-                <div className="px-4 pb-4 border-t bg-muted/20">
-                  <div className="pt-4 space-y-2 text-xs">
-                    {itemBreakdowns
-                      .filter((breakdown) => breakdown.splits[person.id] > 0)
-                      .map((breakdown) => {
-                        const item = state.currentBill.items.find(i => i.id === breakdown.itemId)
-                        const quantity = item?.quantity || 1
-                        const displayName = quantity > 1 ? `${breakdown.itemName} (×${quantity})` : breakdown.itemName
-                        
-                        return (
-                          <div key={breakdown.itemId} className="flex justify-between items-center py-1">
-                            <span className="font-medium">{displayName}</span>
-                            <span className="receipt-subtotal text-muted-foreground">
-                              {formatCurrency(breakdown.splits[person.id])}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    
-                    <div className="border-t pt-2 mt-2 space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Subtotal</span>
-                        <span className="receipt-subtotal">{formatCurrency(personTotal.subtotal)}</span>
-                      </div>
-                      {personTotal.tax > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Tax</span>
-                          <span className="receipt-subtotal">{formatCurrency(personTotal.tax)}</span>
-                        </div>
-                      )}
-                      {personTotal.tip > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Tip</span>
-                          <span className="receipt-subtotal">{formatCurrency(personTotal.tip)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="font-semibold text-foreground">
+                    {formatCurrency(personTotal.total)}
+                  </span>
+                  <button
+                    className="rounded-sm border border-transparent p-1 text-muted-foreground transition hover:border-destructive/50 hover:text-destructive"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      handleRemovePerson(person.id)
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </button>
+              {isExpanded && assignments.length > 0 && (
+                <div className="border-t border-border/70 px-3 py-3 text-xs text-muted-foreground">
+                  <ul className="space-y-1.5">
+                    {assignments.map((assignment) => (
+                      <li key={assignment.itemId} className="flex justify-between gap-2">
+                        <span className="truncate">{assignment.itemName}</span>
+                        <span className="font-medium text-card-foreground">
+                          {formatCurrency(assignment.splits[person.id])}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
           )
         })}
-        
-        {isAddingPerson && (
-          <div className="float-card-sm border-0 p-4">
-            <AddPersonForm
-              ref={personInputRef}
-              onPersonAdded={() => setIsAddingPerson(false)}
-              onCancel={() => setIsAddingPerson(false)}
-            />
-          </div>
-        )}
-
-        {summary.personTotals.length === 0 && !isAddingPerson && (
-          <div className="py-12 text-center text-muted-foreground border-2 border-dashed rounded-2xl bg-muted/20">
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 mx-auto mb-4">
-              <Users className="h-7 w-7 text-primary" />
-            </div>
-            <p className="font-semibold mb-1.5 text-foreground">No people added yet</p>
-            <p className="text-sm">Add people to start splitting the bill</p>
-          </div>
-        )}
       </div>
-    </div>
-  )
 
-  const BillSummaryPanel = () => (
-    <div className="float-card-sm border-0 p-5 space-y-3">
-      <div className="space-y-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
-          <span className="receipt-subtotal">
-            {formatCurrency(summary.subtotal)}
-          </span>
+      {isAddingPerson && (
+        <div className="rounded-md border border-border bg-surface-1 p-3">
+          <AddPersonForm
+            ref={personInputRef}
+            onPersonAdded={() => setIsAddingPerson(false)}
+            onCancel={() => setIsAddingPerson(false)}
+          />
         </div>
-
-        {summary.tax > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tax</span>
-            <span className="receipt-subtotal">{formatCurrency(summary.tax)}</span>
-          </div>
-        )}
-
-        {summary.tip > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tip</span>
-            <span className="receipt-subtotal">{formatCurrency(summary.tip)}</span>
-          </div>
-        )}
-        {summary.discount > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Discount</span>
-            <span className="receipt-subtotal text-green-600 dark:text-green-400">-{formatCurrency(summary.discount)}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="border-t border-border/50 pt-4">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold">Total</span>
-          <div className="receipt-total text-primary">
-            <AnimatedNumber 
-              value={summary.total}
-              formatFn={(v) => formatCurrency(v)}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+      )}
+    </section>
   )
 
   if (compact) {
     return (
-      <div className="space-y-5">
-        <PeoplePanel />
-        <div className="border-t border-border/50"></div>
-        <BillSummaryPanel />
+      <div className="flex flex-col gap-4">
+        {totalsBlock}
+        {peopleBlock}
       </div>
     )
   }
 
   return (
-    <div className="space-y-5">
-      <PeoplePanel />
-      <div className="border-t border-border/50"></div>
-      <BillSummaryPanel />
+    <div className="flex flex-col gap-5">
+      <HeaderStrip />
+      {totalsBlock}
+      {peopleBlock}
+    </div>
+  )
+}
+
+function Row({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string
+  value: number
+  tone?: "default" | "positive"
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={tone === "positive" ? "text-success" : "text-foreground"}>
+        {formatCurrency(value)}
+      </span>
+    </div>
+  )
+}
+
+function HeaderStrip() {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border bg-surface-2 px-4 py-3">
+      <div className="flex items-center gap-3">
+        <Calculator className="h-4 w-4 text-muted-foreground" />
+        <span className="micro-label text-muted-foreground">Control Summary</span>
+      </div>
+      <div className="flex items-center gap-3 text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <UsersIcon className="h-3.5 w-3.5" />
+          Participants
+        </div>
+        <div className="flex items-center gap-1">
+          <Wallet className="h-3.5 w-3.5" />
+          Balances
+        </div>
+      </div>
     </div>
   )
 }

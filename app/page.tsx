@@ -1,36 +1,57 @@
 "use client"
 
+import { useEffect, useMemo, useRef, useState } from "react"
 import type React from "react"
 
 import { CollapsibleItemsTable } from "@/components/CollapsibleItemsTable"
 import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
-import { MobileFirstUI } from "@/components/MobileFirstUI"
-import { MobileActionButton, MobileActionSpacer } from "@/components/MobileActionButton"
 import { ShareBill } from "@/components/ShareBill"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Receipt, Plus, Copy, Share2 } from "lucide-react"
+import {
+  Activity,
+  ClipboardList,
+  Copy,
+  LayoutDashboard,
+  ListPlus,
+  Receipt,
+  RefreshCcw,
+  UserPlus,
+  Users as UsersIcon,
+  Package,
+  Clock,
+  FileDown,
+} from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
+import type { Item } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
-import { useState, useEffect, useRef } from "react"
 import { useBillAnalytics } from "@/hooks/use-analytics"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { BillStatusIndicator } from "@/components/BillStatusIndicator"
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
-import { Users } from "lucide-react"
+import { ThemeToggle } from "@/components/ThemeToggle"
+import { useIsMobile } from "@/hooks/use-mobile"
+
+interface ControlAction {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  tooltip?: string
+  onExecute: () => void
+  active?: boolean
+  disabled?: boolean
+}
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
+  const isMobile = useIsMobile()
+
   const [isAddingPerson, setIsAddingPerson] = useState(false)
   const personInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
-  const isMobile = useIsMobile()
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [previousTitle, setPreviousTitle] = useState(state.currentBill.title)
 
@@ -54,7 +75,6 @@ export default function HomePage() {
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value
     dispatch({ type: "SET_BILL_TITLE", payload: newTitle })
-    
     if (newTitle !== previousTitle) {
       setPreviousTitle(newTitle)
     }
@@ -64,8 +84,8 @@ export default function HomePage() {
     if (previousTitle !== state.currentBill.title && previousTitle !== "New Bill") {
       const timeoutId = setTimeout(() => {
         analytics.trackTitleChanged(state.currentBill.title)
-      }, 1000)
-      
+      }, 800)
+
       return () => clearTimeout(timeoutId)
     }
     return undefined
@@ -87,8 +107,8 @@ export default function HomePage() {
   const handleCopySummary = async () => {
     if (state.currentBill.people.length === 0) {
       toast({
-        title: "No data to copy",
-        description: "Add people and items to generate a summary",
+        title: "Nothing to copy",
+        description: "Add people and items first.",
         variant: "destructive",
       })
       analytics.trackError("copy_summary_failed", "No data to copy")
@@ -100,15 +120,15 @@ export default function HomePage() {
 
     if (success) {
       toast({
-        title: "Summary copied!",
-        description: "Bill summary has been copied to your clipboard",
+        title: "Summary copied",
+        description: "Share it anywhere.",
       })
       analytics.trackBillSummaryCopied()
       analytics.trackFeatureUsed("copy_summary")
     } else {
       toast({
         title: "Copy failed",
-        description: "Unable to copy to clipboard. Please try again.",
+        description: "Clipboard API rejected the operation.",
         variant: "destructive",
       })
       analytics.trackError("copy_summary_failed", "Clipboard API failed")
@@ -117,165 +137,294 @@ export default function HomePage() {
 
   const handleAddPerson = () => {
     setIsAddingPerson(true)
-    analytics.trackFeatureUsed("mobile_add_person")
+    analytics.trackFeatureUsed("control_add_person")
   }
 
   const handleAddItem = () => {
-    analytics.trackFeatureUsed("mobile_add_item")
+    const payload: Omit<Item, "id"> = {
+      name: "",
+      price: "",
+      quantity: 1,
+      splitWith: state.currentBill.people.map((person) => person.id),
+      method: "even",
+    }
+    dispatch({ type: "ADD_ITEM", payload })
+    analytics.trackFeatureUsed("control_add_item")
   }
 
+  const handleImport = () => {
+    toast({
+      title: "Import coming soon",
+      description: "CSV import is on the roadmap.",
+    })
+    analytics.trackFeatureUsed("control_import")
+  }
+
+  const controlActions: ControlAction[] = useMemo(
+    () => [
+      {
+        label: "Add Person",
+        icon: UserPlus,
+        tooltip: "Invite someone to the split",
+        onExecute: handleAddPerson,
+        active: isAddingPerson,
+      },
+      {
+        label: "Add Item",
+        icon: ListPlus,
+        tooltip: "Capture a new line item",
+        onExecute: handleAddItem,
+        disabled: state.currentBill.people.length === 0,
+      },
+      {
+        label: "Import",
+        icon: FileDown,
+        tooltip: "Upload CSV (soon)",
+        onExecute: handleImport,
+      },
+      {
+        label: "Copy Summary",
+        icon: ClipboardList,
+        tooltip: "Copy the full split breakdown",
+        onExecute: handleCopySummary,
+        disabled: state.currentBill.people.length === 0,
+      },
+    ],
+    [
+      handleAddItem,
+      handleAddPerson,
+      handleCopySummary,
+      handleImport,
+      isAddingPerson,
+      state.currentBill.people.length,
+    ]
+  )
 
   return (
-    <div className="min-h-screen pb-32">
-      {/* Minimal Header with Glass Effect */}
-      <header className="glass-header px-4 py-3 sticky top-0 z-50">
-        <div className="container mx-auto max-w-5xl">
-          <div className="flex items-center justify-between gap-4">
-            {/* Left: Minimal Logo & Title */}
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="command-header sticky top-0 z-40">
+        <div className="mx-auto flex w-full max-w-[1640px] flex-wrap items-center gap-5 px-8 py-6">
+          <div className="flex min-w-0 flex-1 items-center gap-6">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-md">
-                  <Receipt className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">SplitSimple</span>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-surface-2">
+                <Receipt className="h-5 w-5 text-accent" />
               </div>
-              <div className="w-px h-6 bg-border/30" />
+              <div>
+                <p className="micro-label text-xs">Workspace</p>
+                <p className="text-sm font-semibold tracking-wide text-foreground">SplitSimple</p>
+              </div>
+            </div>
+            <div className="hidden h-9 w-px bg-border lg:block" />
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <p className="micro-label text-[0.65rem] uppercase tracking-[0.28em] text-muted-foreground">
+                Bill
+              </p>
               <Input
                 ref={titleInputRef}
                 value={state.currentBill.title}
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
-                placeholder="Untitled Bill"
-                className="text-title h-10 w-40 sm:w-56 border-0 bg-muted/30 text-foreground px-3 rounded-xl hover:bg-muted/50 focus:bg-card focus:shadow-md transition-all duration-200 font-semibold"
+                placeholder="Name this bill"
+                className="h-10 w-full rounded-md border border-border bg-surface-2 text-base font-semibold tracking-wide text-foreground transition focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
               />
             </div>
+          </div>
 
-            {/* Right: Status Only */}
-            <div className="flex items-center gap-2">
-              <BillStatusIndicator compact={true} showSelector={true} />
-              <SyncStatusIndicator compact />
-            </div>
+          <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <BillStatusIndicator compact showSelector />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Change bill status</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <SyncStatusIndicator compact />
+            <ThemeToggle />
+            <ShareBill variant="ghost" size="sm" showText={false} />
+            <Button
+              variant="outline"
+              size="sm"
+              className="border border-border bg-surface-2 font-semibold tracking-[0.18em] uppercase text-xs"
+              onClick={handleNewBill}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Reset
+            </Button>
+          </div>
+        </div>
+
+        <div className="border-t border-border/60 bg-surface-1/80">
+          <div className="mx-auto flex w-full max-w-[1640px] flex-wrap items-center gap-3 px-8 py-3">
+            <span className="command-chip">
+              People <strong>{state.currentBill.people.length}</strong>
+            </span>
+            <span className="command-chip">
+              Items <strong>{state.currentBill.items.length}</strong>
+            </span>
+            <span className="command-chip">
+              Status <strong className="capitalize">{state.currentBill.status}</strong>
+            </span>
+            {state.currentBill.lastModified && (
+              <span className="command-chip">
+                Updated <strong>{new Date(state.currentBill.lastModified).toLocaleString()}</strong>
+              </span>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Main Content - Canvas with floating cards (ORIGINAL LAYOUT) */}
-      <main className="container mx-auto px-4 py-6 lg:py-8 max-w-5xl">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 lg:gap-6">
-          {/* Items Section - LEFT */}
-          <div className="space-y-5">
-            {isMobile && state.currentBill.people.length === 0 ? (
-              <MobileFirstUI />
-            ) : state.currentBill.people.length > 0 ? (
-              <CollapsibleItemsTable />
-            ) : (
-              <Card className="float-card p-12 border-0">
-                <CardHeader className="text-center p-0">
-                  <div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-6">
-                    <Users className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-title mb-3">
-                    {isNewBillFlow ? "Welcome to SplitSimple!" : "Who's splitting the bill?"}
-                  </CardTitle>
-                  <p className="text-subtitle max-w-md mx-auto">
-                    {isNewBillFlow
-                      ? "First, give your bill a name above."
-                      : isMobile
-                      ? "Tap 'View Details' below to add people."
-                      : "Add the first person on the right to get started."}
-                  </p>
-                </CardHeader>
-              </Card>
-            )}
-          </div>
+      <main className="relative">
+        <div className="mx-auto grid w-full max-w-[1640px] gap-6 px-8 py-10 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
+          <aside className="control-rail">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              <LayoutDashboard className="h-4 w-4" />
+              Controls
+            </div>
+            {controlActions.map((action) => {
+              const Icon = action.icon
+              const button = (
+                <button
+                  key={action.label}
+                  data-active={action.active}
+                  className="control-button"
+                  disabled={action.disabled}
+                  onClick={action.onExecute}
+                >
+                  <Icon className="h-4 w-4" />
+                  {action.label}
+                </button>
+              )
 
-          {/* Totals Panel - RIGHT - RESTORED! */}
-          <div className="hidden lg:block">
-            <div className="sticky top-24">
-              <div className="float-panel border-0 p-5">
-                <TotalsPanel
-                  isAddingPerson={isAddingPerson}
-                  setIsAddingPerson={setIsAddingPerson}
-                  personInputRef={personInputRef}
-                />
+              if (action.tooltip) {
+                return (
+                  <TooltipProvider key={action.label}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>{button}</TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={12}>
+                        {action.tooltip}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )
+              }
+
+              return button
+            })}
+          </aside>
+
+          <section className="flex min-w-0 flex-col gap-6">
+            {state.currentBill.people.length === 0 && state.currentBill.items.length === 0 ? (
+              <div className="panel p-8">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="micro-label text-[0.65rem] text-muted-foreground">Getting started</p>
+                    <h2 className="mt-2 text-xl font-semibold tracking-tight">Invite your first person</h2>
+                  <p className="mt-2 max-w-md text-sm text-card-foreground">
+                    SplitSimple works best when everyone is in the room. Add the first person, then start
+                    logging the items you are sharing.
+                  </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleAddPerson}
+                    className="border border-accent bg-transparent text-xs font-semibold uppercase tracking-[0.18em]"
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add Person
+                  </Button>
+                </div>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <div className="panel bg-surface-2 p-4">
+                    <p className="micro-label text-[0.65rem] text-muted-foreground">Step 1</p>
+                    <p className="mt-2 font-semibold">Add the people</p>
+                    <p className="text-sm text-card-foreground">Use the control rail or the totals panel.</p>
+                  </div>
+                  <div className="panel bg-surface-2 p-4">
+                    <p className="micro-label text-[0.65rem] text-muted-foreground">Step 2</p>
+                    <p className="mt-2 font-semibold">Capture items</p>
+                    <p className="text-sm text-card-foreground">Log each line item and assign participants.</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="micro-label text-[0.65rem] text-muted-foreground">Items ledger</p>
+                <h3 className="mt-1 text-lg font-semibold tracking-tight">Breakdown</h3>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Copy className="h-3 w-3" />
+                {state.currentBill.items.length} total lines recorded
               </div>
             </div>
-          </div>
+
+            <CollapsibleItemsTable />
+          </section>
+
+          <aside className="panel flex h-fit flex-col gap-4 p-5 lg:sticky lg:top-[112px]">
+            <div className="flex items-center justify-between">
+              <p className="micro-label">Totals</p>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <TotalsPanel
+              isAddingPerson={isAddingPerson}
+              setIsAddingPerson={setIsAddingPerson}
+              personInputRef={personInputRef}
+              compact
+            />
+            <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
+              <Button
+                variant="secondary"
+                className="border border-border bg-surface-2 text-xs font-semibold uppercase tracking-[0.18em]"
+                onClick={handleCopySummary}
+                disabled={state.currentBill.people.length === 0}
+              >
+                <ClipboardList className="mr-2 h-4 w-4" />
+                Copy Summary
+              </Button>
+              <ShareBill variant="outline" size="sm" />
+            </div>
+          </aside>
         </div>
-        
-        {/* Mobile Action Button */}
-        {state.currentBill.people.length > 0 && (
-          <MobileActionButton
-            onAddPerson={handleAddPerson}
-            onAddItem={handleAddItem}
-            onViewReceipt={handleCopySummary}
-          />
-        )}
-        
-        <MobileActionSpacer />
+
+        <MobileTotalsBar />
       </main>
 
-      <MobileTotalsBar />
-
-      {/* FLOATING DOCK - Bottom Center (Desktop Only) */}
-      {!isMobile && state.currentBill.people.length > 0 && (
-        <div className="floating-dock">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  onClick={handleCopySummary}
-                  className="dock-item"
-                  aria-label="Copy Summary"
-                >
-                  <Copy className="h-5 w-5 text-foreground" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Copy Summary</TooltipContent>
-            </Tooltip>
-
-            <ShareBill variant="ghost" size="sm" showText={false} />
-
-            <div className="dock-divider" />
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  onClick={handleNewBill}
-                  className="dock-item"
-                  aria-label="New Bill"
-                >
-                  <Plus className="h-5 w-5 text-foreground" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">New Bill</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      )}
-
-      {/* FOOTER - Bottom Left & Right */}
-      <footer className="fixed bottom-0 left-0 right-0 px-6 py-3 text-xs text-muted-foreground border-t border-border/30 bg-background/80 backdrop-blur-sm z-40 pointer-events-none">
-        <div className="container mx-auto max-w-5xl flex justify-between items-center">
-          <span className="pointer-events-auto">
-            Crafted by{' '}
-            <a
-              href="https://anuragd.me"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium hover:text-primary transition-colors"
+      <footer className="border-t border-border/70 bg-surface-1/80 px-8 py-4 text-xs text-muted-foreground">
+        <div className="mx-auto flex w-full max-w-[1640px] items-center justify-between">
+          <span>Crafted with precision • SplitSimple Control Center</span>
+          <span className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground transition hover:text-foreground"
+              onClick={handleNewBill}
             >
-              anuragdhungana
-            </a>
+              Reset Bill
+            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="badge-outline"
+                    onClick={() => {
+                      toast({
+                        title: "Shortcuts",
+                        description: "Shortcut reference coming soon.",
+                      })
+                    }}
+                  >
+                    ⌘K
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Shortcut palette (soon)</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </span>
-          <a
-            href="https://github.com/aarekaz/splitsimple"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium hover:text-primary transition-colors pointer-events-auto"
-          >
-            View Source on GitHub
-          </a>
         </div>
       </footer>
     </div>

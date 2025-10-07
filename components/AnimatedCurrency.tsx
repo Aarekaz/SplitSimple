@@ -1,27 +1,27 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { formatCurrency } from "@/lib/utils"
 
-interface AnimatedNumberProps {
+interface AnimatedCurrencyProps {
   value: number
   className?: string
-  formatFn?: (value: number) => string
   duration?: number
-  showChange?: boolean
+  highlightChanges?: boolean
+  showIndicator?: boolean
 }
 
-export function AnimatedNumber({ 
+export function AnimatedCurrency({ 
   value, 
   className = "", 
-  formatFn = (v) => v.toFixed(2), 
   duration = 300,
-  showChange = false
-}: AnimatedNumberProps) {
+  highlightChanges = false,
+  showIndicator = false
+}: AnimatedCurrencyProps) {
   const [displayValue, setDisplayValue] = useState(value)
   const [isAnimating, setIsAnimating] = useState(false)
-  const [shouldPulse, setShouldPulse] = useState(false)
   const [changeDirection, setChangeDirection] = useState<'up' | 'down' | null>(null)
-  const [previousValue, setPreviousValue] = useState(value)
+  const [showChange, setShowChange] = useState(false)
 
   useEffect(() => {
     if (value === displayValue) return
@@ -31,23 +31,20 @@ export function AnimatedNumber({
     const difference = value - startValue
     const startTime = Date.now()
     
-    // Track change direction
+    // Track change direction for color indication
     if (difference > 0) {
       setChangeDirection('up')
+      if (highlightChanges) {
+        setShowChange(true)
+        setTimeout(() => setShowChange(false), 1200)
+      }
     } else if (difference < 0) {
       setChangeDirection('down')
+      if (highlightChanges) {
+        setShowChange(true)
+        setTimeout(() => setShowChange(false), 1200)
+      }
     }
-    
-    // Trigger pulse for significant changes
-    if (Math.abs(difference) > Math.abs(startValue) * 0.1 || Math.abs(difference) > 1) {
-      setShouldPulse(true)
-      setTimeout(() => {
-        setShouldPulse(false)
-        setChangeDirection(null)
-      }, 800)
-    }
-    
-    setPreviousValue(startValue)
 
     const animate = () => {
       const elapsed = Date.now() - startTime
@@ -65,26 +62,35 @@ export function AnimatedNumber({
       } else {
         setDisplayValue(value)
         setIsAnimating(false)
+        if (!highlightChanges) {
+          setTimeout(() => setChangeDirection(null), 400)
+        }
       }
     }
 
     requestAnimationFrame(animate)
-  }, [value, displayValue, duration])
+  }, [value, displayValue, duration, highlightChanges])
+
+  const getColorClass = () => {
+    if (!showChange || !changeDirection) return ''
+    return changeDirection === 'up' ? 'text-success' : 'text-destructive'
+  }
 
   return (
     <span 
-      className={`${className} inline-flex items-center gap-1 transition-colors-moderate ${shouldPulse ? 'success-pulse' : ''}`}
+      className={`${className} inline-flex items-center gap-1.5 font-mono transition-colors-moderate ${getColorClass()}`}
       style={{ 
         fontFeatureSettings: '"tnum" 1, "zero" 1',
         fontVariantNumeric: 'tabular-nums',
       }}
     >
-      {formatFn(displayValue)}
-      {showChange && changeDirection && (
-        <span className={`text-xs animate-fade-in ${changeDirection === 'up' ? 'text-success' : 'text-destructive'}`}>
+      {formatCurrency(displayValue)}
+      {showIndicator && changeDirection && showChange && (
+        <span className={`text-xs font-bold animate-slide-in-up ${changeDirection === 'up' ? 'text-success' : 'text-destructive'}`}>
           {changeDirection === 'up' ? '↑' : '↓'}
         </span>
       )}
     </span>
   )
 }
+
