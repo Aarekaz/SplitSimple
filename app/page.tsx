@@ -198,34 +198,41 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="command-header sticky top-0 z-40">
-        <div className="mx-auto flex w-full max-w-[1640px] flex-wrap items-center gap-5 px-8 py-6">
-          <div className="flex min-w-0 flex-1 items-center gap-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-surface-2">
-                <Receipt className="h-5 w-5 text-accent" />
-              </div>
-              <div>
-                <p className="micro-label text-xs">Workspace</p>
-                <p className="text-sm font-semibold tracking-wide text-foreground">SplitSimple</p>
-              </div>
+        <div className="mx-auto flex w-full max-w-[1640px] items-center gap-4 px-8 py-3.5">
+          {/* Workspace Branding */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface-2">
+              <Receipt className="h-4 w-4 text-accent" />
             </div>
-            <div className="hidden h-9 w-px bg-border lg:block" />
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <p className="micro-label text-[0.65rem] uppercase tracking-[0.28em] text-muted-foreground">
-                Bill
-              </p>
-              <Input
-                ref={titleInputRef}
-                value={state.currentBill.title}
-                onChange={handleTitleChange}
-                onKeyDown={handleTitleKeyDown}
-                placeholder="Name this bill"
-                className="h-10 w-full rounded-md border border-border bg-surface-2 px-4 py-2.5 text-base font-semibold tracking-wide text-foreground transition focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
-              />
-            </div>
+            <span className="text-sm font-semibold tracking-tight text-foreground">SplitSimple</span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden h-6 w-px bg-border lg:block" />
+
+          {/* Bill Title Input - Prominent */}
+          <div className="flex min-w-0 flex-1 items-center">
+            <Input
+              ref={titleInputRef}
+              value={state.currentBill.title}
+              onChange={handleTitleChange}
+              onKeyDown={handleTitleKeyDown}
+              placeholder="Name this bill"
+              className="h-9 w-full rounded-md border border-border bg-surface-2 px-3.5 text-base font-semibold tracking-tight text-foreground transition focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+            />
+          </div>
+
+          {/* Stats Chips - Inline & Compact */}
+          <div className="hidden items-center gap-2 lg:flex">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="text-foreground">{state.currentBill.people.length}</span> People
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="text-foreground">{state.currentBill.items.length}</span> Items
+            </span>
+          </div>
+
+          {/* Action Buttons - Compact */}
+          <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -242,31 +249,12 @@ export default function HomePage() {
             <Button
               variant="outline"
               size="sm"
-              className="border border-border bg-surface-2 font-semibold tracking-[0.18em] uppercase text-xs"
+              className="h-8 border border-border bg-surface-2 px-3 text-[0.65rem] font-semibold uppercase tracking-[0.16em]"
               onClick={handleNewBill}
             >
-              <RefreshCcw className="mr-2 h-4 w-4" />
+              <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
               Reset
             </Button>
-          </div>
-        </div>
-
-        <div className="border-t border-border/60 bg-surface-1/80">
-          <div className="mx-auto flex w-full max-w-[1640px] flex-wrap items-center gap-3 px-8 py-3">
-            <span className="command-chip">
-              People <strong>{state.currentBill.people.length}</strong>
-            </span>
-            <span className="command-chip">
-              Items <strong>{state.currentBill.items.length}</strong>
-            </span>
-            <span className="command-chip">
-              Status <strong className="capitalize">{state.currentBill.status}</strong>
-            </span>
-            {state.currentBill.lastModified && (
-              <span className="command-chip">
-                Updated <strong>{new Date(state.currentBill.lastModified).toLocaleString()}</strong>
-              </span>
-            )}
           </div>
         </div>
       </header>
@@ -360,7 +348,7 @@ export default function HomePage() {
             <CollapsibleItemsTable />
           </section>
 
-          <aside className="panel flex h-fit flex-col gap-4 p-5 lg:sticky lg:top-[112px]">
+          <aside className="panel flex h-fit flex-col gap-4 p-5 lg:sticky lg:top-[76px]">
             <div className="flex items-center justify-between">
               <p className="micro-label">Totals</p>
               <Activity className="h-4 w-4 text-muted-foreground" />
