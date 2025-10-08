@@ -388,6 +388,38 @@ export default function HomePage() {
 
         <MobileTotalsBar />
       </main>
+
+      {/* Corner Text Elements - Desktop Only */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 hidden lg:block">
+        <div className="mx-auto flex w-full max-w-[1640px] items-end justify-between px-8 pb-10">
+          {/* Bottom Left */}
+          <div className="pointer-events-auto text-xs text-muted-foreground/60 transition-colors-moderate hover:text-muted-foreground">
+            SplitSimple: Splitting made easy
+          </div>
+
+          {/* Bottom Right */}
+          <div className="pointer-events-auto flex items-center gap-2 text-xs text-muted-foreground/60">
+            <span>Made by</span>
+            <a
+              href="https://anuragd.me"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline-offset-2 transition-colors-moderate hover:text-foreground hover:underline"
+            >
+              Anurag
+            </a>
+            <span>•</span>
+            <a
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline-offset-2 transition-colors-moderate hover:text-foreground hover:underline"
+            >
+              View code here
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
