@@ -121,7 +121,7 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
             size="sm" 
             onClick={handleAddPerson} 
             disabled={!newPersonName.trim()} 
-            className={`h-10 px-4 rounded-xl btn-float transition-all duration-300 font-medium ${showSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white'}`}
+            className={`h-10 px-4 rounded-xl transition-all-moderate font-medium ${showSuccess ? 'bg-success hover:bg-success/90 text-success-foreground success-pulse' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
           >
             {showSuccess ? '✓' : 'Add'}
           </Button>
