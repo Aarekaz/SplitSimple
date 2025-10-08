@@ -277,7 +277,7 @@ export default function HomePage() {
       </header>
 
       <main className="relative">
-        <div className="mx-auto grid w-full max-w-[1640px] gap-6 px-8 py-10 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
+        <div className="mx-auto grid w-full max-w-[1640px] gap-6 px-8 pt-10 pb-4 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
           <aside className="control-rail">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
               <LayoutDashboard className="h-4 w-4" />
@@ -394,23 +394,22 @@ export default function HomePage() {
         <MobileTotalsBar />
       </main>
 
-      <footer className="border-t border-border/70 bg-surface-1/80 px-8 py-4 text-xs text-muted-foreground">
-        <div className="mx-auto flex w-full max-w-[1640px] items-center justify-between">
-          <span>Crafted with precision • SplitSimple Control Center</span>
-          <span className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground transition hover:text-foreground"
+      <footer className="border-t border-border/50 bg-surface-1/60 backdrop-blur-sm h-7 flex items-center px-8">
+        <div className="mx-auto flex w-full max-w-[1640px] items-center justify-between text-[0.6rem] text-muted-foreground/80">
+          <span className="tracking-wide">Crafted with precision • SplitSimple Control Center</span>
+          <span className="flex items-center gap-1.5">
+            <button
+              className="text-[0.6rem] text-muted-foreground transition-colors-moderate hover:text-foreground px-1.5 py-0.5"
               onClick={handleNewBill}
             >
               Reset Bill
-            </Button>
+            </button>
+            <span className="text-muted-foreground/40">•</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    className="badge-outline"
+                    className="flex items-center gap-1 rounded border border-border/50 bg-surface-2/50 px-1 py-0.5 text-[0.6rem] font-medium text-muted-foreground transition-colors-moderate hover:border-border hover:text-foreground"
                     onClick={() => {
                       toast({
                         title: "Shortcuts",
