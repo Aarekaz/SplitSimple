@@ -575,6 +575,39 @@
     animation: pulse-subtle 2s var(--easing-standard) infinite;
   }
 
+  /* Exit/Remove Animations */
+  @keyframes slide-out-up {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-slide-out-up {
+    animation: slide-out-up var(--duration-fast) var(--easing-accelerate);
+  }
+
+  /* Shake Animation for Validation */
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+
+  .animate-shake {
+    animation: shake 0.3s var(--easing-standard);
+  }
+
   /* Shimmer/Loading Animations */
   @keyframes shimmer {
     0% {

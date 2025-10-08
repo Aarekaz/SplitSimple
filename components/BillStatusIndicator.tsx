@@ -53,7 +53,7 @@ export function BillStatusIndicator({ compact = false, showSelector = true }: Bi
   if (compact) {
     if (!showSelector) {
       return (
-        <Badge variant={config.variant} className="flex items-center gap-1.5 text-xs px-2 py-1">
+        <Badge variant={config.variant} className="flex items-center gap-1.5 text-xs px-2 py-1 transition-colors-moderate">
           <Icon className="h-3 w-3" />
           {config.label}
         </Badge>
@@ -65,7 +65,7 @@ export function BillStatusIndicator({ compact = false, showSelector = true }: Bi
       <Select value={currentStatus} onValueChange={handleStatusChange}>
         <SelectTrigger className="w-auto h-8 border-none shadow-none p-0 gap-1.5 hover:bg-muted/50 focus:ring-0 focus:ring-offset-0">
           <SelectValue asChild>
-            <Badge variant={config.variant} className="flex items-center gap-1.5 cursor-pointer">
+            <Badge variant={config.variant} className="flex items-center gap-1.5 cursor-pointer transition-colors-moderate">
               <Icon className="h-3.5 w-3.5" />
               {config.label}
             </Badge>
@@ -94,7 +94,7 @@ export function BillStatusIndicator({ compact = false, showSelector = true }: Bi
   if (!showSelector) {
     return (
       <div className="flex items-center gap-2 text-sm">
-        <Badge variant={config.variant} className="flex items-center gap-1.5">
+        <Badge variant={config.variant} className="flex items-center gap-1.5 transition-colors-moderate">
           <Icon className="h-3.5 w-3.5" />
           {config.label}
         </Badge>
@@ -105,7 +105,7 @@ export function BillStatusIndicator({ compact = false, showSelector = true }: Bi
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <Badge variant={config.variant} className="flex items-center gap-1.5">
+      <Badge variant={config.variant} className="flex items-center gap-1.5 transition-colors-moderate">
         <Icon className="h-3.5 w-3.5" />
         {config.label}
       </Badge>

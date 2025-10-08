@@ -19,9 +19,6 @@ import {
   Receipt,
   RefreshCcw,
   UserPlus,
-  Users as UsersIcon,
-  Package,
-  Clock,
   FileDown,
 } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
@@ -32,7 +29,6 @@ import { useBillAnalytics } from "@/hooks/use-analytics"
 import { BillStatusIndicator } from "@/components/BillStatusIndicator"
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
 import { ThemeToggle } from "@/components/ThemeToggle"
-import { useIsMobile } from "@/hooks/use-mobile"
 
 interface ControlAction {
   label: string
@@ -47,7 +43,6 @@ export default function HomePage() {
   const { state, dispatch } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
-  const isMobile = useIsMobile()
 
   const [isAddingPerson, setIsAddingPerson] = useState(false)
   const personInputRef = useRef<HTMLInputElement>(null)
@@ -225,7 +220,7 @@ export default function HomePage() {
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
                 placeholder="Name this bill"
-                className="h-10 w-full rounded-md border border-border bg-surface-2 text-base font-semibold tracking-wide text-foreground transition focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+                className="h-10 w-full rounded-md border border-border bg-surface-2 px-4 py-2.5 text-base font-semibold tracking-wide text-foreground transition focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
               />
             </div>
           </div>
@@ -393,39 +388,6 @@ export default function HomePage() {
 
         <MobileTotalsBar />
       </main>
-
-      <footer className="border-t border-border/50 bg-surface-1/60 backdrop-blur-sm h-7 flex items-center px-8">
-        <div className="mx-auto flex w-full max-w-[1640px] items-center justify-between text-[0.6rem] text-muted-foreground/80">
-          <span className="tracking-wide">Crafted with precision • SplitSimple Control Center</span>
-          <span className="flex items-center gap-1.5">
-            <button
-              className="text-[0.6rem] text-muted-foreground transition-colors-moderate hover:text-foreground px-1.5 py-0.5"
-              onClick={handleNewBill}
-            >
-              Reset Bill
-            </button>
-            <span className="text-muted-foreground/40">•</span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    className="flex items-center gap-1 rounded border border-border/50 bg-surface-2/50 px-1 py-0.5 text-[0.6rem] font-medium text-muted-foreground transition-colors-moderate hover:border-border hover:text-foreground"
-                    onClick={() => {
-                      toast({
-                        title: "Shortcuts",
-                        description: "Shortcut reference coming soon.",
-                      })
-                    }}
-                  >
-                    ⌘K
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Shortcut palette (soon)</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </span>
-        </div>
-      </footer>
     </div>
   )
 }

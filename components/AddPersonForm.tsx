@@ -25,6 +25,7 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
   const [newPersonName, setNewPersonName] = useState("")
   const [validationError, setValidationError] = useState<string>("")
   const [showSuccess, setShowSuccess] = useState(false)
+  const [shake, setShake] = useState(false)
 
   const handleAddPerson = () => {
     const trimmedName = newPersonName.trim()
@@ -33,6 +34,8 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
     const validation = validatePersonName(trimmedName)
     if (!validation.isValid) {
       setValidationError(validation.error || "Invalid name")
+      setShake(true)
+      setTimeout(() => setShake(false), 300)
       return
     }
 
@@ -43,6 +46,8 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
 
     if (isDuplicate) {
       setValidationError("A person with this name already exists")
+      setShake(true)
+      setTimeout(() => setShake(false), 300)
       toast({
         title: "Duplicate name",
         description: "A person with this name already exists in the bill",
@@ -111,7 +116,7 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
           value={newPersonName}
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
-          className={`h-10 text-sm flex-1 rounded-xl border-border/50 focus:border-primary transition-all duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+          className={`h-10 text-sm flex-1 rounded-xl border-border/50 focus:border-primary transition-all duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''} ${shake ? 'animate-shake' : ''}`}
           autoFocus
           aria-invalid={validationError ? 'true' : 'false'}
           aria-describedby={validationError ? 'person-name-error' : undefined}
@@ -130,7 +135,7 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
       {validationError && (
         <div
           id="person-name-error"
-          className="text-sm text-destructive ml-5"
+          className="text-sm text-destructive ml-5 animate-slide-in-down"
           role="alert"
           aria-live="polite"
         >

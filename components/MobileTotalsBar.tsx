@@ -9,6 +9,7 @@ import { useBill } from "@/contexts/BillContext"
 import { getBillSummary } from "@/lib/calculations"
 import { formatCurrency } from "@/lib/utils"
 import { SyncStatusIndicator } from "./SyncStatusIndicator"
+import { AnimatedCurrency } from "./AnimatedCurrency"
 
 export function MobileTotalsBar() {
   const { state } = useBill()
@@ -37,9 +38,10 @@ export function MobileTotalsBar() {
                 <Calculator className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-lg font-semibold text-foreground">
-                  {formatCurrency(summary.total)}
-                </div>
+                <AnimatedCurrency 
+                  value={summary.total} 
+                  className="text-lg font-semibold text-foreground"
+                />
                 <div className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
                   {state.currentBill.people.length} people • {state.currentBill.items.length} items
                 </div>

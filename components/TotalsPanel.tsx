@@ -10,6 +10,7 @@ import { formatCurrency } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { AddPersonForm } from "@/components/AddPersonForm"
 import { AnimatedNumber } from "@/components/AnimatedNumber"
+import { AnimatedCurrency } from "@/components/AnimatedCurrency"
 
 interface TotalsPanelProps {
   compact?: boolean
@@ -28,10 +29,35 @@ export function TotalsPanel({
   const summary = getBillSummary(state.currentBill)
   const itemBreakdowns = getItemBreakdowns(state.currentBill)
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null)
+  const [newPeople, setNewPeople] = useState<Set<string>>(new Set())
+  const [removingPeople, setRemovingPeople] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     setExpandedPerson(null)
   }, [state.currentBill.people])
+
+  // Track newly added people for animation
+  useEffect(() => {
+    const currentIds = new Set(state.currentBill.people.map(p => p.id))
+    const previousIds = new Set([...newPeople].filter(id => !currentIds.has(id)))
+    
+    // Find truly new people (not in newPeople set yet)
+    const freshlyAdded = state.currentBill.people
+      .filter(p => !newPeople.has(p.id))
+      .map(p => p.id)
+    
+    if (freshlyAdded.length > 0) {
+      setNewPeople(new Set([...newPeople, ...freshlyAdded]))
+      // Remove animation class after animation completes
+      setTimeout(() => {
+        setNewPeople(prev => {
+          const updated = new Set(prev)
+          freshlyAdded.forEach(id => updated.delete(id))
+          return updated
+        })
+      }, 400)
+    }
+  }, [state.currentBill.people.length])
 
   const handleRemovePerson = (personId: string) => {
     const person = state.currentBill.people.find((p) => p.id === personId)
@@ -45,11 +71,20 @@ export function TotalsPanel({
       if (!confirmed) return
     }
 
-    dispatch({ type: "REMOVE_PERSON", payload: personId })
+    // Add removing animation
+    setRemovingPeople(prev => new Set([...prev, personId]))
+    setTimeout(() => {
+      dispatch({ type: "REMOVE_PERSON", payload: personId })
+      setRemovingPeople(prev => {
+        const updated = new Set(prev)
+        updated.delete(personId)
+        return updated
+      })
+    }, 200)
   }
 
   const totalsBlock = (
-    <section className="space-y-3 rounded-lg border border-border bg-surface-2 p-4">
+    <section className="space-y-3 rounded-lg border border-border bg-surface-2 p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <span className="micro-label text-muted-foreground">Bill snapshot</span>
         <span className="badge-outline capitalize">{state.currentBill.status}</span>
@@ -78,7 +113,7 @@ export function TotalsPanel({
   )
 
   const peopleBlock = (
-    <section className="space-y-3 rounded-lg border border-border bg-surface-2 p-4">
+    <section className="space-y-3 rounded-lg border border-border bg-surface-2 p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <span className="micro-label text-muted-foreground">Participants</span>
         {!isAddingPerson && (
@@ -110,7 +145,7 @@ export function TotalsPanel({
           return (
             <div
               key={person.id}
-              className="rounded-md border border-border bg-surface-1/60 transition hover:border-accent/80"
+              className={`rounded-md border border-border bg-surface-1/60 shadow-sm transition-all-moderate hover:border-accent/80 hover:shadow-md ${newPeople.has(person.id) ? 'animate-slide-in-down' : ''} ${removingPeople.has(person.id) ? 'animate-scale-out' : ''}`}
             >
               <button
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm"
@@ -134,9 +169,10 @@ export function TotalsPanel({
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="font-semibold text-foreground">
-                    {formatCurrency(personTotal.total)}
-                  </span>
+                  <AnimatedCurrency 
+                    value={personTotal.total} 
+                    className="font-semibold text-foreground"
+                  />
                   <button
                     className="rounded-sm border border-transparent p-1 text-muted-foreground transition hover:border-destructive/50 hover:text-destructive"
                     onClick={(event) => {
@@ -148,20 +184,23 @@ export function TotalsPanel({
                   </button>
                 </div>
               </button>
-              {isExpanded && assignments.length > 0 && (
-                <div className="border-t border-border/70 px-3 py-3 text-xs text-muted-foreground">
-                  <ul className="space-y-1.5">
-                    {assignments.map((assignment) => (
-                      <li key={assignment.itemId} className="flex justify-between gap-2">
+              <div className="overflow-hidden transition-all-moderate">
+                {isExpanded && assignments.length > 0 && (
+                  <div className="border-t border-border/70 px-3 py-3 text-xs text-muted-foreground animate-slide-in-down">
+                    <ul className="space-y-1.5">
+                      {assignments.map((assignment) => (
+                        <li key={assignment.itemId} className="flex justify-between gap-2">
                         <span className="truncate">{assignment.itemName}</span>
-                        <span className="font-medium text-card-foreground">
-                          {formatCurrency(assignment.splits[person.id])}
-                        </span>
+                        <AnimatedCurrency 
+                          value={assignment.splits[person.id]} 
+                          className="font-medium text-card-foreground"
+                        />
                       </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}
@@ -209,9 +248,10 @@ function Row({
   return (
     <div className="flex items-center justify-between">
       <span className="text-muted-foreground">{label}</span>
-      <span className={tone === "positive" ? "text-success" : "text-foreground"}>
-        {formatCurrency(value)}
-      </span>
+      <AnimatedCurrency 
+        value={value} 
+        className={tone === "positive" ? "text-success" : "text-foreground"}
+      />
     </div>
   )
 }

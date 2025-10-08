@@ -16,7 +16,7 @@ export function ThemeToggle() {
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="relative h-9 w-9 rounded-lg border border-border bg-surface-2 transition-all-moderate hover:bg-surface-3 hover:border-border-strong"
+            className="relative h-9 w-9 rounded-lg border border-border bg-surface-2 transition-all-moderate hover:bg-surface-3 hover:border-border-strong hover:ring-2 hover:ring-accent/20"
           >
             {/* Sun icon for light mode */}
             <Sun
@@ -44,4 +44,3 @@ export function ThemeToggle() {
     </TooltipProvider>
   )
 }
-
