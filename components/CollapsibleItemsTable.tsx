@@ -20,8 +20,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-// Temporarily comment out mobile drag drop to isolate issues
-// import { MobileDragDrop, MobileSortableItem } from "./MobileDragDrop"
+import { MobileDragDrop, MobileSortableItem } from "./MobileDragDrop"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -116,7 +115,7 @@ function getItemValidationStatus(item: Item): { isValid: boolean; warnings: stri
   }
 }
 
-function SortableItem({ id, children }: { id: string; children: React.ReactNode }) {
+function SortableItem({ id, children, isSelected, onSelect }: { id: string; children: React.ReactNode; isSelected?: boolean; onSelect?: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
 
   const style = {
@@ -125,43 +124,42 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} className="relative group">
-      {/* Drag Handle - subtle but always visible */}
+    <div ref={setNodeRef} style={style} className="group">
       <div
-        {...listeners}
-        className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md cursor-grab hover:bg-primary/10 hover:border-primary/30 opacity-30 group-hover:opacity-100 focus:opacity-100 transition-all z-10 bg-background/60 backdrop-blur-sm border border-border/30"
-        title="Drag to reorder or press Enter to focus item"
-        aria-label="Drag handle for item reordering. Press Enter to focus item controls."
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            // Focus the item name input for better keyboard navigation
-            const itemContent = e.currentTarget.parentElement?.querySelector('[data-item-input="name"]') as HTMLInputElement
-            itemContent?.focus()
-          } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            e.preventDefault()
-            // Navigate between drag handles with arrow keys
-            const allDragHandles = document.querySelectorAll('[aria-label*="Drag handle"]')
-            const currentIndex = Array.from(allDragHandles).indexOf(e.currentTarget as Element)
-
-            let nextIndex: number
-            if (e.key === 'ArrowUp') {
-              nextIndex = currentIndex > 0 ? currentIndex - 1 : allDragHandles.length - 1
-            } else {
-              nextIndex = currentIndex < allDragHandles.length - 1 ? currentIndex + 1 : 0
-            }
-
-            (allDragHandles[nextIndex] as HTMLElement)?.focus()
-          }
-        }}
+        className={`grid grid-cols-[36px_1fr] items-stretch rounded-xl ${isSelected ? 'ring-2 ring-primary/40' : 'ring-1 ring-transparent'}`}
+        onClick={onSelect}
       >
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </div>
-      {/* Content with subtle left padding when drag handle is visible */}
-      <div className="group-hover:pl-10 transition-all duration-200">
-        {children}
+        {/* Drag Handle - left gutter, handle-only drag */}
+        <button
+          {...listeners}
+          {...attributes}
+          aria-label="Drag handle for item reordering. Press Enter to focus item controls."
+          title="Drag to reorder or press Enter to focus item"
+          className="m-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/40 bg-background/70 backdrop-blur-sm cursor-grab focus:outline-none focus:ring-2 focus:ring-primary/40 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              const itemContent = (e.currentTarget.parentElement?.querySelector('[data-item-input="name"]') as HTMLInputElement) || null
+              itemContent?.focus()
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+              e.preventDefault()
+              const allDragHandles = document.querySelectorAll('[aria-label*="Drag handle"]')
+              const currentIndex = Array.from(allDragHandles).indexOf(e.currentTarget as Element)
+              let nextIndex: number
+              if (e.key === 'ArrowUp') {
+                nextIndex = currentIndex > 0 ? currentIndex - 1 : allDragHandles.length - 1
+              } else {
+                nextIndex = currentIndex < allDragHandles.length - 1 ? currentIndex + 1 : 0
+              }
+              (allDragHandles[nextIndex] as HTMLElement)?.focus()
+            }
+          }}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <div className="min-w-0">
+          {children}
+        </div>
       </div>
     </div>
   )
@@ -170,13 +168,14 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
 export function CollapsibleItemsTable() {
   const { state, dispatch } = useBill()
   const isMobile = useIsMobile()
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [focusNewItem, setFocusNewItem] = useState(false)
   const [showAddSuccess, setShowAddSuccess] = useState(false)
   const itemInputRefs = useRef<Record<string, { name: HTMLInputElement | null; price: HTMLInputElement | null }>>({})
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -184,21 +183,6 @@ export function CollapsibleItemsTable() {
 
   const items = state.currentBill.items
   const people = state.currentBill.people
-  const { tax, tip, taxTipAllocation } = state.currentBill
-
-  const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const validation = validateCurrencyInput(e.target.value)
-    dispatch({ type: "SET_TAX", payload: validation.value.toString() })
-  }
-
-  const handleTipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const validation = validateCurrencyInput(e.target.value)
-    dispatch({ type: "SET_TIP", payload: validation.value.toString() })
-  }
-
-  const handleTaxTipAllocationChange = (value: "proportional" | "even") => {
-    dispatch({ type: "SET_TAX_TIP_ALLOCATION", payload: value })
-  }
 
   useEffect(() => {
     if (focusNewItem && items.length > 0) {
@@ -249,11 +233,68 @@ export function CollapsibleItemsTable() {
         e.preventDefault()
         handleAddItem(true)
       }
+
+      // Delete to remove selected item
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        if (selectedItemId) {
+          e.preventDefault()
+          handleDeleteItem(selectedItemId)
+        }
+      }
+
+      // Cmd/Ctrl + D to duplicate selected item (if exists)
+      if ((e.metaKey || e.ctrlKey) && (e.key.toLowerCase() === 'd')) {
+        if (selectedItemId) {
+          e.preventDefault()
+          const item = items.find(i => i.id === selectedItemId)
+          if (item) {
+            const duplicate = { ...item, id: undefined as unknown as string }
+            dispatch({ type: "ADD_ITEM", payload: {
+              name: duplicate.name,
+              price: duplicate.price,
+              quantity: duplicate.quantity,
+              splitWith: duplicate.splitWith,
+              method: duplicate.method,
+              customSplits: duplicate.customSplits,
+            } })
+            setFocusNewItem(true)
+          }
+        }
+      }
+
+      // Arrow Up/Down to change selected cell
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (items.length === 0) return
+        const currentIndex = selectedItemId ? items.findIndex(i => i.id === selectedItemId) : -1
+        let nextIndex = currentIndex
+        if (e.key === 'ArrowUp') {
+          nextIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1
+        } else {
+          nextIndex = currentIndex >= items.length - 1 ? 0 : currentIndex + 1
+        }
+        const nextItem = items[nextIndex]
+        if (nextItem) {
+          setSelectedItemId(nextItem.id)
+        }
+      }
+
+      // Enter focuses the first input of the selected item
+      if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        if (selectedItemId) {
+          e.preventDefault()
+          const ref = itemInputRefs.current[selectedItemId]?.name
+          if (ref) {
+            ref.focus()
+            ref.select()
+          }
+        }
+      }
     }
 
     document.addEventListener('keydown', handleGlobalKeyDown)
     return () => document.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [people, handleAddItem])
+  }, [people, handleAddItem, selectedItemId, items, dispatch])
 
   const getItemSplits = useCallback((itemId: string) => {
     const item = items.find((i) => i.id === itemId)
@@ -435,14 +476,21 @@ export function CollapsibleItemsTable() {
                 const validationStatus = getItemValidationStatus(item)
 
                 return (
-                        <SortableItem key={item.id} id={item.id}>
-                          <div className="float-card-sm border-0 hover:shadow-md transition-all duration-300 group">
+                        <SortableItem key={item.id} id={item.id} isSelected={selectedItemId === item.id} onSelect={() => setSelectedItemId(item.id)}>
+                          <div className="float-card-sm border transition-shadow duration-200 group">
                             {/* Modern Row */}
                             <div className="flex items-center p-4 gap-4">
                               {/* Chevron */}
-                                                            <div className="cursor-pointer hover:bg-muted/50 rounded-md p-1 transition-colors" onClick={() => toggleItemExpansion(item.id)}>
+                                                            <button
+                                type="button"
+                                aria-expanded={isExpanded}
+                                aria-label="Toggle item details"
+                                className="rounded-md p-1 transition-colors hover:bg-muted/40"
+                                onMouseDown={(e) => { e.preventDefault() }}
+                                onClick={(e) => { e.stopPropagation(); toggleItemExpansion(item.id) }}
+                              >
                                 <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
-                      </div>
+                              </button>
 
                                       {/* Item Name */}
                               <div className="flex-1 min-w-0">
@@ -458,7 +506,7 @@ export function CollapsibleItemsTable() {
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
                                           placeholder="Add your item..."
                                           data-item-input="name"
-                                    className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm"
+                                    className="receipt-item-name h-9 text-sm"
                                   />
                                   {/* Split method badge */}
                                   {!isExpanded && item.method !== "even" && (
@@ -497,7 +545,7 @@ export function CollapsibleItemsTable() {
                                           onFocus={(e) => e.target.select()}
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
                                           placeholder="0.00"
-                                  className="receipt-amount h-9 border-none bg-transparent focus-visible:ring-1"
+                                  className="receipt-amount h-9"
                                         />
                                       </div>
                               
@@ -514,7 +562,7 @@ export function CollapsibleItemsTable() {
                                     }
                                     onFocus={(e) => e.target.select()}
                                     onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                    className="h-9 border-none bg-transparent focus-visible:ring-1 text-center text-sm"
+                                    className="h-9 text-center text-sm"
                                     title="Quantity"
                                   />
                                 </div>
@@ -539,7 +587,7 @@ export function CollapsibleItemsTable() {
                                   variant="ghost" 
                                   size="icon" 
                                   onClick={() => handleDeleteItem(item.id)} 
-                                  className="h-11 w-11 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                                  className="h-11 w-11 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                   title="Delete item"
                                   aria-label={`Delete ${item.name || 'item'}`}
                                 >
@@ -635,6 +683,7 @@ export function CollapsibleItemsTable() {
 
                     {/* Mobile View */}
           <div className="lg:hidden px-5 pb-5 space-y-3">
+            <MobileDragDrop items={items.map((i) => i.id)} onDragEnd={handleDragEnd}>
             {items.map((item, index) => {
               const isExpanded = expandedItems.has(item.id)
               const splits = getItemSplits(item.id)
@@ -642,7 +691,8 @@ export function CollapsibleItemsTable() {
               const validationStatus = getItemValidationStatus(item)
 
               return (
-                <div key={item.id} className="float-card-sm border-0 hover:shadow-md transition-all duration-300 group">
+              <MobileSortableItem key={item.id} id={item.id}>
+                <div className={`float-card-sm border transition-colors duration-200 group ${selectedItemId === item.id ? 'ring-2 ring-primary/40' : ''}`} onClick={() => setSelectedItemId(item.id)}>
                   {/* Mobile Row */}
                   <div className="p-3 space-y-3">
                     {/* Expandable hint */}
@@ -679,7 +729,7 @@ export function CollapsibleItemsTable() {
                               onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
                               placeholder="Add your item..."
-                            className="receipt-item-name h-9 border-none bg-transparent focus-visible:ring-1 text-sm flex-1"
+                            className="receipt-item-name h-9 text-sm flex-1"
                           />
                           {/* Split method badge for mobile */}
                           {!isExpanded && item.method !== "even" && (
@@ -724,7 +774,7 @@ export function CollapsibleItemsTable() {
                                 onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleKeyDown(e, item, index)}
                                     placeholder="0.00"
-                            className="font-mono h-9 border-none bg-transparent focus-visible:ring-1 text-right font-semibold"
+                            className="font-mono h-9 text-right font-semibold"
                               />
                         </div>
                         
@@ -741,7 +791,7 @@ export function CollapsibleItemsTable() {
                               }
                               onFocus={(e) => e.target.select()}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
-                              className="h-9 border-none bg-transparent focus-visible:ring-1 text-center text-sm"
+                              className="h-9 text-center text-sm"
                               title="Quantity"
                             />
                           </div>
@@ -829,8 +879,10 @@ export function CollapsibleItemsTable() {
                     </div>
                   )}
                   </div>
+              </MobileSortableItem>
                 )
               })}
+            </MobileDragDrop>
 
           {/* Tax and Tip Section for Mobile */}
           <div className="mt-4">

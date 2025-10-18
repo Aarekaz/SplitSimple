@@ -642,6 +642,52 @@
     animation: skeleton 2s var(--easing-standard) infinite;
   }
 
+  /* Subtle animated rainbow border on hover/focus for buttons */
+  @keyframes rainbow-shift {
+    0% { 
+      background: linear-gradient(90deg, #ff6b6b, #f7b267, #ffd166, #06d6a0, #4cc9f0, #a78bfa);
+    }
+    25% { 
+      background: linear-gradient(90deg, #f7b267, #ffd166, #06d6a0, #4cc9f0, #a78bfa, #ff6b6b);
+    }
+    50% { 
+      background: linear-gradient(90deg, #ffd166, #06d6a0, #4cc9f0, #a78bfa, #ff6b6b, #f7b267);
+    }
+    75% { 
+      background: linear-gradient(90deg, #06d6a0, #4cc9f0, #a78bfa, #ff6b6b, #f7b267, #ffd166);
+    }
+    100% { 
+      background: linear-gradient(90deg, #4cc9f0, #a78bfa, #ff6b6b, #f7b267, #ffd166, #06d6a0);
+    }
+  }
+
+  .rainbow-border-hover {
+    position: relative;
+  }
+
+  .rainbow-border-hover::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #ff6b6b, #f7b267, #ffd166, #06d6a0, #4cc9f0, #a78bfa);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--easing-standard);
+    pointer-events: none;
+    z-index: -1;
+    padding: 1px;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .rainbow-border-hover:hover::before,
+  .rainbow-border-hover:focus-visible::before {
+    opacity: 0.4;
+    animation: rainbow-shift 3s ease-in-out infinite;
+  }
+
   /* Reduced Motion Support */
   @media (prefers-reduced-motion: reduce) {
     *,

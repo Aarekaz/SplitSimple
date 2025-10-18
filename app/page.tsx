@@ -29,6 +29,7 @@ import { useBillAnalytics } from "@/hooks/use-analytics"
 import { BillStatusIndicator } from "@/components/BillStatusIndicator"
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
 import { ThemeToggle } from "@/components/ThemeToggle"
+import { ImportDialog } from "@/components/ImportDialog"
 
 interface ControlAction {
   label: string
@@ -45,6 +46,7 @@ export default function HomePage() {
   const analytics = useBillAnalytics()
 
   const [isAddingPerson, setIsAddingPerson] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
   const personInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
@@ -148,10 +150,7 @@ export default function HomePage() {
   }
 
   const handleImport = () => {
-    toast({
-      title: "Import coming soon",
-      description: "CSV import is on the roadmap.",
-    })
+    setShowImportDialog(true)
     analytics.trackFeatureUsed("control_import")
   }
 
@@ -408,6 +407,9 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      
+      {/* Import Dialog */}
+      <ImportDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
     </div>
   )
 }
