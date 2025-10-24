@@ -159,7 +159,7 @@ export default function HomePage() {
       {
         label: "Add Person",
         icon: UserPlus,
-        tooltip: "Invite someone to the split",
+        tooltip: isAddingPerson ? "Click to cancel adding person" : "Click to add a new person to the bill",
         onExecute: handleAddPerson,
         active: isAddingPerson,
       },
@@ -271,7 +271,8 @@ export default function HomePage() {
                 <button
                   key={action.label}
                   data-active={action.active}
-                  className="control-button"
+                  data-action={action.label.toLowerCase().replace(/\s+/g, '-')}
+                  className="control-button rainbow-border-hover"
                   disabled={action.disabled}
                   onClick={action.onExecute}
                 >
@@ -305,18 +306,9 @@ export default function HomePage() {
                     <p className="micro-label text-[0.65rem] text-muted-foreground">Getting started</p>
                     <h2 className="mt-2 text-xl font-semibold tracking-tight">Invite your first person</h2>
                   <p className="mt-2 max-w-md text-sm text-card-foreground">
-                    SplitSimple works best when everyone is in the room. Add the first person, then start
-                    logging the items you are sharing.
+                      SplitSimple works best when everyone is in the room. Use the <strong>"ADD PERSON"</strong> button in the controls panel to get started.
                   </p>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={handleAddPerson}
-                    className="border border-accent bg-transparent text-xs font-semibold uppercase tracking-[0.18em]"
-                  >
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Add Person
-                  </Button>
                 </div>
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   <div className="panel bg-surface-2 p-4">

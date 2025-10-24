@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { AddPersonForm } from "@/components/AddPersonForm"
 import { AnimatedNumber } from "@/components/AnimatedNumber"
 import { AnimatedCurrency } from "@/components/AnimatedCurrency"
+import { useToast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 
 interface TotalsPanelProps {
   compact?: boolean
@@ -26,18 +28,25 @@ export function TotalsPanel({
   personInputRef,
 }: TotalsPanelProps) {
   const { state, dispatch } = useBill()
+  const { toast } = useToast()
   const summary = getBillSummary(state.currentBill)
   const itemBreakdowns = getItemBreakdowns(state.currentBill)
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null)
   const [newPeople, setNewPeople] = useState<Set<string>>(new Set())
   const [removingPeople, setRemovingPeople] = useState<Set<string>>(new Set())
+  const [previousPeopleCount, setPreviousPeopleCount] = useState(state.currentBill.people.length)
 
   useEffect(() => {
     setExpandedPerson(null)
   }, [state.currentBill.people])
 
-  // Track newly added people for animation
+  // Track newly added people for animation and contextual actions
   useEffect(() => {
+    const currentCount = state.currentBill.people.length
+    const previousCount = previousPeopleCount
+    
+    if (currentCount > previousCount) {
+      // Person was added
     const currentIds = new Set(state.currentBill.people.map(p => p.id))
     const previousIds = new Set([...newPeople].filter(id => !currentIds.has(id)))
     
@@ -48,6 +57,52 @@ export function TotalsPanel({
     
     if (freshlyAdded.length > 0) {
       setNewPeople(new Set([...newPeople, ...freshlyAdded]))
+        
+        // Show contextual toast if there are items to assign to
+        if (state.currentBill.items.length > 0) {
+          const newPerson = state.currentBill.people.find(p => freshlyAdded.includes(p.id))
+          if (newPerson) {
+            toast({
+              title: `${newPerson.name} added!`,
+              description: "Would you like to assign them to items?",
+              action: (
+                <ToastAction
+                  altText="Assign to items"
+                  onClick={() => {
+                    // Scroll to first item or show assignment hint
+                    const firstItemElement = document.querySelector('[data-item-input="name"]')
+                    if (firstItemElement) {
+                      firstItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                  }}
+                >
+                  Assign to items
+                </ToastAction>
+              )
+            })
+          }
+        } else if (currentCount === 1) {
+          // First person added - show guidance
+          toast({
+            title: "Great! Now add some items",
+            description: "You can start logging items to split with this person.",
+            action: (
+              <ToastAction
+                altText="Add first item"
+                onClick={() => {
+                  // Trigger add item action
+                  const addItemButton = document.querySelector('[data-action="add-item"]')
+                  if (addItemButton) {
+                    (addItemButton as HTMLElement).click()
+                  }
+                }}
+              >
+                Add first item
+              </ToastAction>
+            )
+          })
+        }
+        
       // Remove animation class after animation completes
       setTimeout(() => {
         setNewPeople(prev => {
@@ -57,7 +112,10 @@ export function TotalsPanel({
         })
       }, 400)
     }
-  }, [state.currentBill.people.length])
+    }
+    
+    setPreviousPeopleCount(currentCount)
+  }, [state.currentBill.people.length, previousPeopleCount, newPeople, state.currentBill.items.length, toast])
 
   const handleRemovePerson = (personId: string) => {
     const person = state.currentBill.people.find((p) => p.id === personId)
@@ -113,14 +171,18 @@ export function TotalsPanel({
   )
 
   const peopleBlock = (
-    <section className="space-y-3 rounded-lg border border-border bg-surface-2 p-4 shadow-sm">
+    <section className={`space-y-3 rounded-lg border p-4 shadow-sm transition-all duration-200 ${
+      isAddingPerson 
+        ? 'border-primary bg-primary/5 ring-2 ring-primary/20' 
+        : 'border-border bg-surface-2'
+    }`}>
       <div className="flex items-center justify-between">
         <span className="micro-label text-muted-foreground">Participants</span>
         {!isAddingPerson && (
           <Button
             size="sm"
             variant="secondary"
-            className="border border-border text-[0.68rem] font-semibold uppercase tracking-[0.18em]"
+            className="border border-border text-[0.68rem] font-semibold uppercase tracking-[0.18em] rainbow-border-hover"
             onClick={() => setIsAddingPerson(true)}
           >
             <Plus className="mr-2 h-3.5 w-3.5" />
@@ -135,7 +197,7 @@ export function TotalsPanel({
         </div>
       ) : null}
 
-      <div className="space-y-2">
+      <div className="space-y-2" role="list" aria-label="Bill participants and their totals">
         {summary.personTotals.map((personTotal) => {
           const person = state.currentBill.people.find((p) => p.id === personTotal.personId)
           if (!person) return null
@@ -145,11 +207,15 @@ export function TotalsPanel({
           return (
             <div
               key={person.id}
+              role="listitem"
               className={`rounded-md border border-border bg-surface-1/60 shadow-sm transition-all-moderate hover:border-accent/80 hover:shadow-md ${newPeople.has(person.id) ? 'animate-slide-in-down' : ''} ${removingPeople.has(person.id) ? 'animate-scale-out' : ''}`}
+              aria-label={`${person.name}: ${formatCurrency(personTotal.total)}`}
             >
               <button
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm"
                 onClick={() => setExpandedPerson(isExpanded ? null : person.id)}
+                aria-expanded={isExpanded}
+                aria-label={`${isExpanded ? 'Collapse' : 'Expand'} details for ${person.name}`}
               >
                 <div className="flex items-center gap-2">
                   <span
@@ -207,12 +273,17 @@ export function TotalsPanel({
       </div>
 
       {isAddingPerson && (
+        <div className="space-y-2">
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-2 text-center">
+            <p className="text-xs text-primary font-medium">✨ Add a new person below</p>
+          </div>
         <div className="rounded-md border border-border bg-surface-1 p-3">
           <AddPersonForm
             ref={personInputRef}
             onPersonAdded={() => setIsAddingPerson(false)}
             onCancel={() => setIsAddingPerson(false)}
           />
+          </div>
         </div>
       )}
     </section>

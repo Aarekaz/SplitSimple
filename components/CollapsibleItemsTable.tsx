@@ -290,11 +290,20 @@ export function CollapsibleItemsTable() {
           }
         }
       }
+
+      // Escape to collapse expanded items
+      if (e.key === 'Escape') {
+        const expandedItemsArray = Array.from(expandedItems)
+        if (expandedItemsArray.length > 0) {
+          e.preventDefault()
+          setExpandedItems(new Set())
+        }
+      }
     }
 
     document.addEventListener('keydown', handleGlobalKeyDown)
     return () => document.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [people, handleAddItem, selectedItemId, items, dispatch])
+  }, [people, handleAddItem, selectedItemId, items, dispatch, expandedItems])
 
   const getItemSplits = useCallback((itemId: string) => {
     const item = items.find((i) => i.id === itemId)
@@ -346,11 +355,42 @@ export function CollapsibleItemsTable() {
               ? "name"
               : "price"
           itemInputRefs.current[nextItem.id]?.[currentField]?.focus()
+          // Only select text on explicit user action, not tab navigation
+          if (e.shiftKey) {
           itemInputRefs.current[nextItem.id]?.[currentField]?.select()
+          }
         }
       }
     } else if (e.key === "Escape") {
       ;(e.target as HTMLInputElement).blur()
+    } else if (e.key === "Tab") {
+      // Handle tab navigation within item row
+      const targetInput = e.target as HTMLInputElement
+      const currentField = targetInput === itemInputRefs.current[item.id]?.name ? "name" : "price"
+      
+      if (e.shiftKey) {
+        // Shift+Tab - go to previous field
+        if (currentField === "price") {
+          itemInputRefs.current[item.id]?.name?.focus()
+        } else if (index > 0) {
+          // Go to previous item's price field
+          const prevItem = items[index - 1]
+          if (prevItem) {
+            itemInputRefs.current[prevItem.id]?.price?.focus()
+          }
+        }
+      } else {
+        // Tab - go to next field
+        if (currentField === "name") {
+          itemInputRefs.current[item.id]?.price?.focus()
+        } else if (index < items.length - 1) {
+          // Go to next item's name field
+          const nextItem = items[index + 1]
+          if (nextItem) {
+            itemInputRefs.current[nextItem.id]?.name?.focus()
+          }
+        }
+      }
     }
   }, [items, handleAddItem])
 
@@ -441,11 +481,21 @@ export function CollapsibleItemsTable() {
             <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
               <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">⌘</kbd>
               <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">↵</kbd>
+                <span className="text-xs text-muted-foreground ml-1">Add item</span>
+              </div>
+              <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1 ml-2">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">⌘</kbd>
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">D</kbd>
+                <span className="text-xs text-muted-foreground ml-1">Duplicate</span>
+              </div>
+              <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1 ml-2">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">Esc</kbd>
+                <span className="text-xs text-muted-foreground ml-1">Collapse</span>
             </div>
             <Button 
               onClick={() => handleAddItem(true)} 
               size="sm"
-              className={`btn-float rounded-xl transition-all duration-300 ${showAddSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80'} text-white font-medium h-9 px-4`}
+              className={`btn-float rounded-xl transition-all duration-300 hover:animate-bounce-subtle ${showAddSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80'} text-white font-medium h-9 px-4`}
             >
               <div className="transition-transform duration-200 flex items-center">
                 {showAddSuccess ? (
@@ -477,19 +527,24 @@ export function CollapsibleItemsTable() {
 
                 return (
                         <SortableItem key={item.id} id={item.id} isSelected={selectedItemId === item.id} onSelect={() => setSelectedItemId(item.id)}>
-                          <div className="float-card-sm border transition-shadow duration-200 group">
+                          <div 
+                            className={`float-card-sm border transition-all duration-300 group hover:shadow-md hover:border-border-strong ${isExpanded ? 'ring-2 ring-primary/20 shadow-lg' : ''}`}
+                            role="listitem"
+                            aria-label={`Item ${index + 1}: ${item.name || 'Unnamed item'}, $${item.price || '0.00'}`}
+                          >
                             {/* Modern Row */}
                             <div className="flex items-center p-4 gap-4">
                               {/* Chevron */}
                                                             <button
                                 type="button"
                                 aria-expanded={isExpanded}
-                                aria-label="Toggle item details"
-                                className="rounded-md p-1 transition-colors hover:bg-muted/40"
+                                aria-label={isExpanded ? "Collapse item details" : "Expand item details"}
+                                className="rounded-md p-2 transition-all duration-200 hover:bg-muted/60 active:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1 min-w-[44px] min-h-[44px] flex items-center justify-center rainbow-border-hover"
                                 onMouseDown={(e) => { e.preventDefault() }}
                                 onClick={(e) => { e.stopPropagation(); toggleItemExpansion(item.id) }}
+                                title={isExpanded ? "Click to collapse details" : "Click to expand details"}
                               >
-                                <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                                <ChevronRight className={`h-4 w-4 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-90' : ''}`} />
                               </button>
 
                                       {/* Item Name */}
@@ -506,7 +561,9 @@ export function CollapsibleItemsTable() {
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
                                           placeholder="Add your item..."
                                           data-item-input="name"
-                                    className="receipt-item-name h-9 text-sm"
+                                          className="receipt-item-name h-9 text-sm focus:focus-input transition-all duration-200"
+                                          inputMode="text"
+                                          enterKeyHint="next"
                                   />
                                   {/* Split method badge */}
                                   {!isExpanded && item.method !== "even" && (
@@ -545,7 +602,8 @@ export function CollapsibleItemsTable() {
                                           onFocus={(e) => e.target.select()}
                                           onKeyDown={(e) => handleKeyDown(e, item, index)}
                                           placeholder="0.00"
-                                  className="receipt-amount h-9"
+                                          className="receipt-amount h-9 focus:focus-input transition-all duration-200"
+                                          enterKeyHint={index === items.length - 1 ? "done" : "next"}
                                         />
                                       </div>
                               
@@ -562,8 +620,10 @@ export function CollapsibleItemsTable() {
                                     }
                                     onFocus={(e) => e.target.select()}
                                     onKeyDown={(e) => handleKeyDown(e, item, index)}
-                                    className="h-9 text-center text-sm"
+                                    className="h-9 text-center text-sm focus:focus-input transition-all duration-200"
                                     title="Quantity"
+                                    inputMode="numeric"
+                                    enterKeyHint="next"
                                   />
                                 </div>
                               )}
@@ -587,7 +647,7 @@ export function CollapsibleItemsTable() {
                                   variant="ghost" 
                                   size="icon" 
                                   onClick={() => handleDeleteItem(item.id)} 
-                                  className="h-11 w-11 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="h-11 w-11 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity rainbow-border-hover"
                                   title="Delete item"
                                   aria-label={`Delete ${item.name || 'item'}`}
                                 >
@@ -598,11 +658,20 @@ export function CollapsibleItemsTable() {
 
                             {/* Expanded Row */}
                             {isExpanded && (
-                              <div className="border-t bg-muted/20 animate-in slide-in-from-top-2 fade-in duration-200">
+                              <div 
+                                className="border-t bg-muted/20 animate-in slide-in-from-top-2 fade-in duration-200 animate-expand-glow"
+                                role="region"
+                                aria-label={`Details for ${item.name || 'item'}`}
+                                aria-live="polite"
+                              >
                                 <div className="p-5 space-y-5">
                                   {/* Validation warnings */}
                                   {!validationStatus.isValid && (
-                                    <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                                    <div 
+                                      className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800"
+                                      role="alert"
+                                      aria-live="assertive"
+                                    >
                                       <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                                       <div className="text-sm text-amber-900 dark:text-amber-100">
                                         <p className="font-semibold mb-1.5">Please complete this item:</p>
@@ -646,6 +715,11 @@ export function CollapsibleItemsTable() {
                                         onSelectionChange={(selected) =>
                                           handleUpdateItem(item.id, { splitWith: selected })
                                         }
+                                        showQuickAdd={true}
+                                        onPersonAdded={(personId) => {
+                                          // Auto-select the newly added person for this item
+                                          handleUpdateItem(item.id, { splitWith: [...item.splitWith, personId] })
+                                        }}
                                       />
                                     </div>
                                   </div>
@@ -692,7 +766,7 @@ export function CollapsibleItemsTable() {
 
               return (
               <MobileSortableItem key={item.id} id={item.id}>
-                <div className={`float-card-sm border transition-colors duration-200 group ${selectedItemId === item.id ? 'ring-2 ring-primary/40' : ''}`} onClick={() => setSelectedItemId(item.id)}>
+                <div className={`float-card-sm border transition-all duration-300 group hover:shadow-md hover:border-border-strong ${selectedItemId === item.id ? 'ring-2 ring-primary/40' : ''} ${isExpanded ? 'ring-2 ring-primary/20 shadow-lg' : ''}`} onClick={() => setSelectedItemId(item.id)}>
                   {/* Mobile Row */}
                   <div className="p-3 space-y-3">
                     {/* Expandable hint */}
@@ -729,7 +803,9 @@ export function CollapsibleItemsTable() {
                               onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
                               onKeyDown={(e) => handleKeyDown(e, item, index)}
                               placeholder="Add your item..."
-                            className="receipt-item-name h-9 text-sm flex-1"
+                              className="receipt-item-name h-9 text-sm flex-1 focus:focus-input transition-all duration-200"
+                              inputMode="text"
+                              enterKeyHint="next"
                           />
                           {/* Split method badge for mobile */}
                           {!isExpanded && item.method !== "even" && (
@@ -774,7 +850,8 @@ export function CollapsibleItemsTable() {
                                 onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleKeyDown(e, item, index)}
                                     placeholder="0.00"
-                            className="font-mono h-9 text-right font-semibold"
+                            className="font-mono h-9 text-right font-semibold focus:focus-input transition-all duration-200"
+                                enterKeyHint={index === items.length - 1 ? "done" : "next"}
                               />
                         </div>
                         
@@ -811,16 +888,19 @@ export function CollapsibleItemsTable() {
                           variant="outline"
                           size="sm"
                           onClick={() => toggleItemExpansion(item.id)}
-                          className="h-8 px-3 text-xs shrink-0"
+                          className="h-10 px-4 text-xs shrink-0 min-w-[44px] transition-all duration-200 hover:bg-primary/10 hover:border-primary/30 focus:ring-2 focus:ring-primary/40 rainbow-border-hover"
+                          aria-expanded={isExpanded}
+                          aria-label={isExpanded ? "Collapse item details" : "Expand item details"}
+                          title={isExpanded ? "Click to collapse details" : "Click to expand details"}
                         >
                           {isExpanded ? (
                             <>
-                              <ChevronUp className="h-3 w-3 mr-1" />
+                              <ChevronUp className="h-3 w-3 mr-1 transition-transform duration-200" />
                               Hide
                             </>
                           ) : (
                             <>
-                              <ChevronDown className="h-3 w-3 mr-1" />
+                              <ChevronDown className="h-3 w-3 mr-1 transition-transform duration-200" />
                               Details
                             </>
                           )}
@@ -830,7 +910,7 @@ export function CollapsibleItemsTable() {
                           </div>
 
                   {isExpanded && (
-                    <div className="border-t bg-muted/20 p-4 space-y-5 animate-in slide-in-from-top-2 fade-in duration-200">
+                    <div className="border-t bg-muted/20 p-4 space-y-5 animate-in slide-in-from-top-2 fade-in duration-200 animate-expand-glow">
                       {/* Validation warnings */}
                       {!validationStatus.isValid && (
                         <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
@@ -860,6 +940,11 @@ export function CollapsibleItemsTable() {
                         <PersonSelector
                           selectedPeople={item.splitWith}
                           onSelectionChange={(selected) => handleUpdateItem(item.id, { splitWith: selected })}
+                          showQuickAdd={true}
+                          onPersonAdded={(personId) => {
+                            // Auto-select the newly added person for this item
+                            handleUpdateItem(item.id, { splitWith: [...item.splitWith, personId] })
+                          }}
                         />
                       </div>
 

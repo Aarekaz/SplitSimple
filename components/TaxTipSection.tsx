@@ -96,6 +96,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
                 onFocus={(e) => e.target.select()}
                 placeholder="0.00"
                 className="receipt-amount h-11 pr-10 rounded-xl border-border/50 focus:border-primary transition-all duration-200"
+                enterKeyHint="next"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
                 $
@@ -117,6 +118,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
                 onFocus={(e) => e.target.select()}
                 placeholder="0.00"
                 className="receipt-amount h-11 pr-10 rounded-xl border-border/50 focus:border-primary transition-all duration-200"
+                enterKeyHint="next"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
                 $
@@ -132,7 +134,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
                     variant="outline"
                     size="sm"
                     onClick={() => handleTipPercentage(percentage)}
-                    className="h-8 px-3 text-xs rounded-lg border-border/50 hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 font-medium"
+                    className="h-8 px-3 text-xs rounded-lg border-border/50 hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 font-medium rainbow-border-hover"
                   >
                     {percentage}%
                   </Button>
@@ -155,6 +157,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
                 onFocus={(e) => e.target.select()}
                 placeholder="0.00"
                 className="receipt-amount h-11 pr-10 rounded-xl border-border/50 focus:border-primary transition-all duration-200"
+                enterKeyHint="done"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
                 $

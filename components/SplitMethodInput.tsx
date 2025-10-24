@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, CheckCircle2, AlertCircle } from "lucide-react"
 import { validateCurrencyInput, validatePercentage, validateShares } from "@/lib/validation"
 import type { Person, Item } from "@/contexts/BillContext"
 
@@ -84,6 +84,23 @@ export function SplitMethodInput({ item, people, onCustomSplitsChange }: SplitMe
     }
   }
 
+  const getValidationStatus = () => {
+    const values = selectedPeople.map((p) => customSplits[p.id] || 0)
+    const total = values.reduce((sum, val) => sum + val, 0)
+    
+    switch (item.method) {
+      case "shares":
+        return total > 0 ? "valid" : "invalid"
+      case "percent":
+        return Math.abs(total - 100) <= 0.01 ? "valid" : "warning"
+      case "exact":
+        const itemPrice = parseFloat(item.price || '0')
+        return Math.abs(total - itemPrice) <= 0.01 ? "valid" : "warning"
+      default:
+        return "valid"
+    }
+  }
+
   if (item.method === "even" || selectedPeople.length === 0) {
     return null
   }
@@ -137,17 +154,35 @@ export function SplitMethodInput({ item, people, onCustomSplitsChange }: SplitMe
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: person.color }} />
               <span className="text-sm font-medium flex-shrink-0 min-w-0 truncate">{person.name}</span>
             </div>
-            <div className="w-24 flex-shrink-0">
+            <div className="w-24 flex-shrink-0 relative">
               <Input
                 type="number"
                 step={getInputStep()}
                 min="0"
                 value={customSplits[person.id] || ""}
                 onChange={(e) => handleSplitChange(person.id, e.target.value)}
-                className="h-9 text-sm"
+                className={`h-9 text-sm transition-all duration-200 ${
+                  getValidationStatus() === "valid" 
+                    ? "border-green-500 focus:border-green-500 focus:ring-green-500/20" 
+                    : getValidationStatus() === "warning"
+                    ? "border-yellow-500 focus:border-yellow-500 focus:ring-yellow-500/20"
+                    : "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                }`}
                 placeholder="0"
                 inputMode={getInputMode()}
               />
+              {/* Validation icon */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                {getValidationStatus() === "valid" && (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                )}
+                {getValidationStatus() === "warning" && (
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+                )}
+                {getValidationStatus() === "invalid" && (
+                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                )}
+              </div>
             </div>
           </div>
         ))}

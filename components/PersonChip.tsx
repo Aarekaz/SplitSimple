@@ -47,9 +47,9 @@ export function PersonChip({
     }
   }
 
-  const baseClasses = "flex items-center gap-1.5 cursor-pointer transition-all border"
-  const selectedClasses = "bg-primary text-primary-foreground hover:bg-primary/90"
-  const unselectedClasses = "bg-muted hover:bg-muted/80 text-muted-foreground border-dashed"
+  const baseClasses = "flex items-center gap-1.5 cursor-pointer transition-all duration-200 border rainbow-border-hover"
+  const selectedClasses = "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+  const unselectedClasses = "bg-muted hover:bg-muted/80 text-muted-foreground border-dashed hover:border-solid hover:border-primary/30 hover:shadow-sm"
 
   return (
     <div

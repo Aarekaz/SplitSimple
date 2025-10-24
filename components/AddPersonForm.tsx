@@ -116,10 +116,12 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
           value={newPersonName}
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
-          className={`h-10 text-sm flex-1 rounded-xl border-border/50 focus:border-primary transition-all duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''} ${shake ? 'animate-shake' : ''}`}
+          className={`h-10 text-sm flex-1 rounded-xl border-border/50 focus:border-primary transition-all duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive animate-wiggle' : ''} ${shake ? 'animate-shake' : ''}`}
           autoFocus
           aria-invalid={validationError ? 'true' : 'false'}
           aria-describedby={validationError ? 'person-name-error' : undefined}
+          inputMode="text"
+          enterKeyHint="done"
         />
         {showButton && (
           <Button 
