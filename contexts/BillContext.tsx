@@ -1,8 +1,9 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useEffect } from "react"
+import { createContext, useContext, useReducer, useEffect, useRef } from "react"
 import { getBillFromCloud, storeBillInCloud } from "@/lib/sharing"
+import { toast } from "@/hooks/use-toast"
 
 // Types
 export type SyncStatus = "never_synced" | "syncing" | "synced" | "error"
@@ -23,6 +24,11 @@ export interface Item {
   customSplits?: Record<string, number> // person ID -> amount/share/percent
 }
 
+// Legacy item type without quantity field (for migration)
+interface LegacyItem extends Omit<Item, 'quantity'> {
+  quantity?: number
+}
+
 export interface Bill {
   id: string
   title: string
@@ -38,6 +44,20 @@ export interface Bill {
   lastModified?: string
   accessCount?: number
   lastAccessed?: string
+}
+
+// Helper function to migrate legacy bills
+function migrateBillData(bill: Partial<Bill> & { items?: LegacyItem[] }): Bill {
+  return {
+    ...bill,
+    status: bill.status || "draft",
+    notes: bill.notes || "",
+    discount: bill.discount || "",
+    items: bill.items?.map((item) => ({
+      ...item,
+      quantity: item.quantity || 1
+    })) || []
+  } as Bill
 }
 
 // State and Actions
@@ -389,85 +409,52 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         // Check for shared bill in URL
         const urlParams = new URLSearchParams(window.location.search)
         const sharedBillId = urlParams.get("bill")
-        
+
         if (sharedBillId) {
           // First try to load from Redis (cloud)
-          const cloudResult = await getBillFromCloud(sharedBillId)
-          if (cloudResult.bill) {
-            // Migration: Add missing fields to existing shared bills
-            if (!cloudResult.bill.status) {
-              cloudResult.bill.status = "draft"
+          try {
+            const cloudResult = await getBillFromCloud(sharedBillId)
+            if (cloudResult.bill) {
+              // Migration: Add missing fields to existing shared bills
+              const migratedBill = migrateBillData(cloudResult.bill)
+              dispatch({ type: "LOAD_BILL", payload: migratedBill })
+              return // CRITICAL: Exit here, don't load localStorage
             }
-            if (!cloudResult.bill.notes) {
-              cloudResult.bill.notes = ""
+          } catch (cloudError) {
+            if (process.env.NODE_ENV === 'development') {
+              console.error("Failed to load bill from cloud:", cloudError)
             }
-            if (!cloudResult.bill.discount) {
-              cloudResult.bill.discount = ""
-            }
-            // Add quantity field to items that don't have it
-            if (cloudResult.bill.items) {
-              cloudResult.bill.items = cloudResult.bill.items.map((item: any) => ({
-                ...item,
-                quantity: item.quantity || 1
-              }))
-            }
-            dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
-            return
           }
-          
+
           // Fallback to localStorage for backwards compatibility
           const localSharedBill = loadBillFromLocalStorage(sharedBillId)
           if (localSharedBill) {
             // Migration: Add missing fields to existing local shared bills
-            if (!localSharedBill.status) {
-              localSharedBill.status = "draft"
-            }
-            if (!localSharedBill.notes) {
-              localSharedBill.notes = ""
-            }
-            if (!localSharedBill.discount) {
-              localSharedBill.discount = ""
-            }
-            // Add quantity field to items that don't have it
-            if (localSharedBill.items) {
-              localSharedBill.items = localSharedBill.items.map((item: any) => ({
-                ...item,
-                quantity: item.quantity || 1
-              }))
-            }
-            dispatch({ type: "LOAD_BILL", payload: localSharedBill })
-            return
+            const migratedBill = migrateBillData(localSharedBill)
+            dispatch({ type: "LOAD_BILL", payload: migratedBill })
+            return // CRITICAL: Exit here, don't load localStorage current bill
           }
-          
-          // If shared bill not found, show error but continue with default
-          console.warn(`Shared bill ${sharedBillId} not found in cloud or local storage`)
+
+          // If shared bill not found anywhere, DON'T load localStorage
+          // User expected a specific shared bill, not their own data
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`Shared bill ${sharedBillId} not found in cloud or local storage`)
+          }
+          return // CRITICAL: Exit without loading localStorage when shared bill expected
         }
-        
-        // Load current bill from localStorage
+
+        // ONLY load current bill from localStorage if NO shared bill ID in URL
         const saved = localStorage.getItem("splitSimple_currentBill")
         if (saved) {
           const bill = JSON.parse(saved)
           // Migration: Add missing fields to existing bills
-          if (!bill.status) {
-            bill.status = "draft"
-          }
-          if (!bill.notes) {
-            bill.notes = ""
-          }
-          if (!bill.discount) {
-            bill.discount = ""
-          }
-          // Add quantity field to items that don't have it
-          if (bill.items) {
-            bill.items = bill.items.map((item: any) => ({
-              ...item,
-              quantity: item.quantity || 1
-            }))
-          }
-          dispatch({ type: "LOAD_BILL", payload: bill })
+          const migratedBill = migrateBillData(bill)
+          dispatch({ type: "LOAD_BILL", payload: migratedBill })
         }
       } catch (error) {
-        console.error("Failed to load bill:", error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error("Failed to load bill:", error)
+        }
       }
     }
 
@@ -479,12 +466,14 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
     try {
       // Save current bill to main storage
       localStorage.setItem("splitSimple_currentBill", JSON.stringify(state.currentBill))
-      
+
       // Also save to shared bills storage for sharing
       saveBillToLocalStorage(state.currentBill)
     } catch (error) {
-      console.error("Failed to save bill to localStorage:", error)
-      
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Failed to save bill to localStorage:", error)
+      }
+
       // Try to save with a smaller payload if the bill is too large
       try {
         const minimalBill = {
@@ -501,25 +490,42 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         }
         localStorage.setItem("splitSimple_currentBill", JSON.stringify(minimalBill))
       } catch (fallbackError) {
-        console.error("Failed to save even minimal bill:", fallbackError)
-        // At this point, we've exhausted our options - could show a user notification
+        if (process.env.NODE_ENV === 'development') {
+          console.error("Failed to save even minimal bill:", fallbackError)
+        }
+        // Show user-friendly error notification
+        toast({
+          title: "Storage Full",
+          description: "Unable to save your bill locally. Your data is still synced to the cloud. Consider clearing browser data or reducing bill size.",
+          variant: "destructive",
+        })
       }
     }
   }, [state.currentBill])
 
   // Debounced auto-sync to cloud when bill changes
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | undefined
-    
+    // Clear any existing timeout
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current)
+      syncTimeoutRef.current = null
+    }
+
+    // Only auto-sync if never synced
     if (state.syncStatus === "never_synced") {
-      timeoutId = setTimeout(() => {
+      syncTimeoutRef.current = setTimeout(() => {
         syncToCloud()
+        syncTimeoutRef.current = null
       }, 2000) // 2-second debounce
     }
-    
+
+    // Cleanup function
     return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId)
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current)
+        syncTimeoutRef.current = null
       }
     }
   }, [state.currentBill, state.syncStatus])

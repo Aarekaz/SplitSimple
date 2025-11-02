@@ -78,14 +78,20 @@ export function calculateItemSplits(item: Item, people: Person[]): Record<string
         if (totalShares > 0) {
           let distributedAmount = 0
           selectedPeople.forEach((person, index) => {
+            const shares = item.customSplits![person.id] || 0
+
             if (index < selectedPeople.length - 1) {
-              const shares = item.customSplits![person.id] || 0
               const amount = Math.round((priceInCents * shares) / totalShares)
               splits[person.id] = amount / 100
               distributedAmount += amount
             } else {
               // Last person gets the remainder to avoid penny problems
-              splits[person.id] = (priceInCents - distributedAmount) / 100
+              // BUT only if they have shares! Otherwise they get their calculated amount
+              if (shares === 0) {
+                splits[person.id] = 0
+              } else {
+                splits[person.id] = (priceInCents - distributedAmount) / 100
+              }
             }
           })
         }
@@ -97,14 +103,20 @@ export function calculateItemSplits(item: Item, people: Person[]): Record<string
       if (item.customSplits) {
         let distributedAmount = 0
         selectedPeople.forEach((person, index) => {
+          const percent = item.customSplits![person.id] || 0
+
           if (index < selectedPeople.length - 1) {
-            const percent = item.customSplits![person.id] || 0
             const amount = Math.round((priceInCents * percent) / 100)
             splits[person.id] = amount / 100
             distributedAmount += amount
           } else {
             // Last person gets the remainder to avoid penny problems
-            splits[person.id] = (priceInCents - distributedAmount) / 100
+            // BUT only if they have a percentage! Otherwise they get their calculated amount
+            if (percent === 0) {
+              splits[person.id] = 0
+            } else {
+              splits[person.id] = (priceInCents - distributedAmount) / 100
+            }
           }
         })
       }
@@ -114,15 +126,25 @@ export function calculateItemSplits(item: Item, people: Person[]): Record<string
     case "exact":
       if (item.customSplits) {
         let totalExactAmount = 0
+        let lastPersonWithAmount: string | null = null
+
         selectedPeople.forEach((person) => {
           const exactAmount = item.customSplits![person.id] || 0
           splits[person.id] = exactAmount
           totalExactAmount += exactAmount
+          if (exactAmount > 0) {
+            lastPersonWithAmount = person.id
+          }
         })
-        
-        // Validate that exact amounts sum to total price
-        if (Math.abs(totalExactAmount - totalPrice) > 0.01) {
-          console.warn(`Exact split amounts (${totalExactAmount}) don't match item price (${totalPrice})`)
+
+        // Auto-adjust last person's amount if totals don't match
+        // This ensures the split always equals the item price
+        const difference = totalPrice - totalExactAmount
+        if (Math.abs(difference) > 0.01 && lastPersonWithAmount) {
+          splits[lastPersonWithAmount] = Math.round((splits[lastPersonWithAmount] + difference) * 100) / 100
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`Exact split amounts adjusted by $${difference.toFixed(2)} for person ${lastPersonWithAmount}`)
+          }
         }
       }
       break
@@ -225,7 +247,36 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
           break
         }
       }
-      
+
+      // Ensure all amounts are properly rounded
+      personTotal.tax = Math.round(personTotal.tax * 100) / 100
+      personTotal.tip = Math.round(personTotal.tip * 100) / 100
+      personTotal.discount = Math.round(personTotal.discount * 100) / 100
+      personTotal.total = Math.round((personTotal.subtotal + personTotal.tax + personTotal.tip - personTotal.discount) * 100) / 100
+    })
+  } else if (totals.length > 0 && (taxInCents > 0 || tipInCents > 0 || discountInCents > 0)) {
+    // Edge case: No subtotal but there's tax/tip/discount
+    // Distribute evenly among all people
+    totals.forEach((personTotal, index) => {
+      const isLastPerson = index === totals.length - 1
+
+      if (!isLastPerson) {
+        const taxAmount = Math.floor(taxInCents / totals.length)
+        const tipAmount = Math.floor(tipInCents / totals.length)
+        const discountAmount = Math.floor(discountInCents / totals.length)
+        personTotal.tax = taxAmount / 100
+        personTotal.tip = tipAmount / 100
+        personTotal.discount = discountAmount / 100
+        totalTaxSplit += taxAmount
+        totalTipSplit += tipAmount
+        totalDiscountSplit += discountAmount
+      } else {
+        // Last person gets the remainder
+        personTotal.tax = (taxInCents - totalTaxSplit) / 100
+        personTotal.tip = (tipInCents - totalTipSplit) / 100
+        personTotal.discount = (discountInCents - totalDiscountSplit) / 100
+      }
+
       // Ensure all amounts are properly rounded
       personTotal.tax = Math.round(personTotal.tax * 100) / 100
       personTotal.tip = Math.round(personTotal.tip * 100) / 100

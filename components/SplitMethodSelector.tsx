@@ -76,10 +76,10 @@ export function SplitMethodSelector({
       assigned_people_count: assignedPeopleCount,
     })
   }
+  
   return (
     <div className={cn("space-y-2", className)}>
-      <label className="text-xs font-medium text-muted-foreground">Split Method</label>
-      <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/20 p-1">
+      <div className="flex flex-wrap gap-1.5">
         {splitMethodOptions.map((option) => {
           const Icon = option.icon
           const isActive = value === option.value
@@ -90,17 +90,19 @@ export function SplitMethodSelector({
               type="button"
               onClick={() => handleMethodChange(option.value)}
               className={cn(
-                "flex items-center justify-center gap-1.5 py-2 px-3 rounded-md transition-all text-xs font-medium",
-                "hover:bg-background hover:shadow-sm",
-                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
+                "inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 whitespace-nowrap",
+                "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+                "rainbow-border-hover",
                 isActive
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary shadow-sm"
+                  : "bg-surface-2 text-muted-foreground hover:bg-surface-3 hover:text-foreground"
               )}
               title={option.description}
             >
-              <Icon className="h-3.5 w-3.5" />
-              <span>{option.label}</span>
+              <span className={cn("flex-shrink-0", isActive && "text-primary-foreground")}>
+                <Icon className="h-3.5 w-3.5" />
+              </span>
+              <span className={cn("flex-shrink-0", isActive && "text-primary-foreground")}>{option.label}</span>
             </button>
           )
         })}

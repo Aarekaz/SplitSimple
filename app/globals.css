@@ -279,7 +279,7 @@
     background: hsl(var(--surface-1));
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius-lg);
-    box-shadow: none;
+    box-shadow: 0 1px 3px hsl(var(--border) / 0.1);
   }
 
   .float-card-sm {
@@ -294,6 +294,7 @@
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius-lg);
     background: hsl(var(--surface-1));
+    box-shadow: 0 1px 3px hsl(var(--border) / 0.1);
   }
 
   .density-row {
@@ -304,6 +305,12 @@
     padding: 0.9rem 1rem;
     border-top: 1px solid hsl(var(--border) / 0.75);
     font-size: 0.85rem;
+    background: hsl(var(--surface-1));
+    transition: background 0.15s ease;
+  }
+
+  .density-row:hover {
+    background: hsl(var(--surface-2) / 0.5);
   }
 
   .density-row:first-child {
@@ -931,6 +938,33 @@
     /* Improve touch interaction */
     .touch-manipulation {
       touch-action: manipulation;
+    }
+
+    /* Mobile-first spacing adjustments */
+    .panel {
+      padding: 1rem; /* Smaller padding on mobile */
+    }
+
+    /* Bottom action bar enhancements */
+    .mobile-bottom-bar {
+      height: 80px; /* Taller for better touch targets */
+      padding-bottom: env(safe-area-inset-bottom); /* iOS safe area */
+    }
+
+    /* Mobile bottom bar shadow and spacing */
+    .sm\:hidden {
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    /* Improve mobile input fields */
+    input, textarea {
+      padding: 0.75rem; /* More comfortable touch targets */
+    }
+
+    /* Card hover states disabled on mobile */
+    .panel:hover {
+      transform: none;
+      box-shadow: var(--shadow-base);
     }
   }
 

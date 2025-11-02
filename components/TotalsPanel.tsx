@@ -44,20 +44,21 @@ export function TotalsPanel({
   useEffect(() => {
     const currentCount = state.currentBill.people.length
     const previousCount = previousPeopleCount
-    
+    let timeoutId: NodeJS.Timeout | undefined
+
     if (currentCount > previousCount) {
       // Person was added
-    const currentIds = new Set(state.currentBill.people.map(p => p.id))
-    const previousIds = new Set([...newPeople].filter(id => !currentIds.has(id)))
-    
-    // Find truly new people (not in newPeople set yet)
-    const freshlyAdded = state.currentBill.people
-      .filter(p => !newPeople.has(p.id))
-      .map(p => p.id)
-    
-    if (freshlyAdded.length > 0) {
-      setNewPeople(new Set([...newPeople, ...freshlyAdded]))
-        
+      const currentIds = new Set(state.currentBill.people.map(p => p.id))
+      const previousIds = new Set([...newPeople].filter(id => !currentIds.has(id)))
+
+      // Find truly new people (not in newPeople set yet)
+      const freshlyAdded = state.currentBill.people
+        .filter(p => !newPeople.has(p.id))
+        .map(p => p.id)
+
+      if (freshlyAdded.length > 0) {
+        setNewPeople(new Set([...newPeople, ...freshlyAdded]))
+
         // Show contextual toast if there are items to assign to
         if (state.currentBill.items.length > 0) {
           const newPerson = state.currentBill.people.find(p => freshlyAdded.includes(p.id))
@@ -102,19 +103,26 @@ export function TotalsPanel({
             )
           })
         }
-        
-      // Remove animation class after animation completes
-      setTimeout(() => {
-        setNewPeople(prev => {
-          const updated = new Set(prev)
-          freshlyAdded.forEach(id => updated.delete(id))
-          return updated
-        })
-      }, 400)
+
+        // Remove animation class after animation completes
+        timeoutId = setTimeout(() => {
+          setNewPeople(prev => {
+            const updated = new Set(prev)
+            freshlyAdded.forEach(id => updated.delete(id))
+            return updated
+          })
+        }, 400)
+      }
     }
-    }
-    
+
     setPreviousPeopleCount(currentCount)
+
+    // Cleanup timeout on unmount or when effect reruns
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
   }, [state.currentBill.people.length, previousPeopleCount, newPeople, state.currentBill.items.length, toast])
 
   const handleRemovePerson = (personId: string) => {
@@ -219,13 +227,16 @@ export function TotalsPanel({
               >
                 <div className="flex items-center gap-2">
                   <span
-                    className="flex h-6 w-6 items-center justify-center rounded-sm text-xs font-bold"
-                    style={{
-                      backgroundColor: `${person.color}22`,
-                      color: person.color,
-                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-sm text-xs font-bold relative overflow-hidden"
+                    style={{ color: person.color }}
                   >
-                    {person.name.charAt(0).toUpperCase()}
+                    <span
+                      className="absolute inset-0 opacity-[0.13]"
+                      style={{ backgroundColor: person.color }}
+                    />
+                    <span className="relative z-10">
+                      {person.name.charAt(0).toUpperCase()}
+                    </span>
                   </span>
                   <div>
                     <p className="font-semibold leading-tight">{person.name}</p>

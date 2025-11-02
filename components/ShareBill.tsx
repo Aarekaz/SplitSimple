@@ -150,7 +150,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
           {showText && <span>Share</span>}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[95vw] sm:max-w-md">
+      <DialogContent className="max-w-[95vw] xs:max-w-sm sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />

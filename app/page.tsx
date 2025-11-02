@@ -5,11 +5,11 @@ import type React from "react"
 
 import { CollapsibleItemsTable } from "@/components/CollapsibleItemsTable"
 import { TotalsPanel } from "@/components/TotalsPanel"
-import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { ShareBill } from "@/components/ShareBill"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import {
   Activity,
   ClipboardList,
@@ -259,8 +259,11 @@ export default function HomePage() {
       </header>
 
       <main className="relative">
-        <div className="mx-auto grid w-full max-w-[1640px] gap-6 px-8 pt-10 pb-4 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
-          <aside className="control-rail">
+        {/* Mobile-First Layout */}
+        <div className="mx-auto w-full max-w-[1640px] px-4 pt-6 pb-24 sm:px-8 lg:grid lg:grid-cols-[240px_minmax(0,1fr)_340px] lg:gap-6 lg:pt-10 lg:pb-4">
+
+          {/* Desktop: Control Rail */}
+          <aside className="hidden lg:block control-rail">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
               <LayoutDashboard className="h-4 w-4" />
               Controls
@@ -299,32 +302,59 @@ export default function HomePage() {
           </aside>
 
           <section className="flex min-w-0 flex-col gap-6">
+            {/* Simplified Mobile-First Onboarding */}
             {state.currentBill.people.length === 0 && state.currentBill.items.length === 0 ? (
-              <div className="panel p-8">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="micro-label text-[0.65rem] text-muted-foreground">Getting started</p>
-                    <h2 className="mt-2 text-xl font-semibold tracking-tight">Invite your first person</h2>
-                  <p className="mt-2 max-w-md text-sm text-card-foreground">
-                      SplitSimple works best when everyone is in the room. Use the <strong>"ADD PERSON"</strong> button in the controls panel to get started.
+              <div className="panel p-8 lg:p-10">
+                <div className="text-center space-y-6">
+                  <div className="mx-auto w-20 h-20 flex items-center justify-center rounded-full bg-primary/15 animate-pulse">
+                    <UserPlus className="w-10 h-10 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold">Welcome to SplitSimple</h2>
+                    <p className="text-base text-muted-foreground">
+                      Tap the <strong>green "Add"</strong> button below to add your first person
                   </p>
                   </div>
-                </div>
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <div className="panel bg-surface-2 p-4">
-                    <p className="micro-label text-[0.65rem] text-muted-foreground">Step 1</p>
-                    <p className="mt-2 font-semibold">Add the people</p>
-                    <p className="text-sm text-card-foreground">Use the control rail or the totals panel.</p>
+                  <div className="pt-2">
+                  <Button
+                      size="lg"
+                    onClick={handleAddPerson}
+                      className="rainbow-border-hover text-base h-14 px-8"
+                  >
+                      <UserPlus className="mr-2 h-5 w-5" />
+                      Add First Person
+                  </Button>
                   </div>
-                  <div className="panel bg-surface-2 p-4">
-                    <p className="micro-label text-[0.65rem] text-muted-foreground">Step 2</p>
-                    <p className="mt-2 font-semibold">Capture items</p>
-                    <p className="text-sm text-card-foreground">Log each line item and assign participants.</p>
+                </div>
+              </div>
+            ) : state.currentBill.people.length > 0 && state.currentBill.items.length === 0 ? (
+              <div className="panel p-8 lg:p-10">
+                <div className="text-center space-y-6">
+                  <div className="mx-auto w-20 h-20 flex items-center justify-center rounded-full bg-primary/15 animate-pulse">
+                    <ListPlus className="w-10 h-10 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold">Great! {state.currentBill.people.length} {state.currentBill.people.length === 1 ? 'person added' : 'people added'}</h2>
+                    <p className="text-base text-muted-foreground">
+                      Now tap the <strong>green "Add Item"</strong> button to log your first expense
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <Button
+                      size="lg"
+                      onClick={handleAddItem}
+                      className="rainbow-border-hover text-base h-14 px-8"
+                    >
+                      <ListPlus className="mr-2 h-5 w-5" />
+                      Add First Item
+                    </Button>
                   </div>
                 </div>
               </div>
             ) : null}
 
+            {/* Section Header - Only show when items exist */}
+            {state.currentBill.items.length > 0 && (
             <div className="flex items-center justify-between">
               <div>
                 <p className="micro-label text-[0.65rem] text-muted-foreground">Items ledger</p>
@@ -335,11 +365,15 @@ export default function HomePage() {
                 {state.currentBill.items.length} total lines recorded
               </div>
             </div>
+            )}
 
             <CollapsibleItemsTable />
+            
+            {/* Mobile: Inline Totals - Hide this, we'll use bottom sheet */}
           </section>
 
-          <aside className="panel flex h-fit flex-col gap-4 p-5 lg:sticky lg:top-[76px]">
+          {/* Desktop: Totals Panel */}
+          <aside className="hidden lg:block panel flex h-fit flex-col gap-4 p-5 sticky top-[76px]">
             <div className="flex items-center justify-between">
               <p className="micro-label">Totals</p>
               <Activity className="h-4 w-4 text-muted-foreground" />
@@ -353,7 +387,7 @@ export default function HomePage() {
             <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
               <Button
                 variant="secondary"
-                className="border border-border bg-surface-2 text-xs font-semibold uppercase tracking-[0.18em]"
+                className="border border-border bg-surface-2 text-xs font-semibold uppercase tracking-[0.18em] rainbow-border-hover"
                 onClick={handleCopySummary}
                 disabled={state.currentBill.people.length === 0}
               >
@@ -365,7 +399,75 @@ export default function HomePage() {
           </aside>
         </div>
 
-        <MobileTotalsBar />
+        {/* Mobile: Unified Bottom Action Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface-1 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] sm:hidden">
+          <div className="flex h-20 items-center justify-around px-2 py-3">
+            {/* Left: Totals Button - Always First Action */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-surface-2 hover:text-foreground rainbow-border-hover min-w-[64px]">
+                  <Activity className="h-5 w-5" />
+                  <span>Totals</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="flex max-h-[85vh] flex-col rounded-t-[28px] p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Bill Summary</SheetTitle>
+                </SheetHeader>
+                <div className="overflow-y-auto p-6 pt-8">
+                  <TotalsPanel
+                    compact
+                    isAddingPerson={isAddingPerson}
+                    setIsAddingPerson={setIsAddingPerson}
+                    personInputRef={personInputRef}
+                  />
+                  <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6">
+                    <Button
+                      variant="secondary"
+                      className="w-full border border-border bg-surface-2 text-xs font-semibold uppercase tracking-[0.18em] rainbow-border-hover"
+                      onClick={handleCopySummary}
+                      disabled={state.currentBill.people.length === 0}
+                    >
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      Copy Summary
+                    </Button>
+                      <div className="w-full">
+                        <ShareBill variant="outline" size="default" />
+                      </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* Center: Primary Action Button */}
+            {state.currentBill.people.length === 0 ? (
+              <button
+                onClick={handleAddPerson}
+                className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-sm font-bold text-primary-foreground bg-primary transition-all hover:bg-primary/90 shadow-lg rainbow-border-hover min-w-[80px]"
+              >
+                <UserPlus className="h-5 w-5" />
+                <span>Add</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleAddItem}
+                className="flex flex-col items-center gap-1 rounded-xl px-4 py-2 text-sm font-bold text-primary-foreground bg-primary transition-all hover:bg-primary/90 shadow-lg rainbow-border-hover min-w-[80px]"
+              >
+                <ListPlus className="h-5 w-5" />
+                <span>Add Item</span>
+              </button>
+            )}
+
+            {/* Right: People Count/Quick Access */}
+            <button
+              className="flex flex-col items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-surface-2 hover:text-foreground rainbow-border-hover min-w-[64px]"
+              onClick={() => setIsAddingPerson(true)}
+            >
+              <UserPlus className="h-5 w-5" />
+              <span>{state.currentBill.people.length}</span>
+            </button>
+          </div>
+        </div>
       </main>
 
       {/* Corner Text Elements - Desktop Only */}
