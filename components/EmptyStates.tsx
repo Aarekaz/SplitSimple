@@ -62,7 +62,7 @@ export function EmptyState({
               onClick={action.onClick}
               variant={action.variant || "secondary"}
               size="sm"
-              className="border border-border bg-surface-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em]"
+              className="border border-border bg-surface-2 text-xs font-semibold uppercase tracking-wider"
             >
               {action.label}
             </Button>
@@ -72,7 +72,7 @@ export function EmptyState({
               onClick={secondaryAction.onClick}
               variant="ghost"
               size="sm"
-              className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
+              className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
             >
               {secondaryAction.label}
             </Button>
@@ -257,7 +257,7 @@ export function OnboardingFlow({ onQuickStart, onAddPerson }: OnboardingFlowProp
         <Button
           size="sm"
           variant="secondary"
-          className="border border-border bg-surface-2 text-[0.72rem] font-semibold uppercase tracking-[0.18em]"
+          className="border border-border bg-surface-2 text-xs font-semibold uppercase tracking-wider"
           onClick={onAddPerson}
         >
           <Users className="mr-2 h-3.5 w-3.5" />

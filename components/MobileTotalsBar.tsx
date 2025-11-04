@@ -42,7 +42,7 @@ export function MobileTotalsBar() {
                   value={summary.total} 
                   className="text-lg font-semibold text-foreground"
                 />
-                <div className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+                <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
                   {state.currentBill.people.length} people • {state.currentBill.items.length} items
                 </div>
               </div>
@@ -72,7 +72,7 @@ export function MobileTotalsBar() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="rounded-full border border-border bg-surface-2 px-4 py-2 font-semibold uppercase tracking-[0.18em]"
+                    className="rounded-full border border-border bg-surface-2 px-4 py-2 font-semibold uppercase tracking-wider"
                   >
                     View Details
                   </Button>

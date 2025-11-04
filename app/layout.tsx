@@ -1,4 +1,5 @@
 import type React from "react"
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import { Inter, JetBrains_Mono, Source_Sans_3 } from "next/font/google"
 import "./globals.css"
@@ -50,11 +51,13 @@ export default function RootLayout({
         <ThemeProvider>
           <PostHogProvider>
             <ErrorBoundary>
-              <BillProvider>
-                {children}
-                <Toaster />
-                <Analytics />
-              </BillProvider>
+              <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                <BillProvider>
+                  {children}
+                  <Toaster />
+                  <Analytics />
+                </BillProvider>
+              </Suspense>
             </ErrorBoundary>
           </PostHogProvider>
         </ThemeProvider>

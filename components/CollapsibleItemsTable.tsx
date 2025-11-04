@@ -478,24 +478,24 @@ export function CollapsibleItemsTable() {
             <CardTitle className="text-title">Items ({items.length})</CardTitle>
           </div>
           <div className="flex items-center gap-3">
-            <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1">
-              <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">⌘</kbd>
-              <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">↵</kbd>
-                <span className="text-xs text-muted-foreground ml-1">Add item</span>
+            <div className="text-xs hidden sm:flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-surface-2 text-foreground rounded-md text-xs font-semibold border border-border shadow-sm">⌘</kbd>
+              <kbd className="px-2 py-1 bg-surface-2 text-foreground rounded-md text-xs font-semibold border border-border shadow-sm">↵</kbd>
+                <span className="text-xs text-foreground/70 ml-1 font-medium">Add item</span>
               </div>
-              <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1 ml-2">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">⌘</kbd>
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">D</kbd>
-                <span className="text-xs text-muted-foreground ml-1">Duplicate</span>
+              <div className="text-xs hidden sm:flex items-center gap-1 ml-2">
+                <kbd className="px-2 py-1 bg-surface-2 text-foreground rounded-md text-xs font-semibold border border-border shadow-sm">⌘</kbd>
+                <kbd className="px-2 py-1 bg-surface-2 text-foreground rounded-md text-xs font-semibold border border-border shadow-sm">D</kbd>
+                <span className="text-xs text-foreground/70 ml-1 font-medium">Duplicate</span>
               </div>
-              <div className="text-xs text-muted-foreground hidden sm:flex items-center gap-1 ml-2">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded-lg text-xs font-medium border border-border/50">Esc</kbd>
-                <span className="text-xs text-muted-foreground ml-1">Collapse</span>
+              <div className="text-xs hidden sm:flex items-center gap-1 ml-2">
+                <kbd className="px-2 py-1 bg-surface-2 text-foreground rounded-md text-xs font-semibold border border-border shadow-sm">Esc</kbd>
+                <span className="text-xs text-foreground/70 ml-1 font-medium">Collapse</span>
             </div>
-            <Button 
-              onClick={() => handleAddItem(true)} 
+            <Button
+              onClick={() => handleAddItem(true)}
               size="sm"
-              className={`btn-float rounded-xl transition-all duration-300 hover:animate-bounce-subtle ${showAddSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80'} text-white font-medium h-9 px-4`}
+              className={`btn-float rounded-xl transition-all duration-300 hover:animate-bounce-subtle ${showAddSuccess ? 'bg-success hover:bg-success/90 text-white success-pulse' : 'bg-primary hover:bg-primary/90 text-primary-foreground'} font-semibold h-9 px-4 shadow-md`}
             >
               <div className="transition-transform duration-200 flex items-center">
                 {showAddSuccess ? (

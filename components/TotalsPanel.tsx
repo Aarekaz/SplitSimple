@@ -165,7 +165,7 @@ export function TotalsPanel({
       </div>
       <div className="border-t border-border/70 pt-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Total</span>
+          <span className="text-xs uppercase tracking-widest text-muted-foreground">Total</span>
           <div className="text-lg font-semibold text-foreground">
             <AnimatedNumber
               value={summary.total}
@@ -190,7 +190,7 @@ export function TotalsPanel({
           <Button
             size="sm"
             variant="secondary"
-            className="border border-border text-[0.68rem] font-semibold uppercase tracking-[0.18em] rainbow-border-hover"
+            className="border border-border text-xs font-semibold uppercase tracking-wider rainbow-border-hover"
             onClick={() => setIsAddingPerson(true)}
           >
             <Plus className="mr-2 h-3.5 w-3.5" />
@@ -240,7 +240,7 @@ export function TotalsPanel({
                   </span>
                   <div>
                     <p className="font-semibold leading-tight">{person.name}</p>
-                    <p className="text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
                       {assignments.length} item{assignments.length === 1 ? "" : "s"}
                     </p>
                   </div>
@@ -345,7 +345,7 @@ function HeaderStrip() {
         <Calculator className="h-4 w-4 text-muted-foreground" />
         <span className="micro-label text-muted-foreground">Control Summary</span>
       </div>
-      <div className="flex items-center gap-3 text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+      <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-muted-foreground">
         <div className="flex items-center gap-1">
           <UsersIcon className="h-3.5 w-3.5" />
           Participants

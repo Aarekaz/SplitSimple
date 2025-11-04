@@ -20,7 +20,7 @@ export async function GET(
     }
 
     const { id: billId } = await params
-    
+
     if (!billId || typeof billId !== 'string') {
       return NextResponse.json(
         { error: "Invalid bill ID" },
@@ -31,7 +31,7 @@ export async function GET(
     // Use connection pool for Redis operation
     const billData = await executeRedisOperation(async (client) => {
       const data = await client.get(`bill:${billId}`)
-      
+
       // Increment access count if bill exists
       if (data) {
         const bill = JSON.parse(data)
@@ -40,17 +40,17 @@ export async function GET(
           accessCount: (bill.accessCount || 0) + 1,
           lastAccessed: new Date().toISOString()
         }
-        
+
         // Update the bill with incremented access count
         await client.setEx(
           `bill:${billId}`,
           30 * 24 * 60 * 60, // Maintain original TTL
           JSON.stringify(updatedBill)
         )
-        
+
         return JSON.stringify(updatedBill)
       }
-      
+
       return data
     })
 

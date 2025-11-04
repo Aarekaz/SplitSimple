@@ -20,6 +20,7 @@ import {
   RefreshCcw,
   UserPlus,
   FileDown,
+  Loader2,
 } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import type { Item } from "@/contexts/BillContext"
@@ -41,7 +42,7 @@ interface ControlAction {
 }
 
 export default function HomePage() {
-  const { state, dispatch } = useBill()
+  const { state, dispatch, isLoadingSharedBill } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
 
@@ -196,6 +197,19 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Loading Overlay for Shared Bills */}
+      {isLoadingSharedBill && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-surface-1 p-8 shadow-lg">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <div className="text-center">
+              <h3 className="text-lg font-semibold">Loading Shared Bill</h3>
+              <p className="text-sm text-muted-foreground">Please wait...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="command-header sticky top-0 z-40">
         <div className="mx-auto flex w-full max-w-[1640px] items-center gap-4 px-8 py-3.5">
           {/* Workspace Branding */}
@@ -222,10 +236,10 @@ export default function HomePage() {
 
           {/* Stats Chips - Inline & Compact */}
           <div className="hidden items-center gap-2 lg:flex">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <span className="text-foreground">{state.currentBill.people.length}</span> People
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <span className="text-foreground">{state.currentBill.items.length}</span> Items
             </span>
           </div>
@@ -248,7 +262,7 @@ export default function HomePage() {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 border border-border bg-surface-2 px-3 text-[0.65rem] font-semibold uppercase tracking-[0.16em]"
+              className="h-8 border border-border bg-surface-2 px-3 text-xs font-semibold uppercase tracking-wider"
               onClick={handleNewBill}
             >
               <RefreshCcw className="mr-1.5 h-3.5 w-3.5" />
@@ -264,7 +278,7 @@ export default function HomePage() {
 
           {/* Desktop: Control Rail */}
           <aside className="hidden lg:block control-rail">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               <LayoutDashboard className="h-4 w-4" />
               Controls
             </div>
@@ -357,7 +371,7 @@ export default function HomePage() {
             {state.currentBill.items.length > 0 && (
             <div className="flex items-center justify-between">
               <div>
-                <p className="micro-label text-[0.65rem] text-muted-foreground">Items ledger</p>
+                <p className="micro-label">Items ledger</p>
                 <h3 className="mt-1 text-lg font-semibold tracking-tight">Breakdown</h3>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -387,7 +401,7 @@ export default function HomePage() {
             <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
               <Button
                 variant="secondary"
-                className="border border-border bg-surface-2 text-xs font-semibold uppercase tracking-[0.18em] rainbow-border-hover"
+                className="border border-border bg-surface-2 text-xs font-semibold uppercase tracking-wider rainbow-border-hover"
                 onClick={handleCopySummary}
                 disabled={state.currentBill.people.length === 0}
               >
@@ -400,8 +414,8 @@ export default function HomePage() {
         </div>
 
         {/* Mobile: Unified Bottom Action Bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface-1 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] sm:hidden">
-          <div className="flex h-20 items-center justify-around px-2 py-3">
+        <div className="mobile-bottom-bar fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface-1 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] sm:hidden">
+          <div className="flex items-center justify-around px-2 py-3">
             {/* Left: Totals Button - Always First Action */}
             <Sheet>
               <SheetTrigger asChild>
@@ -424,7 +438,7 @@ export default function HomePage() {
                   <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6">
                     <Button
                       variant="secondary"
-                      className="w-full border border-border bg-surface-2 text-xs font-semibold uppercase tracking-[0.18em] rainbow-border-hover"
+                      className="w-full border border-border bg-surface-2 text-xs font-semibold uppercase tracking-wider rainbow-border-hover"
                       onClick={handleCopySummary}
                       disabled={state.currentBill.people.length === 0}
                     >

@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useEffect, useRef } from "react"
+import { createContext, useContext, useReducer, useEffect, useRef, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { getBillFromCloud, storeBillInCloud } from "@/lib/sharing"
 import { toast } from "@/hooks/use-toast"
 
@@ -68,6 +69,7 @@ interface BillState {
   maxHistorySize: number
   syncStatus: SyncStatus
   lastSyncTime: number | null
+  isLoadingSharedBill: boolean
 }
 
 type BillAction =
@@ -90,6 +92,7 @@ type BillAction =
   | { type: "REDO" }
   | { type: "SET_SYNC_STATUS"; payload: SyncStatus }
   | { type: "SYNC_TO_CLOUD" }
+  | { type: "SET_LOADING_SHARED_BILL"; payload: boolean }
 
 // Default colors for people
 const PERSON_COLORS = [
@@ -140,6 +143,7 @@ const initialState: BillState = {
   maxHistorySize: 50,
   syncStatus: "never_synced",
   lastSyncTime: null,
+  isLoadingSharedBill: false,
 }
 
 // Reducer
@@ -314,6 +318,13 @@ function billReducer(state: BillState, action: BillAction): BillState {
       }
     }
 
+    case "SET_LOADING_SHARED_BILL": {
+      return {
+        ...state,
+        isLoadingSharedBill: action.payload,
+      }
+    }
+
     default:
       return state
   }
@@ -374,11 +385,19 @@ const BillContext = createContext<{
   canUndo: boolean
   canRedo: boolean
   syncToCloud: () => Promise<void>
+  isLoadingSharedBill: boolean
 } | null>(null)
 
 // Provider
 export function BillProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(billReducer, initialState)
+  const searchParams = useSearchParams()
+  const [isClient, setIsClient] = useState(false)
+
+  // Set client flag after hydration
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const canUndo = state.historyIndex >= 0
   const canRedo = state.historyIndex < state.history.length - 1
@@ -404,20 +423,39 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
   // Check for shared bill on mount and load data from localStorage
   useEffect(() => {
+    // Only run on client side after hydration
+    if (!isClient) return
+
     const loadBill = async () => {
       try {
-        // Check for shared bill in URL
-        const urlParams = new URLSearchParams(window.location.search)
-        const sharedBillId = urlParams.get("bill")
+        // Get shared bill ID from URL params - support both ?bill= and ?share= for backwards compatibility
+        let sharedBillId = searchParams?.get("bill") || searchParams?.get("share")
+
+        // Fallback to window.location if searchParams doesn't work
+        if (!sharedBillId && typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search)
+          sharedBillId = urlParams.get("bill") || urlParams.get("share")
+        }
 
         if (sharedBillId) {
+          // Set loading state
+          dispatch({ type: "SET_LOADING_SHARED_BILL", payload: true })
+
           // First try to load from Redis (cloud)
           try {
             const cloudResult = await getBillFromCloud(sharedBillId)
+
             if (cloudResult.bill) {
               // Migration: Add missing fields to existing shared bills
               const migratedBill = migrateBillData(cloudResult.bill)
               dispatch({ type: "LOAD_BILL", payload: migratedBill })
+              dispatch({ type: "SET_LOADING_SHARED_BILL", payload: false })
+
+              // Show success toast
+              toast({
+                title: "Bill Loaded",
+                description: "Shared bill loaded successfully.",
+              })
               return // CRITICAL: Exit here, don't load localStorage
             }
           } catch (cloudError) {
@@ -432,11 +470,24 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             // Migration: Add missing fields to existing local shared bills
             const migratedBill = migrateBillData(localSharedBill)
             dispatch({ type: "LOAD_BILL", payload: migratedBill })
+            dispatch({ type: "SET_LOADING_SHARED_BILL", payload: false })
+
+            // Show success toast
+            toast({
+              title: "Bill Loaded",
+              description: "Shared bill loaded successfully.",
+            })
             return // CRITICAL: Exit here, don't load localStorage current bill
           }
 
-          // If shared bill not found anywhere, DON'T load localStorage
-          // User expected a specific shared bill, not their own data
+          // If shared bill not found anywhere, show error
+          dispatch({ type: "SET_LOADING_SHARED_BILL", payload: false })
+          toast({
+            title: "Bill Not Found",
+            description: "The shared bill could not be found or has expired. Please check the link and try again.",
+            variant: "destructive",
+          })
+
           if (process.env.NODE_ENV === 'development') {
             console.warn(`Shared bill ${sharedBillId} not found in cloud or local storage`)
           }
@@ -452,6 +503,13 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: "LOAD_BILL", payload: migratedBill })
         }
       } catch (error) {
+        dispatch({ type: "SET_LOADING_SHARED_BILL", payload: false })
+        toast({
+          title: "Error Loading Bill",
+          description: "An unexpected error occurred while loading the bill. Please try again.",
+          variant: "destructive",
+        })
+
         if (process.env.NODE_ENV === 'development') {
           console.error("Failed to load bill:", error)
         }
@@ -459,7 +517,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
     }
 
     loadBill()
-  }, [])
+  }, [isClient, searchParams])
 
   // Auto-save to localStorage whenever state changes
   useEffect(() => {
@@ -530,7 +588,20 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.currentBill, state.syncStatus])
 
-  return <BillContext.Provider value={{ state, dispatch, canUndo, canRedo, syncToCloud }}>{children}</BillContext.Provider>
+  return (
+    <BillContext.Provider
+      value={{
+        state,
+        dispatch,
+        canUndo,
+        canRedo,
+        syncToCloud,
+        isLoadingSharedBill: state.isLoadingSharedBill
+      }}
+    >
+      {children}
+    </BillContext.Provider>
+  )
 }
 
 // Hook
