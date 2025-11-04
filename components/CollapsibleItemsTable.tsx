@@ -126,10 +126,10 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} className="relative group">
-      {/* Drag Handle - subtle but always visible */}
+      {/* Simplified Drag Handle */}
       <div
         {...listeners}
-        className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md cursor-grab hover:bg-primary/10 hover:border-primary/30 opacity-30 group-hover:opacity-100 focus:opacity-100 transition-all z-10 bg-background/60 backdrop-blur-sm border border-border/30"
+        className="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-10 rounded-md cursor-grab hover:bg-muted/60 active:bg-muted/80 opacity-40 hover:opacity-100 group-hover:opacity-40 group-hover:hover:opacity-100 focus:opacity-100 transition-all z-10 flex items-center justify-center"
         title="Drag to reorder or press Enter to focus item"
         aria-label="Drag handle for item reordering. Press Enter to focus item controls."
         role="button"

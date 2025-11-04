@@ -106,39 +106,37 @@ export function MobileSortableItem({
   }
 
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
+    <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
-        "relative",
-        isDragging && "opacity-50 shadow-lg scale-105",
+        "relative group/item",
+        isDragging && "opacity-60 shadow-lg scale-[1.02] z-50",
         className
       )}
     >
-      {/* Mobile-optimized drag handle */}
+      {/* Simplified drag handle */}
       <div
         {...attributes}
         {...listeners}
         className={cn(
-          "absolute left-3 top-1/2 -translate-y-1/2 z-10",
-          "w-8 h-8 rounded-full",
-          "bg-background/90 backdrop-blur-sm border border-border/50",
+          "absolute left-2 top-1/2 -translate-y-1/2 z-10",
+          "w-6 h-10 rounded-md",
           "flex items-center justify-center",
           "cursor-grab active:cursor-grabbing",
-          "touch-manipulation", // Optimize for touch
+          "touch-manipulation",
           "transition-all duration-200",
-          "hover:bg-muted/80 active:scale-95",
-          // Show by default on mobile, hide on desktop unless hovering
-          "opacity-100 md:opacity-0 md:group-hover:opacity-100"
+          "hover:bg-muted/60 active:bg-muted/80",
+          "opacity-40 hover:opacity-100 md:opacity-0 md:group-hover/item:opacity-40 md:group-hover/item:hover:opacity-100"
         )}
         style={{ touchAction: 'manipulation' }}
         title="Drag to reorder"
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </div>
-      
-      {/* Content with padding for drag handle */}
-      <div className="pl-12 md:pl-0 md:group-hover:pl-12 transition-all duration-200">
+
+      {/* Content with subtle padding for drag handle */}
+      <div className="pl-10 md:pl-0 md:group-hover/item:pl-10 transition-all duration-200">
         {children}
       </div>
     </div>

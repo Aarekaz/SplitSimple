@@ -163,18 +163,18 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         
         <div className="space-y-4 p-2 sm:p-0">
           {isStoring && (
-            <Alert>
-              <AlertDescription className="flex items-center gap-2">
+            <Alert className="bg-primary/10 border-primary/30">
+              <AlertDescription className="flex items-center gap-2 text-sm">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                Preparing bill for sharing...
+                <span className="font-medium">Preparing bill for sharing...</span>
               </AlertDescription>
             </Alert>
           )}
 
           {storeError && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
               <AlertDescription className="text-sm">
-                <strong>Error:</strong> {storeError}
+                <strong className="font-semibold">Error:</strong> {storeError}
               </AlertDescription>
             </Alert>
           )}
@@ -222,9 +222,9 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
             </div>
           </div>
 
-          <Alert>
-            <AlertDescription className="text-sm">
-              <strong>✅ Universal sharing:</strong> This link works for anyone and expires after 30 days. 
+          <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+            <AlertDescription className="text-sm text-green-900 dark:text-green-100">
+              <strong className="font-semibold">✅ Universal sharing:</strong> This link works for anyone and expires after 30 days.
               Bills are stored securely in the cloud.
             </AlertDescription>
           </Alert>

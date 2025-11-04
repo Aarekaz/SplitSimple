@@ -117,11 +117,15 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
           aria-describedby={validationError ? 'person-name-error' : undefined}
         />
         {showButton && (
-          <Button 
-            size="sm" 
-            onClick={handleAddPerson} 
-            disabled={!newPersonName.trim()} 
-            className={`h-10 px-4 rounded-xl btn-float transition-all duration-300 font-medium ${showSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white'}`}
+          <Button
+            size="sm"
+            onClick={handleAddPerson}
+            disabled={!newPersonName.trim()}
+            className={`h-10 px-5 rounded-xl shadow-md transition-all duration-300 font-semibold ${
+              showSuccess
+                ? 'bg-green-600 hover:bg-green-600 text-white success-pulse'
+                : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+            }`}
           >
             {showSuccess ? '✓' : 'Add'}
           </Button>

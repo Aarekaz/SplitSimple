@@ -249,44 +249,53 @@ export function TotalsPanel({
   )
 
   const BillSummaryPanel = () => (
-    <div className="float-card-sm border-0 p-5 space-y-3">
-      <div className="space-y-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
-          <span className="receipt-subtotal">
-            {formatCurrency(summary.subtotal)}
-          </span>
+    <div className="float-card-sm border-0 hover:shadow-md transition-all duration-300">
+      <div className="p-5 space-y-3">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
+            <Receipt className="h-5 w-5 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold">Bill Summary</h3>
         </div>
 
-        {summary.tax > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tax</span>
-            <span className="receipt-subtotal">{formatCurrency(summary.tax)}</span>
+        <div className="space-y-2.5">
+          <div className="flex justify-between text-sm items-center py-1">
+            <span className="text-muted-foreground font-medium">Subtotal</span>
+            <span className="receipt-subtotal font-semibold">
+              {formatCurrency(summary.subtotal)}
+            </span>
           </div>
-        )}
 
-        {summary.tip > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tip</span>
-            <span className="receipt-subtotal">{formatCurrency(summary.tip)}</span>
-          </div>
-        )}
-        {summary.discount > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Discount</span>
-            <span className="receipt-subtotal text-green-600 dark:text-green-400">-{formatCurrency(summary.discount)}</span>
-          </div>
-        )}
-      </div>
+          {summary.tax > 0 && (
+            <div className="flex justify-between text-sm items-center py-1">
+              <span className="text-muted-foreground font-medium">Tax</span>
+              <span className="receipt-subtotal font-semibold">{formatCurrency(summary.tax)}</span>
+            </div>
+          )}
 
-      <div className="border-t border-border/50 pt-4">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold">Total</span>
-          <div className="receipt-total text-primary">
-            <AnimatedNumber 
-              value={summary.total}
-              formatFn={(v) => formatCurrency(v)}
-            />
+          {summary.tip > 0 && (
+            <div className="flex justify-between text-sm items-center py-1">
+              <span className="text-muted-foreground font-medium">Tip</span>
+              <span className="receipt-subtotal font-semibold">{formatCurrency(summary.tip)}</span>
+            </div>
+          )}
+          {summary.discount > 0 && (
+            <div className="flex justify-between text-sm items-center py-1">
+              <span className="text-muted-foreground font-medium">Discount</span>
+              <span className="receipt-subtotal text-green-600 dark:text-green-400 font-semibold">-{formatCurrency(summary.discount)}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-border/50 pt-4 mt-4">
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold">Total</span>
+            <div className="receipt-total text-primary font-bold">
+              <AnimatedNumber
+                value={summary.total}
+                formatFn={(v) => formatCurrency(v)}
+              />
+            </div>
           </div>
         </div>
       </div>
