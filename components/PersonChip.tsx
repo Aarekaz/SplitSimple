@@ -47,9 +47,9 @@ export function PersonChip({
     }
   }
 
-  const baseClasses = "flex items-center gap-1.5 cursor-pointer transition-all border"
-  const selectedClasses = "bg-primary text-primary-foreground hover:bg-primary/90"
-  const unselectedClasses = "bg-muted hover:bg-muted/80 text-muted-foreground border-dashed"
+  const baseClasses = "flex items-center gap-2 cursor-pointer transition-all duration-200"
+  const selectedClasses = "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md border-2 border-primary"
+  const unselectedClasses = "bg-background hover:bg-muted/50 text-foreground border-2 border-border/50 hover:border-border"
 
   return (
     <div
@@ -62,7 +62,7 @@ export function PersonChip({
       )}
     >
       <div
-        className={cn("w-2 h-2 rounded-full flex-shrink-0", isSelected ? 'bg-primary-foreground/80' : 'bg-primary/80')}
+        className={cn("w-2.5 h-2.5 rounded-full flex-shrink-0 ring-2", isSelected ? 'ring-primary-foreground/30' : 'ring-border/50')}
         style={{ backgroundColor: person.color }}
       />
       <span className="font-medium flex-1 min-w-0">{person.name || "Unnamed"}</span>

@@ -52,7 +52,7 @@ export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
   const selectedPeople = people.filter((p) => item.splitWith.includes(p.id))
 
   return (
-    <Card className="w-full">
+    <Card className="w-full border-2 hover:border-border transition-all duration-200 shadow-sm hover:shadow-md">
       <CardContent className="p-4">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -62,9 +62,9 @@ export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
                   value={item.name}
                   onChange={handleNameChange}
                   placeholder="Item name"
-                  className="h-9 text-sm font-medium"
+                  className="h-9 text-sm font-medium border-2 focus:border-primary transition-all duration-200 rounded-lg"
                 />
-                <div className="text-xs text-muted-foreground whitespace-nowrap">${parseFloat(item.price || '0').toFixed(2)}</div>
+                <div className="text-sm font-mono font-semibold text-foreground whitespace-nowrap bg-muted/50 px-2.5 py-1 rounded-md border border-border/50">${parseFloat(item.price || '0').toFixed(2)}</div>
               </div>
               {!isExpanded && selectedPeople.length > 0 && (
                 <div className="flex items-center gap-1 mt-1">
@@ -110,13 +110,13 @@ export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
                       value={priceInput}
                       onChange={handlePriceChange}
                       placeholder="0.00 or 7.48/2"
-                      className="h-9 pr-10 text-sm"
+                      className="h-9 pr-10 text-sm border-2 focus:border-primary transition-all duration-200 rounded-lg"
                       inputMode="decimal"
                     />
                     <Calculator className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   </div>
                   {priceInput !== item.price.toString() && (
-                    <div className="text-xs text-muted-foreground mt-1">= ${parseFloat(item.price || '0').toFixed(2)}</div>
+                    <div className="text-xs font-semibold text-primary mt-1">= ${parseFloat(item.price || '0').toFixed(2)}</div>
                   )}
                 </div>
 

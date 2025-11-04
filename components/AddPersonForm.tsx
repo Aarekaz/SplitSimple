@@ -107,23 +107,23 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
         <Input
           ref={ref}
           type="text"
-          placeholder="Enter name"
+          placeholder="Enter person name"
           value={newPersonName}
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
-          className={`h-10 text-sm flex-1 rounded-xl border-border/50 focus:border-primary transition-all duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+          className={`h-10 text-sm flex-1 rounded-xl border-2 focus:border-primary transition-all duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive' : 'border-border/50'}`}
           autoFocus
           aria-invalid={validationError ? 'true' : 'false'}
           aria-describedby={validationError ? 'person-name-error' : undefined}
         />
         {showButton && (
-          <Button 
-            size="sm" 
-            onClick={handleAddPerson} 
-            disabled={!newPersonName.trim()} 
-            className={`h-10 px-4 rounded-xl btn-float transition-all duration-300 font-medium ${showSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white'}`}
+          <Button
+            size="sm"
+            onClick={handleAddPerson}
+            disabled={!newPersonName.trim()}
+            className={`h-10 px-5 rounded-xl btn-float transition-all duration-300 font-semibold text-sm shadow-md ${showSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
           >
-            {showSuccess ? '✓' : 'Add'}
+            {showSuccess ? '✓ Added' : 'Add Person'}
           </Button>
         )}
       </div>

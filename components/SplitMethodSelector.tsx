@@ -78,24 +78,23 @@ export function SplitMethodSelector({
   }
   return (
     <div className={cn("space-y-2", className)}>
-      <label className="text-xs font-medium text-muted-foreground">Split Method</label>
-      <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/20 p-1">
+      <label className="text-xs font-semibold text-muted-foreground">Split Method</label>
+      <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/20 p-2">
         {splitMethodOptions.map((option) => {
           const Icon = option.icon
           const isActive = value === option.value
-          
+
           return (
             <button
               key={option.value}
               type="button"
               onClick={() => handleMethodChange(option.value)}
               className={cn(
-                "flex items-center justify-center gap-1.5 py-2 px-3 rounded-md transition-all text-xs font-medium",
-                "hover:bg-background hover:shadow-sm",
-                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
+                "flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg transition-all text-xs font-medium",
+                "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
                 isActive
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 border-2 border-primary"
+                  : "bg-background/60 text-muted-foreground hover:text-foreground hover:bg-background hover:shadow-sm border-2 border-transparent"
               )}
               title={option.description}
             >

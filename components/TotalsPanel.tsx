@@ -115,25 +115,25 @@ export function TotalsPanel({
           const isExpanded = expandedPeople.has(person.id)
 
           return (
-            <div key={person.id} className="float-card-sm border-0 hover:shadow-md transition-all duration-300 group">
+            <div key={person.id} className="float-card-sm border-2 hover:shadow-md hover:border-primary/20 transition-all duration-300 group">
               <div className="space-y-2">
                 <div
                   className="flex items-center justify-between p-4 cursor-pointer"
                   onClick={() => togglePersonExpansion(person.id)}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
-                      style={{ 
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0 border-2 border-white/20"
+                      style={{
                         backgroundColor: person.color,
-                        boxShadow: `0 4px 12px ${person.color}30`
-                      }} 
+                        boxShadow: `0 4px 16px ${person.color}40`
+                      }}
                     >
                       {person.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">{person.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-bold truncate">{person.name}</p>
+                      <p className="text-xs text-muted-foreground font-medium">
                         {itemBreakdowns.filter(breakdown => breakdown.splits[person.id] > 0).length} item{itemBreakdowns.filter(breakdown => breakdown.splits[person.id] > 0).length !== 1 ? 's' : ''}
                       </p>
                     </div>
@@ -146,19 +146,19 @@ export function TotalsPanel({
                         e.stopPropagation()
                         handleRemovePerson(person.id)
                       }}
-                      className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                      className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
                     >
                       <X className="h-4 w-4" />
                     </Button>
                     <div className="text-right">
-                      <div className="receipt-amount text-sm font-bold">
-                        <AnimatedNumber 
+                      <div className="receipt-amount text-base font-bold">
+                        <AnimatedNumber
                           value={personTotal.total}
                           formatFn={(v) => formatCurrency(v)}
                           duration={150}
                         />
                       </div>
-                      <div className="text-xs text-muted-foreground font-medium">
+                      <div className="text-xs text-muted-foreground font-semibold bg-muted/50 px-2 py-0.5 rounded-md">
                         {summary.total > 0 ? `${((personTotal.total / summary.total) * 100).toFixed(0)}%` : '0%'}
                       </div>
                     </div>
@@ -170,9 +170,9 @@ export function TotalsPanel({
                 {/* Progress bar */}
                 {summary.total > 0 && (
                   <div className="px-4 pb-3">
-                    <Progress 
-                      value={(personTotal.total / summary.total) * 100} 
-                      className="h-2 rounded-full"
+                    <Progress
+                      value={(personTotal.total / summary.total) * 100}
+                      className="h-2.5 rounded-full"
                       style={{
                         ['--progress-background' as any]: person.color,
                       }}
@@ -249,41 +249,48 @@ export function TotalsPanel({
   )
 
   const BillSummaryPanel = () => (
-    <div className="float-card-sm border-0 p-5 space-y-3">
-      <div className="space-y-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
-          <span className="receipt-subtotal">
+    <div className="float-card-sm border-2 p-5 space-y-4 bg-gradient-to-br from-card to-muted/20">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
+          <Receipt className="h-5 w-5 text-primary" />
+        </div>
+        <h3 className="text-lg font-semibold">Bill Summary</h3>
+      </div>
+
+      <div className="space-y-2.5">
+        <div className="flex justify-between text-sm items-center py-1">
+          <span className="text-muted-foreground font-medium">Subtotal</span>
+          <span className="receipt-subtotal font-semibold">
             {formatCurrency(summary.subtotal)}
           </span>
         </div>
 
         {summary.tax > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tax</span>
-            <span className="receipt-subtotal">{formatCurrency(summary.tax)}</span>
+          <div className="flex justify-between text-sm items-center py-1">
+            <span className="text-muted-foreground font-medium">Tax</span>
+            <span className="receipt-subtotal font-semibold">{formatCurrency(summary.tax)}</span>
           </div>
         )}
 
         {summary.tip > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tip</span>
-            <span className="receipt-subtotal">{formatCurrency(summary.tip)}</span>
+          <div className="flex justify-between text-sm items-center py-1">
+            <span className="text-muted-foreground font-medium">Tip</span>
+            <span className="receipt-subtotal font-semibold">{formatCurrency(summary.tip)}</span>
           </div>
         )}
         {summary.discount > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Discount</span>
-            <span className="receipt-subtotal text-green-600 dark:text-green-400">-{formatCurrency(summary.discount)}</span>
+          <div className="flex justify-between text-sm items-center py-1">
+            <span className="text-muted-foreground font-medium">Discount</span>
+            <span className="receipt-subtotal text-green-600 dark:text-green-400 font-semibold">-{formatCurrency(summary.discount)}</span>
           </div>
         )}
       </div>
 
-      <div className="border-t border-border/50 pt-4">
-        <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold">Total</span>
-          <div className="receipt-total text-primary">
-            <AnimatedNumber 
+      <div className="border-t-2 border-border/50 pt-4">
+        <div className="flex justify-between items-center bg-primary/5 rounded-xl p-3 border-2 border-primary/20">
+          <span className="text-lg font-bold">Total</span>
+          <div className="receipt-total text-primary text-xl">
+            <AnimatedNumber
               value={summary.total}
               formatFn={(v) => formatCurrency(v)}
             />

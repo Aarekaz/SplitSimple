@@ -42,8 +42,8 @@ export function PersonSelector({
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-muted-foreground">Split With</label>
-        <div className="text-xs text-muted-foreground">
+        <label className="text-xs font-semibold text-muted-foreground">Split With</label>
+        <div className="text-xs font-medium text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-md">
           {selectedPeople.length} of {state.currentBill.people.length} selected
         </div>
       </div>

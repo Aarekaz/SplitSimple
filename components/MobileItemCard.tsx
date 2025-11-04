@@ -68,7 +68,7 @@ export function MobileItemCard({
   const totalPrice = parseFloat(item.price) || 0
 
   return (
-    <Card className={cn("group transition-all duration-200", className)}>
+    <Card className={cn("group transition-all duration-200 border-2 hover:border-border hover:shadow-md", className)}>
       <CardContent className="p-4">
         {/* Main Item Row */}
         <div className="space-y-3">
@@ -79,24 +79,24 @@ export function MobileItemCard({
                 value={localName}
                 onChange={(e) => setLocalName(e.target.value)}
                 placeholder="Item name"
-                className="h-10 text-base font-medium"
+                className="h-10 text-base font-medium border-2 focus:border-primary transition-all rounded-lg"
                 autoFocus
               />
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                   <Input
                     value={localPrice}
                     onChange={(e) => setLocalPrice(e.target.value)}
                     placeholder="0.00"
-                    className="h-10 pl-8"
+                    className="h-10 pl-8 border-2 focus:border-primary transition-all rounded-lg font-mono"
                     inputMode="decimal"
                   />
                 </div>
-                <Button size="sm" onClick={handleSave} className="px-6">
+                <Button size="sm" onClick={handleSave} className="px-6 rounded-lg">
                   Save
                 </Button>
-                <Button size="sm" variant="outline" onClick={handleCancel}>
+                <Button size="sm" variant="outline" onClick={handleCancel} className="rounded-lg">
                   Cancel
                 </Button>
               </div>

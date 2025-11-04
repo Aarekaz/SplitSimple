@@ -107,6 +107,11 @@
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   --ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
+
+  /* ===== Enhanced borders ===== */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.12);
+  --border-strong: rgba(0, 0, 0, 0.18);
   
   /* ===== Transition durations ===== */
   --duration-instant: 0.1s;
@@ -197,6 +202,11 @@
   --success-glow: rgba(52, 211, 153, 0.3);
   --warning-glow: rgba(245, 158, 11, 0.3);
   --error-glow: rgba(248, 113, 113, 0.3);
+
+  /* Enhanced borders for dark mode */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.22);
 }
 
 @theme inline {
@@ -626,13 +636,42 @@
   
   /* Loading States */
   .skeleton-pulse {
-    background: linear-gradient(90deg, 
-      var(--muted) 25%, 
-      rgba(255,255,255,0.8) 50%, 
+    background: linear-gradient(90deg,
+      var(--muted) 25%,
+      rgba(255,255,255,0.8) 50%,
       var(--muted) 75%
     );
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Subtle border utilities */
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+
+  .border-medium {
+    border-color: var(--border-medium);
+  }
+
+  .border-strong {
+    border-color: var(--border-strong);
+  }
+
+  /* Enhanced card with subtle gradient */
+  .card-gradient {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)/0.3) 100%);
+  }
+
+  /* Focus ring enhancements */
+  .focus-ring-enhanced {
+    transition: all var(--duration-fast) var(--ease-smooth);
+  }
+
+  .focus-ring-enhanced:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--primary-glow);
   }
 }
 
