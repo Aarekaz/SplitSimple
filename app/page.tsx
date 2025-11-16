@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
-
-import { CollapsibleItemsTable } from "@/components/CollapsibleItemsTable"
+import React from "react"
+import { LedgerItemsTable } from "@/components/LedgerItemsTable"
+import { MobileLedgerView } from "@/components/MobileLedgerView"
 import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { MobileFirstUI } from "@/components/MobileFirstUI"
@@ -11,17 +11,15 @@ import { ShareBill } from "@/components/ShareBill"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Receipt, Plus, Copy, Share2 } from "lucide-react"
+import { Receipt, Plus, Copy, Share2, Users } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
 import { useState, useEffect, useRef } from "react"
 import { useBillAnalytics } from "@/hooks/use-analytics"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { BillStatusIndicator } from "@/components/BillStatusIndicator"
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
-import { Users } from "lucide-react"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
@@ -78,13 +76,13 @@ export default function HomePage() {
     }
   }
 
-  const handleNewBill = () => {
+  const handleNewBill = React.useCallback(() => {
     dispatch({ type: "NEW_BILL" })
     analytics.trackBillCreated()
     analytics.trackFeatureUsed("new_bill")
-  }
+  }, [dispatch, analytics])
 
-  const handleCopySummary = async () => {
+  const handleCopySummary = React.useCallback(async () => {
     if (state.currentBill.people.length === 0) {
       toast({
         title: "No data to copy",
@@ -113,7 +111,7 @@ export default function HomePage() {
       })
       analytics.trackError("copy_summary_failed", "Clipboard API failed")
     }
-  }
+  }, [state.currentBill, toast, analytics])
 
   const handleAddPerson = () => {
     setIsAddingPerson(true)
@@ -124,6 +122,63 @@ export default function HomePage() {
     analytics.trackFeatureUsed("mobile_add_item")
   }
 
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only trigger if not in an input field
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return
+      }
+
+      // N: Add new item (desktop only, handled by LedgerItemsTable)
+      // P: Add person
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault()
+        setIsAddingPerson(true)
+        analytics.trackFeatureUsed("keyboard_shortcut_add_person")
+      }
+
+      // C: Copy summary
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault()
+        handleCopySummary()
+        analytics.trackFeatureUsed("keyboard_shortcut_copy")
+      }
+
+      // S: Share (handled by ShareBill component, but we track it)
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault()
+        analytics.trackFeatureUsed("keyboard_shortcut_share")
+        // ShareBill component will handle the actual share action
+        document.querySelector('[aria-label*="Share"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      }
+
+      // Cmd/Ctrl + N: New bill
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault()
+        handleNewBill()
+        analytics.trackFeatureUsed("keyboard_shortcut_new_bill")
+      }
+
+      // Cmd/Ctrl + Z: Undo
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        dispatch({ type: 'UNDO' })
+        analytics.trackFeatureUsed("keyboard_shortcut_undo")
+      }
+
+      // Cmd/Ctrl + Shift + Z: Redo
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault()
+        dispatch({ type: 'REDO' })
+        analytics.trackFeatureUsed("keyboard_shortcut_redo")
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [dispatch, analytics, handleCopySummary, handleNewBill, setIsAddingPerson])
 
   return (
     <div className="min-h-screen pb-32">
@@ -170,7 +225,16 @@ export default function HomePage() {
             {isMobile && state.currentBill.people.length === 0 ? (
               <MobileFirstUI />
             ) : state.currentBill.people.length > 0 ? (
-              <CollapsibleItemsTable />
+              <>
+                {/* Desktop: Ledger Grid Table */}
+                <div className="hidden lg:block">
+                  <LedgerItemsTable />
+                </div>
+                {/* Mobile: Compact Ledger View */}
+                <div className="lg:hidden">
+                  <MobileLedgerView />
+                </div>
+              </>
             ) : (
               <div className="receipt-container p-12">
                 <div className="text-center">
@@ -224,7 +288,7 @@ export default function HomePage() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button 
+                <button
                   onClick={handleCopySummary}
                   className="dock-item"
                   aria-label="Copy Summary"
@@ -232,7 +296,7 @@ export default function HomePage() {
                   <Copy className="h-5 w-5 text-foreground" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top">Copy Summary</TooltipContent>
+              <TooltipContent side="top">Copy Summary (C)</TooltipContent>
             </Tooltip>
 
             <ShareBill variant="ghost" size="sm" showText={false} />
@@ -241,7 +305,7 @@ export default function HomePage() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <button 
+                <button
                   onClick={handleNewBill}
                   className="dock-item"
                   aria-label="New Bill"
@@ -249,9 +313,44 @@ export default function HomePage() {
                   <Plus className="h-5 w-5 text-foreground" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top">New Bill</TooltipContent>
+              <TooltipContent side="top">New Bill (⌘N)</TooltipContent>
             </Tooltip>
           </TooltipProvider>
+        </div>
+      )}
+
+      {/* KEYBOARD SHORTCUTS BAR - Desktop Only */}
+      {!isMobile && state.currentBill.people.length > 0 && (
+        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+          <div className="receipt-container px-4 py-2 pointer-events-auto">
+            <div className="flex items-center gap-6 text-xs font-receipt text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">N</kbd>
+                <span>New item</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">P</kbd>
+                <span>Add person</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">C</kbd>
+                <span>Copy</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">S</kbd>
+                <span>Share</span>
+              </div>
+              <div className="w-px h-4 bg-border" />
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">⌘Z</kbd>
+                <span>Undo</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">⌘⇧Z</kbd>
+                <span>Redo</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

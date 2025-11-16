@@ -506,6 +506,118 @@
     font-feature-settings: "tnum" 1;
   }
 
+  /* ===== Ledger Table System ===== */
+  .ledger-table {
+    @apply w-full border-collapse;
+    font-family: var(--font-receipt);
+  }
+
+  .ledger-header {
+    @apply border-b-2 border-border bg-muted/50 sticky top-0 z-10;
+  }
+
+  .ledger-header-cell {
+    @apply px-3 py-2 text-left text-xs font-bold uppercase tracking-widest text-muted-foreground;
+    font-family: var(--font-receipt);
+  }
+
+  .ledger-header-cell-right {
+    @apply px-3 py-2 text-right text-xs font-bold uppercase tracking-widest text-muted-foreground;
+    font-family: var(--font-receipt);
+  }
+
+  .ledger-row {
+    @apply border-b border-border hover:bg-muted/30 transition-colors duration-150;
+  }
+
+  .ledger-row-expanded {
+    @apply bg-muted/20;
+  }
+
+  .ledger-cell {
+    @apply px-3 py-3 text-sm border-r border-border/50 last:border-r-0;
+    font-family: var(--font-ui);
+  }
+
+  .ledger-cell-number {
+    @apply px-3 py-3 text-sm border-r border-border/50 last:border-r-0 text-right tabular-nums;
+    font-family: var(--font-numbers);
+    font-feature-settings: "tnum" 1;
+  }
+
+  .ledger-cell-mini {
+    @apply px-2 py-2 text-xs;
+  }
+
+  .ledger-row-number {
+    @apply text-xs font-mono text-muted-foreground tabular-nums w-12;
+    font-family: var(--font-receipt);
+  }
+
+  /* Ledger grid for person columns */
+  .ledger-grid {
+    display: grid;
+    gap: 0;
+    grid-template-columns:
+      minmax(40px, 60px)        /* Row # */
+      minmax(180px, 2fr)        /* Item name */
+      minmax(60px, 80px)        /* Qty */
+      minmax(90px, 120px)       /* Price */
+      repeat(var(--person-count, 3), minmax(100px, 1fr)) /* Person columns */
+      minmax(100px, 140px);     /* Total */
+  }
+
+  .ledger-grid-header {
+    @apply bg-muted/50 border-b-2 border-border sticky top-0 z-10;
+  }
+
+  .ledger-grid-cell {
+    @apply px-3 py-3 border-r border-border/50 last:border-r-0;
+  }
+
+  .ledger-grid-row {
+    @apply border-b border-border hover:bg-muted/20 transition-colors duration-150;
+  }
+
+  /* Mini inline proportion bars for table cells */
+  .cell-proportion-bar {
+    @apply inline-flex gap-px items-center mt-1;
+  }
+
+  .cell-proportion-block {
+    @apply w-1.5 h-2 rounded-sm;
+  }
+
+  .cell-proportion-block-filled {
+    @apply bg-current opacity-90;
+  }
+
+  .cell-proportion-block-empty {
+    @apply bg-current opacity-15;
+  }
+
+  /* Split method badge for cells */
+  .cell-split-badge {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wide;
+    @apply bg-primary/10 text-primary border border-primary/20;
+    font-family: var(--font-receipt);
+  }
+
+  /* Row expand/collapse button */
+  .ledger-expand-btn {
+    @apply inline-flex items-center justify-center w-6 h-6 rounded hover:bg-muted/60 transition-colors cursor-pointer;
+  }
+
+  /* Ledger footer for totals */
+  .ledger-footer {
+    @apply border-t-4 border-double border-border bg-muted/30 font-bold;
+  }
+
+  .ledger-footer-cell {
+    @apply px-3 py-3 text-sm font-bold;
+    font-family: var(--font-receipt);
+  }
+
   /* ===== Legacy Float Card Support (for gradual migration) ===== */
   .float-card {
     @apply bg-card border-2 border-border;
