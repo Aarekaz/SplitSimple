@@ -327,7 +327,7 @@
   .dotted-leader::before {
     content: '';
     flex: 1;
-    border-bottom: 1px dotted hsl(var(--border));
+    border-bottom: 1px dotted var(--border);
     margin-bottom: 4px;
   }
 
