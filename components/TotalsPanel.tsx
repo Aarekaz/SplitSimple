@@ -83,26 +83,17 @@ export function TotalsPanel({
   const hasLargeAmounts = summary.total > 1000
 
   const PeoplePanel = () => (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
-            <Users className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold">People</h3>
-            {peopleCount > 0 && (
-              <p className="text-xs text-muted-foreground">{peopleCount} member{peopleCount > 1 ? 's' : ''}</p>
-            )}
-          </div>
-        </div>
+    <div className="receipt-container">
+      {/* Section Header */}
+      <div className="receipt-section-header flex justify-between items-center">
+        <span>WHO PAYS WHAT</span>
         {!isAddingPerson && (
-          <Button 
-            size="sm" 
-            onClick={() => setIsAddingPerson(true)} 
-            className="h-9 px-4 btn-float rounded-xl bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white font-medium"
+          <Button
+            size="sm"
+            onClick={() => setIsAddingPerson(true)}
+            className="h-8 px-3 receipt-button text-xs font-bold uppercase"
           >
-            <Plus className="h-4 w-4 mr-1.5" />
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
             Add
           </Button>
         )}
@@ -114,30 +105,29 @@ export function TotalsPanel({
           if (!person) return null
           const isExpanded = expandedPeople.has(person.id)
 
+          const percentage = summary.total > 0 ? ((personTotal.total / summary.total) * 100) : 0
+          const filledBlocks = Math.round((percentage / 100) * 20) // 20 blocks total
+
           return (
-            <div key={person.id} className="float-card-sm border-0 hover:shadow-md transition-all duration-300 group">
-              <div className="space-y-2">
-                <div
-                  className="flex items-center justify-between p-4 cursor-pointer"
-                  onClick={() => togglePersonExpansion(person.id)}
-                >
+            <div key={person.id} className="border-b-2 border-border last:border-b-0 hover-highlight group">
+              <div
+                className="p-4 cursor-pointer"
+                onClick={() => togglePersonExpansion(person.id)}
+              >
+                {/* Collapsed Row */}
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
-                      style={{ 
-                        backgroundColor: person.color,
-                        boxShadow: `0 4px 12px ${person.color}30`
-                      }} 
+                    <div
+                      className="person-dot"
+                      style={{ backgroundColor: person.color }}
                     >
                       {person.name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold truncate">{person.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {itemBreakdowns.filter(breakdown => breakdown.splits[person.id] > 0).length} item{itemBreakdowns.filter(breakdown => breakdown.splits[person.id] > 0).length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
+                    <span className="text-receipt-item font-bold uppercase">
+                      {person.name}
+                    </span>
                   </div>
+
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <Button
                       variant="ghost"
@@ -146,77 +136,94 @@ export function TotalsPanel({
                         e.stopPropagation()
                         handleRemovePerson(person.id)
                       }}
-                      className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5" />
                     </Button>
                     <div className="text-right">
-                      <div className="receipt-amount text-sm font-bold">
-                        <AnimatedNumber 
+                      <div className="text-receipt-number">
+                        <AnimatedNumber
                           value={personTotal.total}
                           formatFn={(v) => formatCurrency(v)}
                           duration={150}
                         />
                       </div>
                       <div className="text-xs text-muted-foreground font-medium">
-                        {summary.total > 0 ? `${((personTotal.total / summary.total) * 100).toFixed(0)}%` : '0%'}
+                        [{percentage.toFixed(0)}%]
                       </div>
                     </div>
                     <ChevronDown
-                      className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
+                      className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                     />
                   </div>
                 </div>
-                {/* Progress bar */}
+
+                {/* Proportion Blocks */}
                 {summary.total > 0 && (
-                  <div className="px-4 pb-3">
-                    <Progress 
-                      value={(personTotal.total / summary.total) * 100} 
-                      className="h-2 rounded-full"
-                      style={{
-                        ['--progress-background' as any]: person.color,
-                      }}
-                    />
+                  <div className="mt-2 proportion-blocks" style={{ color: person.color }}>
+                    {Array.from({ length: 20 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`proportion-block ${i < filledBlocks ? 'proportion-block-filled' : 'proportion-block-empty'}`}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
               {isExpanded && (
-                <div className="px-4 pb-4 border-t bg-muted/20">
-                  <div className="pt-4 space-y-2 text-xs">
+                <div className="px-4 pb-4 border-t-2 border-border bg-muted/30">
+                  <div className="pt-3 space-y-0 font-receipt text-[13px]">
+                    {/* Items */}
                     {itemBreakdowns
                       .filter((breakdown) => breakdown.splits[person.id] > 0)
-                      .map((breakdown) => {
+                      .map((breakdown, idx, arr) => {
                         const item = state.currentBill.items.find(i => i.id === breakdown.itemId)
                         const quantity = item?.quantity || 1
                         const displayName = quantity > 1 ? `${breakdown.itemName} (×${quantity})` : breakdown.itemName
-                        
+                        const isLast = idx === arr.length - 1
+
                         return (
-                          <div key={breakdown.itemId} className="flex justify-between items-center py-1">
-                            <span className="font-medium">{displayName}</span>
-                            <span className="receipt-subtotal text-muted-foreground">
-                              {formatCurrency(breakdown.splits[person.id])}
-                            </span>
+                          <div key={breakdown.itemId} className="tree-item py-0.5">
+                            <div className="flex justify-between items-center flex-1">
+                              <span className="text-muted-foreground">{displayName}</span>
+                              <span className="text-receipt-number text-foreground">
+                                {formatCurrency(breakdown.splits[person.id])}
+                              </span>
+                            </div>
                           </div>
                         )
                       })}
-                    
-                    <div className="border-t pt-2 mt-2 space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Subtotal</span>
-                        <span className="receipt-subtotal">{formatCurrency(personTotal.subtotal)}</span>
+
+                    <div className="receipt-line my-2"></div>
+
+                    {/* Breakdown */}
+                    <div className="tree-item py-0.5">
+                      <div className="flex justify-between items-center flex-1">
+                        <span className="text-muted-foreground">Items ({itemBreakdowns.filter(b => b.splits[person.id] > 0).length})</span>
+                        <span className="text-receipt-number">{formatCurrency(personTotal.subtotal)}</span>
                       </div>
-                      {personTotal.tax > 0 && (
-                        <div className="flex justify-between">
+                    </div>
+                    {personTotal.tax > 0 && (
+                      <div className="tree-item py-0.5">
+                        <div className="flex justify-between items-center flex-1">
                           <span className="text-muted-foreground">Tax</span>
-                          <span className="receipt-subtotal">{formatCurrency(personTotal.tax)}</span>
+                          <span className="text-receipt-number">+{formatCurrency(personTotal.tax)}</span>
                         </div>
-                      )}
-                      {personTotal.tip > 0 && (
-                        <div className="flex justify-between">
+                      </div>
+                    )}
+                    {personTotal.tip > 0 && (
+                      <div className="tree-item py-0.5">
+                        <div className="flex justify-between items-center flex-1">
                           <span className="text-muted-foreground">Tip</span>
-                          <span className="receipt-subtotal">{formatCurrency(personTotal.tip)}</span>
+                          <span className="text-receipt-number">+{formatCurrency(personTotal.tip)}</span>
                         </div>
-                      )}
+                      </div>
+                    )}
+                    <div className="tree-item py-0.5">
+                      <div className="flex justify-between items-center flex-1">
+                        <span className="font-bold">Total</span>
+                        <span className="text-receipt-number font-bold">{formatCurrency(personTotal.total)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -226,7 +233,7 @@ export function TotalsPanel({
         })}
         
         {isAddingPerson && (
-          <div className="float-card-sm border-0 p-4">
+          <div className="border-b-2 border-border p-4 bg-muted/30">
             <AddPersonForm
               ref={personInputRef}
               onPersonAdded={() => setIsAddingPerson(false)}
@@ -236,12 +243,12 @@ export function TotalsPanel({
         )}
 
         {summary.personTotals.length === 0 && !isAddingPerson && (
-          <div className="py-12 text-center text-muted-foreground border-2 border-dashed rounded-2xl bg-muted/20">
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 mx-auto mb-4">
-              <Users className="h-7 w-7 text-primary" />
+          <div className="p-8 text-center text-muted-foreground border-2 border-dashed border-border bg-muted/20">
+            <div className="flex items-center justify-center w-12 h-12 border-2 border-border mx-auto mb-3">
+              <Users className="h-6 w-6 text-primary" />
             </div>
-            <p className="font-semibold mb-1.5 text-foreground">No people added yet</p>
-            <p className="text-sm">Add people to start splitting the bill</p>
+            <p className="text-receipt-label font-bold mb-1">No people added yet</p>
+            <p className="text-xs">Add people to start splitting the bill</p>
           </div>
         )}
       </div>
@@ -249,41 +256,43 @@ export function TotalsPanel({
   )
 
   const BillSummaryPanel = () => (
-    <div className="float-card-sm border-0 p-5 space-y-3">
-      <div className="space-y-3">
-        <div className="flex justify-between text-sm">
+    <div className="receipt-container font-receipt">
+      <div className="p-4 space-y-2 text-[13px]">
+        <div className="flex justify-between">
           <span className="text-muted-foreground">Subtotal</span>
-          <span className="receipt-subtotal">
+          <span className="text-receipt-number">
             {formatCurrency(summary.subtotal)}
           </span>
         </div>
 
         {summary.tax > 0 && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between">
             <span className="text-muted-foreground">Tax</span>
-            <span className="receipt-subtotal">{formatCurrency(summary.tax)}</span>
+            <span className="text-receipt-number">{formatCurrency(summary.tax)}</span>
           </div>
         )}
 
         {summary.tip > 0 && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between">
             <span className="text-muted-foreground">Tip</span>
-            <span className="receipt-subtotal">{formatCurrency(summary.tip)}</span>
+            <span className="text-receipt-number">{formatCurrency(summary.tip)}</span>
           </div>
         )}
         {summary.discount > 0 && (
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between">
             <span className="text-muted-foreground">Discount</span>
-            <span className="receipt-subtotal text-green-600 dark:text-green-400">-{formatCurrency(summary.discount)}</span>
+            <span className="text-receipt-number text-success">-{formatCurrency(summary.discount)}</span>
           </div>
         )}
       </div>
 
-      <div className="border-t border-border/50 pt-4">
+      <div className="receipt-line-double"></div>
+
+      <div className="p-4">
         <div className="flex justify-between items-center">
-          <span className="text-lg font-semibold">Total</span>
-          <div className="receipt-total text-primary">
-            <AnimatedNumber 
+          <span className="text-receipt-section">TOTAL</span>
+          <div className="text-receipt-total text-primary">
+            <AnimatedNumber
               value={summary.total}
               formatFn={(v) => formatCurrency(v)}
             />
@@ -295,18 +304,16 @@ export function TotalsPanel({
 
   if (compact) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <PeoplePanel />
-        <div className="border-t border-border/50"></div>
         <BillSummaryPanel />
       </div>
     )
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <PeoplePanel />
-      <div className="border-t border-border/50"></div>
       <BillSummaryPanel />
     </div>
   )

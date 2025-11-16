@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { JetBrains_Mono } from "next/font/google"
+import { JetBrains_Mono, IBM_Plex_Mono, Inter } from "next/font/google"
 import "./globals.css"
 import { BillProvider } from "@/contexts/BillContext"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
@@ -12,6 +12,19 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-jetbrains-mono",
+})
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-ibm-plex-mono",
+})
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
 })
 
 export const metadata: Metadata = {
@@ -26,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${jetbrainsMono.variable} antialiased`}>
+    <html lang="en" className={`${jetbrainsMono.variable} ${ibmPlexMono.variable} ${inter.variable} antialiased`}>
       <body>
         <PostHogProvider>
           <ErrorBoundary>

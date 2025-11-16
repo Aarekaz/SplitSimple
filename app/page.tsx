@@ -127,31 +127,34 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Minimal Header with Glass Effect */}
+      {/* Receipt-Style Header */}
       <header className="glass-header px-4 py-3 sticky top-0 z-50">
         <div className="container mx-auto max-w-5xl">
-          <div className="flex items-center justify-between gap-4">
-            {/* Left: Minimal Logo & Title */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            {/* Left: App branding & Receipt ID */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-md">
-                  <Receipt className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">SplitSimple</span>
+              <div className="flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-primary" />
+                <span className="text-receipt-header hidden sm:inline">SPLITSIMPLE</span>
               </div>
-              <div className="w-px h-6 bg-border/30" />
+              <div className="w-px h-5 bg-border" />
+              <span className="text-receipt-id">#{state.currentBill.id.slice(0, 8).toUpperCase()}</span>
+            </div>
+
+            {/* Center: Bill Title */}
+            <div className="flex-1 min-w-0 max-w-md">
               <Input
                 ref={titleInputRef}
                 value={state.currentBill.title}
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
                 placeholder="Untitled Bill"
-                className="text-title h-10 w-40 sm:w-56 border-0 bg-muted/30 text-foreground px-3 rounded-xl hover:bg-muted/50 focus:bg-card focus:shadow-md transition-all duration-200 font-semibold"
+                className="text-receipt-title h-9 w-full border-2 border-border bg-card text-foreground px-3 hover:border-primary/50 focus:border-primary transition-all font-ui"
               />
             </div>
 
-            {/* Right: Status Only */}
-            <div className="flex items-center gap-2">
+            {/* Right: Status & Sync */}
+            <div className="flex items-center gap-3">
               <BillStatusIndicator compact={true} showSelector={true} />
               <SyncStatusIndicator compact />
             </div>
@@ -159,46 +162,44 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main Content - Canvas with floating cards (ORIGINAL LAYOUT) */}
+      {/* Main Content - Receipt Container */}
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-5xl">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 lg:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
           {/* Items Section - LEFT */}
-          <div className="space-y-5">
+          <div className="space-y-4">
             {isMobile && state.currentBill.people.length === 0 ? (
               <MobileFirstUI />
             ) : state.currentBill.people.length > 0 ? (
               <CollapsibleItemsTable />
             ) : (
-              <Card className="float-card p-12 border-0">
-                <CardHeader className="text-center p-0">
-                  <div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-6">
+              <div className="receipt-container p-12">
+                <div className="text-center">
+                  <div className="mx-auto h-16 w-16 border-2 border-border flex items-center justify-center mb-6">
                     <Users className="h-8 w-8 text-primary" />
                   </div>
-                  <CardTitle className="text-title mb-3">
+                  <h2 className="text-receipt-title mb-3">
                     {isNewBillFlow ? "Welcome to SplitSimple!" : "Who's splitting the bill?"}
-                  </CardTitle>
-                  <p className="text-subtitle max-w-md mx-auto">
+                  </h2>
+                  <p className="text-receipt-label max-w-md mx-auto">
                     {isNewBillFlow
                       ? "First, give your bill a name above."
                       : isMobile
                       ? "Tap 'View Details' below to add people."
                       : "Add the first person on the right to get started."}
                   </p>
-                </CardHeader>
-              </Card>
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Totals Panel - RIGHT - RESTORED! */}
+          {/* Totals Panel - RIGHT */}
           <div className="hidden lg:block">
             <div className="sticky top-24">
-              <div className="float-panel border-0 p-5">
-                <TotalsPanel
-                  isAddingPerson={isAddingPerson}
-                  setIsAddingPerson={setIsAddingPerson}
-                  personInputRef={personInputRef}
-                />
-              </div>
+              <TotalsPanel
+                isAddingPerson={isAddingPerson}
+                setIsAddingPerson={setIsAddingPerson}
+                personInputRef={personInputRef}
+              />
             </div>
           </div>
         </div>
@@ -254,8 +255,8 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* FOOTER - Bottom Left & Right */}
-      <footer className="fixed bottom-0 left-0 right-0 px-6 py-3 text-xs text-muted-foreground border-t border-border/30 bg-background/80 backdrop-blur-sm z-40 pointer-events-none">
+      {/* FOOTER */}
+      <footer className="fixed bottom-0 left-0 right-0 px-6 py-3 text-xs text-muted-foreground border-t-2 border-border bg-background/95 backdrop-blur-sm z-40 pointer-events-none font-receipt">
         <div className="container mx-auto max-w-5xl flex justify-between items-center">
           <span className="pointer-events-auto">
             Crafted by{' '}
@@ -263,7 +264,7 @@ export default function HomePage() {
               href="https://anuragd.me"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium hover:text-primary transition-colors"
+              className="font-medium hover:text-primary transition-colors underline"
             >
               anuragdhungana
             </a>
@@ -272,7 +273,7 @@ export default function HomePage() {
             href="https://github.com/aarekaz/splitsimple"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium hover:text-primary transition-colors pointer-events-auto"
+            className="font-medium hover:text-primary transition-colors pointer-events-auto underline"
           >
             View Source on GitHub
           </a>
