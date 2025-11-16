@@ -87,10 +87,10 @@
   --sidebar-border: #D4D2CC;
   --sidebar-ring: #7C3AED;
 
-  /* Font */
-  --font-receipt: var(--font-ibm-plex-mono), "Courier Prime", "Courier New", monospace;
-  --font-ui: var(--font-inter), "SF Pro Display", system-ui, sans-serif;
-  --font-numbers: var(--font-jetbrains-mono), "Fira Code", monospace;
+  /* Font - System fonts for reliable deployment */
+  --font-receipt: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-numbers: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Courier New", monospace;
 
   /* ===== Receipt Elevation System ===== */
   --receipt-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
