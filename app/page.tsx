@@ -237,20 +237,29 @@ export default function HomePage() {
               </>
             ) : (
               <div className="receipt-container p-12">
-                <div className="text-center">
+                <div className="text-center max-w-md mx-auto">
                   <div className="mx-auto h-16 w-16 border-2 border-border flex items-center justify-center mb-6">
                     <Users className="h-8 w-8 text-primary" />
                   </div>
                   <h2 className="text-receipt-title mb-3">
-                    {isNewBillFlow ? "Welcome to SplitSimple!" : "Who's splitting the bill?"}
+                    {isNewBillFlow ? "Welcome to SplitSimple!" : "Add people to your bill"}
                   </h2>
-                  <p className="text-receipt-label max-w-md mx-auto">
+                  <p className="text-receipt-label mb-6">
                     {isNewBillFlow
-                      ? "First, give your bill a name above."
+                      ? "Give your bill a name above, then add the people who are splitting costs."
                       : isMobile
-                      ? "Tap 'View Details' below to add people."
-                      : "Add the first person on the right to get started."}
+                      ? "Add the people who are splitting this bill. Tap 'View Details' below to get started."
+                      : "Add the people who are splitting this bill. You'll be able to assign them to items and choose how to split costs."}
                   </p>
+                  {!isMobile && !isNewBillFlow && (
+                    <div className="pt-4 border-t border-border">
+                      <p className="text-xs text-muted-foreground mb-2">Quick tip</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">P</kbd>
+                        <span className="text-[11px] text-muted-foreground">Press P to add a person</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
-import { ChevronDown, ChevronRight, Plus, Trash2, Check, AlertCircle, Edit2 } from "lucide-react"
+import { ChevronDown, ChevronRight, Plus, Trash2, Check, AlertCircle, Edit2, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useBill } from "@/contexts/BillContext"
@@ -168,18 +168,36 @@ export function LedgerItemsTable() {
   if (items.length === 0) {
     return (
       <div className="receipt-container p-12">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto">
           <div className="mx-auto h-16 w-16 border-2 border-border flex items-center justify-center mb-6">
-            <Plus className="h-8 w-8 text-primary" />
+            <Receipt className="h-8 w-8 text-primary" />
           </div>
-          <h2 className="text-receipt-title mb-3">No items yet</h2>
-          <p className="text-receipt-label max-w-md mx-auto mb-6">
-            Add your first item to start building the bill
+          <h2 className="text-receipt-title mb-3">Start adding items</h2>
+          <p className="text-receipt-label mb-6">
+            Add the items from your bill. For each item, you can choose who's sharing it and how to split the cost.
           </p>
-          <Button onClick={() => handleAddItem(true)} className="receipt-button">
+          <Button
+            onClick={() => handleAddItem(true)}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-6 font-semibold"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add First Item
           </Button>
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-xs text-muted-foreground">
+              Tip: Use keyboard shortcuts for faster input
+            </p>
+            <div className="flex items-center justify-center gap-4 mt-3">
+              <div className="flex items-center gap-1">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">N</kbd>
+                <span className="text-[11px] text-muted-foreground">New item</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">P</kbd>
+                <span className="text-[11px] text-muted-foreground">Add person</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -212,7 +230,7 @@ export function LedgerItemsTable() {
           <thead className="ledger-header">
             <tr>
               <th className="ledger-header-cell w-12">#</th>
-              <th className="ledger-header-cell">Item</th>
+              <th className="ledger-header-cell min-w-[200px]">Item</th>
               <th className="ledger-header-cell-right w-16">Qty</th>
               <th className="ledger-header-cell-right w-28">Price</th>
               {people.map((person) => (
@@ -251,7 +269,7 @@ export function LedgerItemsTable() {
                     </td>
 
                     {/* Item Name */}
-                    <td className="ledger-cell">
+                    <td className="ledger-cell min-w-[200px]">
                       <div className="flex items-center gap-2">
                         <Input
                           ref={(el) => {

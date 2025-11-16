@@ -455,7 +455,7 @@
 
   /* ===== Interactive Elements ===== */
   .receipt-button {
-    @apply inline-flex items-center gap-2 px-3 py-2 border-2 border-border bg-card hover:bg-muted/50 font-medium transition-all;
+    @apply inline-flex items-center gap-2 px-3 py-2 border-2 border-border bg-card text-foreground hover:bg-muted/50 font-medium transition-all;
     box-shadow: var(--receipt-shadow);
   }
 

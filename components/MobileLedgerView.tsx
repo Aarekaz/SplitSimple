@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
-import { ChevronDown, ChevronUp, Plus, Trash2, AlertCircle } from "lucide-react"
+import { ChevronDown, ChevronUp, Plus, Trash2, AlertCircle, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useBill } from "@/contexts/BillContext"
@@ -148,16 +148,19 @@ export function MobileLedgerView() {
 
   if (items.length === 0) {
     return (
-      <div className="receipt-container p-12">
-        <div className="text-center">
+      <div className="receipt-container p-8">
+        <div className="text-center max-w-sm mx-auto">
           <div className="mx-auto h-16 w-16 border-2 border-border flex items-center justify-center mb-6">
-            <Plus className="h-8 w-8 text-primary" />
+            <Receipt className="h-8 w-8 text-primary" />
           </div>
-          <h2 className="text-receipt-title mb-3">No items yet</h2>
-          <p className="text-receipt-label max-w-md mx-auto mb-6">
-            Add your first item to start building the bill
+          <h2 className="text-receipt-title mb-3">Start adding items</h2>
+          <p className="text-receipt-label mb-6">
+            Add the items from your bill. Tap each item to choose who's sharing it and how to split the cost.
           </p>
-          <Button onClick={() => handleAddItem(true)} className="receipt-button">
+          <Button
+            onClick={() => handleAddItem(true)}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-6 font-semibold"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add First Item
           </Button>
