@@ -72,7 +72,28 @@
   
   /* Font */
   --font-jetbrains-mono: "JetBrains Mono", monospace;
-  
+
+  /* ===== THERMAL RECEIPT DESIGN SYSTEM ===== */
+  --receipt-paper: #F8F8F0;
+  --receipt-ink: #1A1A1A;
+  --receipt-accent: #FF3366;
+  --receipt-border: #000000;
+  --receipt-muted: #666666;
+  --receipt-grid: #E8E8E0;
+
+  /* Thermal person colors (multi-color ribbon) */
+  --person-thermal-1: #FF6B6B;
+  --person-thermal-2: #4ECDC4;
+  --person-thermal-3: #FFE66D;
+  --person-thermal-4: #A8DADC;
+  --person-thermal-5: #F1FAEE;
+
+  /* Thermal layout */
+  --thermal-item-height: 36px;
+  --thermal-person-height: 60px;
+  --thermal-gap: 8px;
+  --thermal-section-gap: 24px;
+
   /* ===== Floating UI Elevation System ===== */
   --float-1: 0 1px 2px rgba(0, 0, 0, 0.04), 
              0 2px 4px rgba(0, 0, 0, 0.04),
@@ -626,13 +647,91 @@
   
   /* Loading States */
   .skeleton-pulse {
-    background: linear-gradient(90deg, 
-      var(--muted) 25%, 
-      rgba(255,255,255,0.8) 50%, 
+    background: linear-gradient(90deg,
+      var(--muted) 25%,
+      rgba(255,255,255,0.8) 50%,
       var(--muted) 75%
     );
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* ===== THERMAL RECEIPT UTILITIES ===== */
+  .thermal-paper {
+    background: var(--receipt-paper);
+    color: var(--receipt-ink);
+  }
+
+  .thermal-separator {
+    border-top: 1px dotted var(--receipt-border);
+    opacity: 0.3;
+  }
+
+  .thermal-separator-strong {
+    border-top: 2px solid var(--receipt-border);
+    border-bottom: 2px solid var(--receipt-border);
+    height: 3px;
+  }
+
+  .thermal-item-row {
+    height: var(--thermal-item-height);
+    @apply flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer;
+  }
+
+  .thermal-person-card {
+    min-height: var(--thermal-person-height);
+    @apply rounded-lg border border-border/50 bg-card/50 hover:bg-card transition-all;
+  }
+
+  .thermal-progress-bar {
+    @apply h-2 rounded-full overflow-hidden bg-muted/30;
+  }
+
+  .thermal-progress-fill {
+    @apply h-full transition-all duration-500 ease-out;
+    background: repeating-linear-gradient(
+      90deg,
+      currentColor,
+      currentColor 4px,
+      transparent 4px,
+      transparent 8px
+    );
+  }
+
+  .thermal-ascii-logo {
+    @apply font-mono text-xs leading-none select-none;
+    font-feature-settings: "tnum" 0;
+    letter-spacing: -0.05em;
+  }
+
+  .thermal-item-number {
+    @apply font-mono text-xs font-semibold text-muted-foreground tabular-nums min-w-[2rem];
+  }
+
+  .thermal-person-initial {
+    @apply inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold;
+    font-family: var(--font-mono);
+  }
+
+  .thermal-inline-add {
+    @apply text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-2 px-3 rounded-lg hover:bg-muted/30;
+  }
+
+  .thermal-tab {
+    @apply px-4 py-2 text-sm font-medium transition-all border-b-2;
+  }
+
+  .thermal-tab-active {
+    @apply border-primary text-primary;
+  }
+
+  .thermal-tab-inactive {
+    @apply border-transparent text-muted-foreground hover:text-foreground hover:border-muted;
+  }
+
+  .thermal-sticky-bar {
+    @apply fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border z-40;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
   }
 }
 
