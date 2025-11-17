@@ -235,57 +235,32 @@ export default function HomePage() {
       <main className="container mx-auto px-4 py-6 lg:py-8 max-w-6xl">
         {/* Vertical Stack Layout */}
         <div className="space-y-6">
-          {/* Section 1: Items Ledger */}
+          {/* Mobile First UI */}
           {isMobile && state.currentBill.people.length === 0 ? (
             <MobileFirstUI />
-          ) : state.currentBill.people.length > 0 ? (
+          ) : null}
+
+          {/* Desktop Layout - Always show on desktop */}
+          {!isMobile && (
             <>
-              {/* Desktop: Ledger Grid Table */}
-              <div className="hidden lg:block">
-                <LedgerItemsTable />
-              </div>
-              {/* Mobile: Compact Ledger View */}
-              <div className="lg:hidden">
-                <MobileLedgerView />
-              </div>
+              {/* Section 1: People Breakdown - Always visible */}
+              <PeopleBreakdownTable
+                isAddingPerson={isAddingPerson}
+                setIsAddingPerson={setIsAddingPerson}
+                personInputRef={personInputRef}
+              />
+
+              {/* Section 2: Items Ledger - Only when people exist */}
+              {state.currentBill.people.length > 0 && <LedgerItemsTable />}
+
+              {/* Section 3: Payment Summary - Only when people exist */}
+              {state.currentBill.people.length > 0 && <TaxTipSection />}
             </>
-          ) : (
-            <div className="receipt-container p-12">
-              <div className="text-center max-w-md mx-auto">
-                <div className="mx-auto h-16 w-16 border-2 border-border flex items-center justify-center mb-6">
-                  <Users className="h-8 w-8 text-primary" />
-                </div>
-                <h2 className="text-receipt-title mb-3">
-                  {isNewBillFlow ? "Welcome to SplitSimple!" : "Add people to your bill"}
-                </h2>
-                <p className="text-receipt-label mb-6">
-                  {isNewBillFlow
-                    ? "Give your bill a name above, then add the people who are splitting costs."
-                    : isMobile
-                    ? "Add the people who are splitting this bill. Tap 'View Details' below to get started."
-                    : "Add the people who are splitting this bill. You'll be able to assign them to items and choose how to split costs."}
-                </p>
-                {!isMobile && !isNewBillFlow && (
-                  <div className="pt-4 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-2">Quick tip</p>
-                    <div className="flex items-center justify-center gap-2">
-                      <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">P</kbd>
-                      <span className="text-[11px] text-muted-foreground">Press P to add a person</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           )}
 
-          {/* Section 2: People Breakdown - Desktop Only */}
-          {!isMobile && state.currentBill.people.length > 0 && (
-            <PeopleBreakdownTable />
-          )}
-
-          {/* Section 3: Payment Summary - Desktop Only */}
-          {!isMobile && state.currentBill.people.length > 0 && (
-            <TaxTipSection />
+          {/* Mobile Ledger - Only when people exist */}
+          {isMobile && state.currentBill.people.length > 0 && (
+            <MobileLedgerView />
           )}
         </div>
         

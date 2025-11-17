@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from "react"
+import React, { useRef, useEffect } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useBill } from "@/contexts/BillContext"
@@ -8,17 +8,34 @@ import { getBillSummary } from "@/lib/calculations"
 import { formatCurrency } from "@/lib/utils"
 import { AddPersonForm } from "./AddPersonForm"
 
-export function PeopleBreakdownTable() {
+interface PeopleBreakdownTableProps {
+  isAddingPerson?: boolean
+  setIsAddingPerson?: (isAdding: boolean) => void
+  personInputRef?: React.RefObject<HTMLInputElement | null>
+}
+
+export function PeopleBreakdownTable({
+  isAddingPerson = false,
+  setIsAddingPerson,
+  personInputRef: externalRef
+}: PeopleBreakdownTableProps) {
   const { state, dispatch } = useBill()
   const { people, items } = state.currentBill
   const summary = getBillSummary(state.currentBill)
-  const [isAddingPerson, setIsAddingPerson] = useState(false)
-  const personInputRef = useRef<HTMLInputElement>(null)
+  const internalRef = useRef<HTMLInputElement>(null)
+  const personInputRef = externalRef || internalRef
 
   const handleAddPerson = () => {
-    setIsAddingPerson(true)
+    setIsAddingPerson?.(true)
     setTimeout(() => personInputRef.current?.focus(), 100)
   }
+
+  // Auto-focus when isAddingPerson becomes true
+  useEffect(() => {
+    if (isAddingPerson) {
+      setTimeout(() => personInputRef.current?.focus(), 100)
+    }
+  }, [isAddingPerson, personInputRef])
 
   const handleRemovePerson = (personId: string) => {
     dispatch({ type: "REMOVE_PERSON", payload: personId })
@@ -44,13 +61,13 @@ export function PeopleBreakdownTable() {
           {isAddingPerson ? (
             <AddPersonForm
               ref={personInputRef}
-              onPersonAdded={() => setIsAddingPerson(false)}
-              onCancel={() => setIsAddingPerson(false)}
+              onPersonAdded={() => setIsAddingPerson?.(false)}
+              onCancel={() => setIsAddingPerson?.(false)}
             />
           ) : (
             <div className="text-muted-foreground text-sm space-y-2">
-              <p className="font-medium">No people added yet</p>
-              <p className="text-xs">Add people to split the bill</p>
+              <p className="font-medium">Start by adding people</p>
+              <p className="text-xs">Click the button above or press <kbd className="px-1.5 py-0.5 bg-muted text-muted-foreground rounded text-[10px] font-medium border border-border/50 mx-1">P</kbd> to add someone</p>
             </div>
           )}
         </div>
@@ -82,8 +99,8 @@ export function PeopleBreakdownTable() {
         <div className="p-4 border-b border-border bg-muted/20">
           <AddPersonForm
             ref={personInputRef}
-            onPersonAdded={() => setIsAddingPerson(false)}
-            onCancel={() => setIsAddingPerson(false)}
+            onPersonAdded={() => setIsAddingPerson?.(false)}
+            onCancel={() => setIsAddingPerson?.(false)}
           />
         </div>
       )}
