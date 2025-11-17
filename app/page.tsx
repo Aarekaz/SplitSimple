@@ -131,7 +131,20 @@ export default function HomePage() {
         return
       }
 
-      // N: Add new item (desktop only, handled by LedgerItemsTable)
+      // N: Add new item
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault()
+        const newItem = {
+          name: "",
+          price: "",
+          quantity: 1,
+          splitWith: state.currentBill.people.map((p) => p.id),
+          method: "even" as const,
+        }
+        dispatch({ type: "ADD_ITEM", payload: newItem })
+        analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+      }
+
       // P: Add person
       if (e.key === 'p' || e.key === 'P') {
         e.preventDefault()
@@ -146,12 +159,11 @@ export default function HomePage() {
         analytics.trackFeatureUsed("keyboard_shortcut_copy")
       }
 
-      // S: Share (handled by ShareBill component, but we track it)
+      // S: Share
       if (e.key === 's' || e.key === 'S') {
         e.preventDefault()
         analytics.trackFeatureUsed("keyboard_shortcut_share")
-        // ShareBill component will handle the actual share action
-        document.querySelector('[aria-label*="Share"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        document.getElementById('share-bill-trigger')?.click()
       }
 
       // Cmd/Ctrl + N: New bill
@@ -178,7 +190,7 @@ export default function HomePage() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [dispatch, analytics, handleCopySummary, handleNewBill, setIsAddingPerson])
+  }, [dispatch, analytics, handleCopySummary, handleNewBill, setIsAddingPerson, state.currentBill.people])
 
   return (
     <div className="min-h-screen pb-32">
@@ -291,73 +303,87 @@ export default function HomePage() {
 
       <MobileTotalsBar />
 
-      {/* FLOATING DOCK - Bottom Center (Desktop Only) */}
-      {!isMobile && state.currentBill.people.length > 0 && (
-        <div className="floating-dock">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleCopySummary}
-                  className="dock-item"
-                  aria-label="Copy Summary"
-                >
-                  <Copy className="h-5 w-5 text-foreground" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Copy Summary (C)</TooltipContent>
-            </Tooltip>
-
-            <ShareBill variant="ghost" size="sm" showText={false} />
-
-            <div className="dock-divider" />
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleNewBill}
-                  className="dock-item"
-                  aria-label="New Bill"
-                >
-                  <Plus className="h-5 w-5 text-foreground" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">New Bill (⌘N)</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      )}
-
       {/* KEYBOARD SHORTCUTS BAR - Desktop Only */}
       {!isMobile && state.currentBill.people.length > 0 && (
-        <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
           <div className="receipt-container px-4 py-2 pointer-events-auto">
             <div className="flex items-center gap-6 text-xs font-receipt text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">N</kbd>
+              <button
+                onClick={() => {
+                  const newItem = {
+                    name: "",
+                    price: "",
+                    quantity: 1,
+                    splitWith: state.currentBill.people.map((p) => p.id),
+                    method: "even" as const,
+                  }
+                  dispatch({ type: "ADD_ITEM", payload: newItem })
+                  analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+                }}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Add new item"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">N</kbd>
                 <span>New item</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">P</kbd>
+              </button>
+
+              <button
+                onClick={() => setIsAddingPerson(true)}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Add person"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">P</kbd>
                 <span>Add person</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">C</kbd>
+              </button>
+
+              <button
+                onClick={handleCopySummary}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Copy summary"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">C</kbd>
                 <span>Copy</span>
+              </button>
+
+              <div className="pointer-events-auto relative">
+                <button
+                  onClick={() => {
+                    // Trigger the hidden ShareBill button
+                    document.getElementById('share-bill-trigger')?.click()
+                  }}
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                  title="Share bill"
+                >
+                  <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">S</kbd>
+                  <span>Share</span>
+                </button>
+                {/* Hidden ShareBill trigger */}
+                <div className="hidden">
+                  <div id="share-bill-trigger">
+                    <ShareBill variant="ghost" size="sm" showText={false} />
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">S</kbd>
-                <span>Share</span>
-              </div>
+
               <div className="w-px h-4 bg-border" />
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">⌘Z</kbd>
+
+              <button
+                onClick={() => dispatch({ type: 'UNDO' })}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Undo"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">⌘Z</kbd>
                 <span>Undo</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">⌘⇧Z</kbd>
+              </button>
+
+              <button
+                onClick={() => dispatch({ type: 'REDO' })}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Redo"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">⌘⇧Z</kbd>
                 <span>Redo</span>
-              </div>
+              </button>
             </div>
           </div>
         </div>
