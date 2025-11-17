@@ -273,8 +273,8 @@ export function LedgerItemsTable() {
             <tr>
               <th className="ledger-header-cell w-12 sticky left-0 z-10 bg-muted/50">#</th>
               <th className="ledger-header-cell min-w-[200px] sticky left-12 z-10 bg-muted/50">Item</th>
-              <th className="ledger-header-cell-right min-w-[60px]">Qty</th>
-              <th className="ledger-header-cell-right min-w-[90px]">Price</th>
+              <th className="ledger-header-cell-right min-w-[70px]">Qty</th>
+              <th className="ledger-header-cell-right min-w-[120px]">Price</th>
               {people.map((person) => (
                 <th key={person.id} className={`ledger-header-cell-right ${personColumnClass}`}>
                   <div className="flex items-center justify-end gap-1.5" title={person.name}>
@@ -292,7 +292,7 @@ export function LedgerItemsTable() {
                   </div>
                 </th>
               ))}
-              <th className="ledger-header-cell-right min-w-[120px]">Total</th>
+              <th className="ledger-header-cell-right min-w-[140px]">Total</th>
               <th className="ledger-header-cell min-w-[50px]"></th>
             </tr>
           </thead>
@@ -345,7 +345,7 @@ export function LedgerItemsTable() {
                     </td>
 
                     {/* Quantity */}
-                    <td className="ledger-cell-number">
+                    <td className="ledger-cell-number min-w-[70px]">
                       <Input
                         type="number"
                         min="1"
@@ -361,7 +361,7 @@ export function LedgerItemsTable() {
                     </td>
 
                     {/* Price */}
-                    <td className="ledger-cell-number">
+                    <td className="ledger-cell-number min-w-[120px]">
                       <Input
                         ref={(el) => {
                           if (!itemInputRefs.current[item.id])
@@ -444,12 +444,12 @@ export function LedgerItemsTable() {
                     })}
 
                     {/* Total */}
-                    <td className="ledger-cell-number font-bold">
+                    <td className="ledger-cell-number font-bold min-w-[140px]">
                       {formatCurrency(itemTotal)}
                     </td>
 
                     {/* Actions */}
-                    <td className="ledger-cell">
+                    <td className="ledger-cell min-w-[50px]">
                       <Button
                         variant="ghost"
                         size="icon"

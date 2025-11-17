@@ -510,6 +510,7 @@
   .ledger-table {
     @apply w-full border-collapse;
     font-family: var(--font-receipt);
+    table-layout: auto;
   }
 
   .ledger-header {
