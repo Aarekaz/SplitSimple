@@ -7,13 +7,17 @@ interface AnimatedNumberProps {
   className?: string
   formatFn?: (value: number) => string
   duration?: number
+  prefix?: string
+  suffix?: string
 }
 
-export function AnimatedNumber({ 
-  value, 
-  className = "", 
-  formatFn = (v) => v.toFixed(2), 
-  duration = 300 
+export function AnimatedNumber({
+  value,
+  className = "",
+  formatFn = (v) => v.toFixed(2),
+  duration = 300,
+  prefix = "",
+  suffix = ""
 }: AnimatedNumberProps) {
   const [displayValue, setDisplayValue] = useState(value)
   const [isAnimating, setIsAnimating] = useState(false)
@@ -58,14 +62,14 @@ export function AnimatedNumber({
   }, [value, displayValue, duration])
 
   return (
-    <span 
+    <span
       className={`${className} ${isAnimating ? 'transition-all duration-300' : ''} ${shouldPulse ? 'success-pulse' : ''} currency-display`}
-      style={{ 
+      style={{
         fontFeatureSettings: '"tnum" 1, "zero" 1', // Enhanced font features
         fontVariantNumeric: 'tabular-nums',
       }}
     >
-      {formatFn(displayValue)}
+      {prefix}{formatFn(displayValue)}{suffix}
     </span>
   )
 }

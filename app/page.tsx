@@ -10,6 +10,7 @@ import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { MobileFirstUI } from "@/components/MobileFirstUI"
 import { MobileActionButton, MobileActionSpacer } from "@/components/MobileActionButton"
 import { ShareBill } from "@/components/ShareBill"
+import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -28,6 +29,7 @@ export default function HomePage() {
   const { toast } = useToast()
   const analytics = useBillAnalytics()
   const [isAddingPerson, setIsAddingPerson] = useState(false)
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false)
   const personInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const isMobile = useIsMobile()
@@ -188,6 +190,13 @@ export default function HomePage() {
         dispatch({ type: 'REDO' })
         analytics.trackFeatureUsed("keyboard_shortcut_redo")
       }
+
+      // ?: Show keyboard shortcuts help
+      if (e.key === '?') {
+        e.preventDefault()
+        setShowShortcutsHelp(true)
+        analytics.trackFeatureUsed("keyboard_shortcut_help")
+      }
     }
 
     document.addEventListener('keydown', handleKeyDown)
@@ -291,6 +300,7 @@ export default function HomePage() {
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
           <div className="receipt-container px-4 py-2 pointer-events-auto">
             <div className="flex items-center gap-6 text-xs font-receipt text-muted-foreground">
+              <KeyboardShortcutsHelp />
               <button
                 onClick={() => {
                   const newItem = {

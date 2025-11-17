@@ -547,6 +547,54 @@
     animation: slide-in-up 0.4s ease-out 0.3s both;
   }
 
+  /* Person cell assignment animations */
+  @keyframes fade-in-color {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes fade-out-color {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+  }
+
+  .person-cell-assigned {
+    animation: fade-in-color 0.2s ease-out;
+  }
+
+  .person-cell-unassigned {
+    animation: fade-out-color 0.2s ease-out;
+  }
+
+  /* Tooltip enhancements */
+  .tooltip-enhanced {
+    @apply bg-foreground text-background px-3 py-2 rounded-lg text-xs font-medium shadow-lg;
+    animation: tooltip-appear 0.15s ease-out;
+  }
+
+  @keyframes tooltip-appear {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   /* ===== Number Alignment ===== */
   .align-right {
     @apply text-right tabular-nums;

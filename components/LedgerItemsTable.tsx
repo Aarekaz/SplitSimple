@@ -8,6 +8,7 @@ import { useBill } from "@/contexts/BillContext"
 import { PersonSelector } from "./PersonSelector"
 import { SplitMethodSelector } from "./SplitMethodSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
+import { AnimatedNumber } from "./AnimatedNumber"
 import { calculateItemSplits, getBillSummary } from "@/lib/calculations"
 import { validateCurrencyInput } from "@/lib/validation"
 import { formatCurrency } from "@/lib/utils"
@@ -403,10 +404,10 @@ export function LedgerItemsTable() {
                           <button
                             onClick={() => handleTogglePersonAssignment(item.id, person.id)}
                             className={`
-                              w-full h-full px-3 py-3 text-right cursor-pointer transition-all duration-150 group
+                              w-full h-full px-3 py-3 text-right cursor-pointer transition-all duration-200 group
                               ${isAssigned
-                                ? 'hover:bg-opacity-25'
-                                : 'bg-muted/40 hover:bg-muted/60'
+                                ? 'person-cell-assigned hover:brightness-95'
+                                : 'person-cell-unassigned bg-muted/40 hover:bg-muted/60'
                               }
                             `}
                             style={isAssigned ? {
@@ -480,12 +481,12 @@ export function LedgerItemsTable() {
                 const personTotal = summary.personTotals.find(pt => pt.personId === person.id)
                 return (
                   <td key={person.id} className="ledger-footer-cell text-right" style={{ color: person.color }}>
-                    {formatCurrency(personTotal?.subtotal || 0)}
+                    <AnimatedNumber value={personTotal?.subtotal || 0} prefix="$" />
                   </td>
                 )
               })}
               <td className="ledger-footer-cell text-right">
-                {formatCurrency(summary.subtotal)}
+                <AnimatedNumber value={summary.subtotal} prefix="$" />
               </td>
               <td></td>
             </tr>
