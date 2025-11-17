@@ -8,7 +8,6 @@ import { useBill } from "@/contexts/BillContext"
 import { PersonSelector } from "./PersonSelector"
 import { SplitMethodSelector } from "./SplitMethodSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
-import { TaxTipSection } from "./TaxTipSection"
 import { calculateItemSplits, getBillSummary } from "@/lib/calculations"
 import { validateCurrencyInput } from "@/lib/validation"
 import { formatCurrency } from "@/lib/utils"
@@ -485,23 +484,6 @@ export function LedgerItemsTable() {
             </tr>
           </tbody>
         </table>
-      </div>
-
-      {/* Tax & Tip Section */}
-      <div className="p-5 border-t-2 border-border">
-        <TaxTipSection />
-      </div>
-
-      {/* Add Item Button at Bottom */}
-      <div className="p-4 border-t border-border">
-        <Button
-          variant="ghost"
-          onClick={() => handleAddItem(true)}
-          className="w-full justify-start text-muted-foreground hover:text-foreground h-10 rounded-xl hover:bg-muted/50 transition-all"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add another item
-        </Button>
       </div>
     </div>
   )
