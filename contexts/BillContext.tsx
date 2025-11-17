@@ -324,7 +324,9 @@ const loadBillFromLocalStorage = (billId: string): Bill | null => {
 }
 
 const generateShareUrl = (billId: string): string => {
-  return `${window.location.origin}${window.location.pathname}?bill=${billId}`
+  // Ensure we always use the root path for sharing
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  return `${baseUrl}/?bill=${billId}`
 }
 
 export { saveBillToLocalStorage, loadBillFromLocalStorage, generateShareUrl }

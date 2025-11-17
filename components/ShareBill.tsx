@@ -35,15 +35,29 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
     setIsOpen(open)
     if (open) {
       analytics.trackShareBillClicked("link")
+
+      // Validate bill ID exists
+      if (!state.currentBill.id) {
+        console.error("Bill ID is missing")
+        setStoreError("Invalid bill - no ID found")
+        toast({
+          title: "Error",
+          description: "Cannot share bill - missing bill ID",
+          variant: "destructive",
+        })
+        return
+      }
+
       const url = generateCloudShareUrl(state.currentBill.id)
+      console.log("Generated share URL:", url) // Debug logging
       setShareUrl(url)
-      
+
       // Store bill in Redis when dialog opens
       setIsStoring(true)
       setStoreError(null)
       const result = await storeBillInCloud(state.currentBill)
       setIsStoring(false)
-      
+
       if (!result.success) {
         setStoreError(result.error || "Failed to store bill for sharing")
         toast({
@@ -51,6 +65,8 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
           description: "Could not prepare bill for sharing. The link may not work for others.",
           variant: "destructive",
         })
+      } else {
+        console.log("Bill stored successfully in cloud")
       }
     }
   }
