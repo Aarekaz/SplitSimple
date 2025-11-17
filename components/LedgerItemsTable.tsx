@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
-import { ChevronDown, ChevronRight, Plus, Trash2, Check, AlertCircle, Edit2, Receipt, Split, BarChart2, Percent, DollarSign } from "lucide-react"
+import { Plus, Trash2, Check, AlertCircle, Receipt, Split, BarChart2, Percent, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useBill } from "@/contexts/BillContext"
@@ -88,7 +88,6 @@ function getItemValidationStatus(item: Item): { isValid: boolean; warnings: stri
 
 export function LedgerItemsTable() {
   const { state, dispatch } = useBill()
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [focusNewItem, setFocusNewItem] = useState(false)
   const itemInputRefs = useRef<Record<string, { name: HTMLInputElement | null; price: HTMLInputElement | null }>>({})
 
@@ -111,10 +110,6 @@ export function LedgerItemsTable() {
     if (focusNewItem && items.length > 0) {
       const newItem = items[items.length - 1]
       if (newItem) {
-        const newExpanded = new Set(expandedItems)
-        newExpanded.add(newItem.id)
-        setExpandedItems(newExpanded)
-
         setTimeout(() => {
           itemInputRefs.current[newItem.id]?.name?.focus()
           itemInputRefs.current[newItem.id]?.name?.select()
@@ -122,7 +117,7 @@ export function LedgerItemsTable() {
       }
       setFocusNewItem(false)
     }
-  }, [focusNewItem, items, expandedItems])
+  }, [focusNewItem, items])
 
   const handleAddItem = useCallback((focus = false) => {
     const newItem: Omit<Item, "id"> = {
@@ -165,17 +160,6 @@ export function LedgerItemsTable() {
     }
   }, [items, handleAddItem])
 
-  const toggleItemExpansion = useCallback((itemId: string) => {
-    setExpandedItems(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId)
-      } else {
-        newSet.add(itemId)
-      }
-      return newSet
-    })
-  }, [])
 
   const handleUpdateItem = useCallback((itemId: string, updates: Partial<Item>) => {
     const item = items.find((i) => i.id === itemId)
@@ -289,8 +273,8 @@ export function LedgerItemsTable() {
             <tr>
               <th className="ledger-header-cell w-12 sticky left-0 z-10 bg-muted/50">#</th>
               <th className="ledger-header-cell min-w-[200px] sticky left-12 z-10 bg-muted/50">Item</th>
-              <th className="ledger-header-cell-right w-16">Qty</th>
-              <th className="ledger-header-cell-right w-28">Price</th>
+              <th className="ledger-header-cell-right min-w-[60px]">Qty</th>
+              <th className="ledger-header-cell-right min-w-[90px]">Price</th>
               {people.map((person) => (
                 <th key={person.id} className={`ledger-header-cell-right ${personColumnClass}`}>
                   <div className="flex items-center justify-end gap-1.5" title={person.name}>
@@ -308,15 +292,14 @@ export function LedgerItemsTable() {
                   </div>
                 </th>
               ))}
-              <th className="ledger-header-cell-right w-32">Total</th>
-              <th className="ledger-header-cell w-10"></th>
+              <th className="ledger-header-cell-right min-w-[120px]">Total</th>
+              <th className="ledger-header-cell min-w-[50px]"></th>
             </tr>
           </thead>
 
           {/* Body */}
           <tbody>
             {items.map((item, index) => {
-              const isExpanded = expandedItems.has(item.id)
               const splits = getItemSplits(item.id)
               const validationStatus = getItemValidationStatus(item)
               const itemTotal = getItemTotal(item)
@@ -324,7 +307,7 @@ export function LedgerItemsTable() {
               return (
                 <React.Fragment key={item.id}>
                   {/* Main Row */}
-                  <tr className={`ledger-row ${isExpanded ? 'ledger-row-expanded' : ''}`}>
+                  <tr className="ledger-row">
                     {/* Row Number */}
                     <td className="ledger-cell ledger-row-number sticky left-0 z-10 bg-card">
                       #{String(index + 1).padStart(2, '0')}
@@ -467,91 +450,17 @@ export function LedgerItemsTable() {
 
                     {/* Actions */}
                     <td className="ledger-cell">
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleItemExpansion(item.id)}
-                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                          title="Edit split settings"
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <Edit2 className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                          title="Delete item"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                        title="Delete item"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </td>
                   </tr>
-
-                  {/* Expanded Row */}
-                  {isExpanded && (
-                    <tr>
-                      <td colSpan={people.length + 6} className="border-b border-border">
-                        <div className="bg-muted/20 p-5 space-y-5">
-                          {/* Validation warnings */}
-                          {!validationStatus.isValid && (
-                            <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
-                              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                              <div className="text-sm text-amber-900 dark:text-amber-100">
-                                <p className="font-semibold mb-1.5">Please complete this item:</p>
-                                <ul className="list-disc list-inside space-y-1 text-xs">
-                                  {validationStatus.warnings.map((warning, idx) => (
-                                    <li key={idx}>{warning}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Left: Method and Custom Inputs */}
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Splitting Method</label>
-                                <SplitMethodSelector
-                                  value={item.method}
-                                  onValueChange={(value) => handleUpdateItem(item.id, { method: value })}
-                                />
-                              </div>
-                              {item.method !== "even" && (
-                                <div className="pt-2 space-y-2">
-                                  <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Custom Amounts</label>
-                                  <SplitMethodInput
-                                    item={item}
-                                    people={people}
-                                    onCustomSplitsChange={(customSplits) =>
-                                      handleUpdateItem(item.id, { customSplits })
-                                    }
-                                  />
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Right: Split With */}
-                            <div className="space-y-2">
-                              <PersonSelector
-                                selectedPeople={item.splitWith}
-                                onSelectionChange={(selected) =>
-                                  handleUpdateItem(item.id, { splitWith: selected })
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
               )
             })}
