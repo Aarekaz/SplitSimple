@@ -602,6 +602,23 @@
     @apply bg-current opacity-15;
   }
 
+  /* Clickable person cell states */
+  .person-cell-assigned {
+    @apply transition-all duration-150;
+  }
+
+  .person-cell-assigned:hover {
+    filter: brightness(0.95);
+  }
+
+  .person-cell-unassigned {
+    @apply bg-muted/40 transition-all duration-150;
+  }
+
+  .person-cell-unassigned:hover {
+    @apply bg-muted/60;
+  }
+
   /* Split method badge for cells */
   .cell-split-badge {
     @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wide;

@@ -202,6 +202,18 @@ export function LedgerItemsTable() {
     dispatch({ type: "REMOVE_ITEM", payload: itemId })
   }, [dispatch])
 
+  const handleTogglePersonAssignment = useCallback((itemId: string, personId: string) => {
+    const item = items.find((i) => i.id === itemId)
+    if (!item) return
+
+    const isCurrentlyAssigned = item.splitWith.includes(personId)
+    const newSplitWith = isCurrentlyAssigned
+      ? item.splitWith.filter(id => id !== personId)
+      : [...item.splitWith, personId]
+
+    handleUpdateItem(itemId, { splitWith: newSplitWith })
+  }, [items, handleUpdateItem])
+
   if (items.length === 0) {
     return (
       <div className="receipt-container p-12">
@@ -387,7 +399,7 @@ export function LedgerItemsTable() {
                       />
                     </td>
 
-                    {/* Person Columns */}
+                    {/* Person Columns - Clickable */}
                     {people.map((person) => {
                       const personSplit = splits[person.id] || 0
                       const isAssigned = item.splitWith.includes(person.id)
@@ -395,29 +407,55 @@ export function LedgerItemsTable() {
                       const filledBlocks = Math.round((percentage / 100) * 8) // 8 blocks for mini bar
 
                       return (
-                        <td key={person.id} className="ledger-cell-number">
-                          <div style={{ color: person.color }}>
-                            {isAssigned ? (
-                              <>
-                                <div className="text-receipt-number">
-                                  {formatCurrency(personSplit)}
-                                </div>
-                                {/* Mini proportion bar */}
-                                {personSplit > 0 && (
-                                  <div className="cell-proportion-bar">
-                                    {Array.from({ length: 8 }).map((_, i) => (
-                                      <div
-                                        key={i}
-                                        className={`cell-proportion-block ${i < filledBlocks ? 'cell-proportion-block-filled' : 'cell-proportion-block-empty'}`}
-                                      />
-                                    ))}
+                        <td
+                          key={person.id}
+                          className="ledger-cell-number p-0"
+                        >
+                          <button
+                            onClick={() => handleTogglePersonAssignment(item.id, person.id)}
+                            className={`
+                              w-full h-full px-3 py-3 text-right cursor-pointer transition-all duration-150 group
+                              ${isAssigned
+                                ? 'hover:bg-opacity-25'
+                                : 'bg-muted/40 hover:bg-muted/60'
+                              }
+                            `}
+                            style={isAssigned ? {
+                              backgroundColor: `${person.color}15`,
+                              borderLeft: `3px solid ${person.color}`
+                            } : undefined}
+                            title={isAssigned
+                              ? `Click to unassign ${person.name}`
+                              : `Click to assign ${person.name}`
+                            }
+                          >
+                            <div style={{ color: person.color }}>
+                              {isAssigned ? (
+                                <>
+                                  <div className="text-receipt-number flex items-center justify-end gap-1">
+                                    <span className="opacity-0 group-hover:opacity-100 text-[10px]">✕</span>
+                                    <span>{formatCurrency(personSplit)}</span>
                                   </div>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
-                            )}
-                          </div>
+                                  {/* Mini proportion bar */}
+                                  {personSplit > 0 && (
+                                    <div className="cell-proportion-bar justify-end">
+                                      {Array.from({ length: 8 }).map((_, i) => (
+                                        <div
+                                          key={i}
+                                          className={`cell-proportion-block ${i < filledBlocks ? 'cell-proportion-block-filled' : 'cell-proportion-block-empty'}`}
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="text-muted-foreground text-xs flex items-center justify-end gap-1">
+                                  <span className="opacity-0 group-hover:opacity-100 text-[10px]">+</span>
+                                  <span>—</span>
+                                </div>
+                              )}
+                            </div>
+                          </button>
                         </td>
                       )
                     })}
