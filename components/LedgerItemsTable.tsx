@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
-import { ChevronDown, ChevronRight, Plus, Trash2, Check, AlertCircle, Edit2, Receipt } from "lucide-react"
+import { ChevronDown, ChevronRight, Plus, Trash2, Check, AlertCircle, Edit2, Receipt, Split, BarChart2, Percent, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useBill } from "@/contexts/BillContext"
@@ -22,6 +22,32 @@ function getSplitMethodLabel(method: "even" | "shares" | "percent" | "exact"): s
     exact: "EXACT"
   }
   return labels[method]
+}
+
+function getSplitMethodIcon(method: "even" | "shares" | "percent" | "exact") {
+  const icons = {
+    even: Split,
+    shares: BarChart2,
+    percent: Percent,
+    exact: DollarSign
+  }
+  return icons[method]
+}
+
+function getSplitMethodColor(method: "even" | "shares" | "percent" | "exact"): string {
+  const colors = {
+    even: "bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+    shares: "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
+    percent: "bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+    exact: "bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+  }
+  return colors[method]
+}
+
+function getNextSplitMethod(current: "even" | "shares" | "percent" | "exact"): "even" | "shares" | "percent" | "exact" {
+  const cycle: Array<"even" | "shares" | "percent" | "exact"> = ["even", "shares", "percent", "exact"]
+  const currentIndex = cycle.indexOf(current)
+  return cycle[(currentIndex + 1) % cycle.length]
 }
 
 function getItemValidationStatus(item: Item): { isValid: boolean; warnings: string[] } {
@@ -69,6 +95,17 @@ export function LedgerItemsTable() {
   const items = state.currentBill.items
   const people = state.currentBill.people
   const summary = getBillSummary(state.currentBill)
+
+  // Calculate responsive column width based on number of people
+  const getPersonColumnWidth = () => {
+    const peopleCount = people.length
+    if (peopleCount <= 4) return 'min-w-[120px]'
+    if (peopleCount <= 6) return 'min-w-[100px]'
+    if (peopleCount <= 8) return 'min-w-[85px]'
+    return 'min-w-[75px]' // For 9+ people
+  }
+
+  const personColumnClass = getPersonColumnWidth()
 
   useEffect(() => {
     if (focusNewItem && items.length > 0) {
@@ -224,25 +261,38 @@ export function LedgerItemsTable() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative">
+        {/* Scroll indicator for many people */}
+        {people.length > 5 && (
+          <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-background/80 to-transparent pointer-events-none z-20 flex items-center justify-end pr-2">
+            <div className="text-xs text-muted-foreground rotate-90 whitespace-nowrap font-receipt">
+              SCROLL →
+            </div>
+          </div>
+        )}
+
         <table className="ledger-table">
           {/* Header */}
           <thead className="ledger-header">
             <tr>
-              <th className="ledger-header-cell w-12">#</th>
-              <th className="ledger-header-cell min-w-[200px]">Item</th>
+              <th className="ledger-header-cell w-12 sticky left-0 z-10 bg-muted/50">#</th>
+              <th className="ledger-header-cell min-w-[200px] sticky left-12 z-10 bg-muted/50">Item</th>
               <th className="ledger-header-cell-right w-16">Qty</th>
               <th className="ledger-header-cell-right w-28">Price</th>
               {people.map((person) => (
-                <th key={person.id} className="ledger-header-cell-right min-w-[120px]">
-                  <div className="flex items-center justify-end gap-2">
+                <th key={person.id} className={`ledger-header-cell-right ${personColumnClass}`}>
+                  <div className="flex items-center justify-end gap-1.5" title={person.name}>
                     <div
                       className="person-dot"
                       style={{ backgroundColor: person.color }}
                     >
                       {person.name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="truncate">{person.name.toUpperCase()}</span>
+                    {people.length <= 6 ? (
+                      <span className="truncate">{person.name.toUpperCase()}</span>
+                    ) : (
+                      <span className="text-[10px] font-bold">{person.name.charAt(0).toUpperCase()}</span>
+                    )}
                   </div>
                 </th>
               ))}
@@ -264,12 +314,12 @@ export function LedgerItemsTable() {
                   {/* Main Row */}
                   <tr className={`ledger-row ${isExpanded ? 'ledger-row-expanded' : ''}`}>
                     {/* Row Number */}
-                    <td className="ledger-cell ledger-row-number">
+                    <td className="ledger-cell ledger-row-number sticky left-0 z-10 bg-card">
                       #{String(index + 1).padStart(2, '0')}
                     </td>
 
                     {/* Item Name */}
-                    <td className="ledger-cell min-w-[200px]">
+                    <td className="ledger-cell min-w-[200px] sticky left-12 z-10 bg-card">
                       <div className="flex items-center gap-2">
                         <Input
                           ref={(el) => {
@@ -283,11 +333,19 @@ export function LedgerItemsTable() {
                           placeholder="Item name..."
                           className="h-8 border-none bg-transparent focus-visible:ring-1 text-sm font-medium flex-1"
                         />
-                        {item.method !== "even" && (
-                          <span className="cell-split-badge">
-                            {getSplitMethodLabel(item.method)}
-                          </span>
-                        )}
+                        {/* Clickable split method badge */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const nextMethod = getNextSplitMethod(item.method)
+                            handleUpdateItem(item.id, { method: nextMethod })
+                          }}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide border transition-all hover:scale-105 cursor-pointer ${getSplitMethodColor(item.method)}`}
+                          title={`Split method: ${item.method}. Click to cycle through methods.`}
+                        >
+                          {React.createElement(getSplitMethodIcon(item.method), { className: "h-3 w-3" })}
+                          <span>{getSplitMethodLabel(item.method)}</span>
+                        </button>
                       </div>
                     </td>
 
