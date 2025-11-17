@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback } from "react"
-import { Plus, Trash2, Check, AlertCircle, Receipt, Split, BarChart2, Percent, DollarSign } from "lucide-react"
+import { Plus, Trash2, Check, AlertCircle, Receipt, Split, BarChart2, Percent, DollarSign, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useBill } from "@/contexts/BillContext"
@@ -110,8 +110,14 @@ export function LedgerItemsTable() {
       const newItem = items[items.length - 1]
       if (newItem) {
         setTimeout(() => {
-          itemInputRefs.current[newItem.id]?.name?.focus()
-          itemInputRefs.current[newItem.id]?.name?.select()
+          const nameInput = itemInputRefs.current[newItem.id]?.name
+          if (nameInput) {
+            nameInput.focus()
+            nameInput.select()
+            // Add pulse animation to guide user
+            nameInput.classList.add('input-focus-hint')
+            setTimeout(() => nameInput.classList.remove('input-focus-hint'), 6000)
+          }
         }, 0)
       }
       setFocusNewItem(false)
@@ -259,9 +265,10 @@ export function LedgerItemsTable() {
       <div className="overflow-x-auto relative">
         {/* Scroll indicator for many people */}
         {people.length > 5 && (
-          <div className="absolute top-0 right-0 h-full w-8 bg-gradient-to-l from-background/80 to-transparent pointer-events-none z-20 flex items-center justify-end pr-2">
-            <div className="text-xs text-muted-foreground rotate-90 whitespace-nowrap font-receipt">
-              SCROLL →
+          <div className="absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none z-20 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-1">
+              <ChevronRight className="h-4 w-4 text-primary animate-bounce" style={{ animationDuration: '1.5s' }} />
+              <ChevronRight className="h-4 w-4 text-primary/60 animate-bounce" style={{ animationDuration: '1.5s', animationDelay: '0.15s' }} />
             </div>
           </div>
         )}
@@ -334,7 +341,7 @@ export function LedgerItemsTable() {
                             const nextMethod = getNextSplitMethod(item.method)
                             handleUpdateItem(item.id, { method: nextMethod })
                           }}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide border transition-all hover:scale-105 cursor-pointer ${getSplitMethodColor(item.method)}`}
+                          className={`clickable-badge inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wide border ${getSplitMethodColor(item.method)}`}
                           title={`Split method: ${item.method}. Click to cycle through methods.`}
                         >
                           {React.createElement(getSplitMethodIcon(item.method), { className: "h-3 w-3" })}

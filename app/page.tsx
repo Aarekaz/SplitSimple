@@ -250,11 +250,19 @@ export default function HomePage() {
                 personInputRef={personInputRef}
               />
 
-              {/* Section 2: Items Ledger - Only when people exist */}
-              {state.currentBill.people.length > 0 && <LedgerItemsTable />}
+              {/* Section 2: Items Ledger - Only when people exist - Staggered animation */}
+              {state.currentBill.people.length > 0 && (
+                <div className="animate-slide-in-1">
+                  <LedgerItemsTable />
+                </div>
+              )}
 
-              {/* Section 3: Payment Summary - Only when people exist */}
-              {state.currentBill.people.length > 0 && <TaxTipSection />}
+              {/* Section 3: Payment Summary - Only when people exist - Staggered animation */}
+              {state.currentBill.people.length > 0 && (
+                <div className="animate-slide-in-2">
+                  <TaxTipSection />
+                </div>
+              )}
             </>
           )}
 
