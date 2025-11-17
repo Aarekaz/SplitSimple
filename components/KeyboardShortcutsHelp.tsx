@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { HelpCircle, Plus, Users, Copy, Share2, Undo, Redo } from "lucide-react"
+import { HelpCircle, Plus, Users, Copy, Share2, Undo, Redo, Trash2 } from "lucide-react"
 
 interface Shortcut {
   key: string
@@ -58,6 +58,18 @@ export function KeyboardShortcutsHelp() {
       description: "Redo last action",
       icon: <Redo className="h-4 w-4" />,
       category: "Edit"
+    },
+    {
+      key: "⌘D / Ctrl+D",
+      description: "Duplicate focused item",
+      icon: <Copy className="h-4 w-4" />,
+      category: "Items"
+    },
+    {
+      key: "Delete",
+      description: "Delete focused item",
+      icon: <Trash2 className="h-4 w-4" />,
+      category: "Items"
     }
   ]
 

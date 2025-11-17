@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Plus, Trash2, Check, AlertCircle, Receipt, Split, BarChart2, Percent, DollarSign, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,7 @@ import { PersonSelector } from "./PersonSelector"
 import { SplitMethodSelector } from "./SplitMethodSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
 import { AnimatedNumber } from "./AnimatedNumber"
+import { ItemContextMenu } from "./ItemContextMenu"
 import { calculateItemSplits, getBillSummary } from "@/lib/calculations"
 import { validateCurrencyInput } from "@/lib/validation"
 import { formatCurrency } from "@/lib/utils"
@@ -138,34 +139,18 @@ export function LedgerItemsTable() {
     setFocusNewItem(focus)
   }, [people, dispatch])
 
-  const getItemSplits = useCallback((itemId: string) => {
-    const item = items.find((i) => i.id === itemId)
-    if (!item) return {}
-    return calculateItemSplits(item, people)
+  // Memoize item splits calculations to avoid recalculating on every render
+  const itemSplitsCache = useMemo(() => {
+    const cache: Record<string, Record<string, number>> = {}
+    items.forEach((item) => {
+      cache[item.id] = calculateItemSplits(item, people)
+    })
+    return cache
   }, [items, people])
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent, item: Item, index: number) => {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      handleAddItem(true)
-    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-      e.preventDefault()
-      const nextIndex = e.key === "ArrowUp" ? index - 1 : index + 1
-      if (nextIndex >= 0 && nextIndex < items.length) {
-        const nextItem = items[nextIndex]
-        if (nextItem) {
-          const targetInput = e.target as HTMLInputElement
-          const currentField =
-            targetInput === itemInputRefs.current[item.id]?.name
-              ? "name"
-              : "price"
-          itemInputRefs.current[nextItem.id]?.[currentField]?.focus()
-          itemInputRefs.current[nextItem.id]?.[currentField]?.select()
-        }
-      }
-    }
-  }, [items, handleAddItem])
-
+  const getItemSplits = useCallback((itemId: string) => {
+    return itemSplitsCache[itemId] || {}
+  }, [itemSplitsCache])
 
   const handleUpdateItem = useCallback((itemId: string, updates: Partial<Item>) => {
     const item = items.find((i) => i.id === itemId)
@@ -203,6 +188,63 @@ export function LedgerItemsTable() {
 
     handleUpdateItem(itemId, { splitWith: newSplitWith })
   }, [items, handleUpdateItem])
+
+  // Context menu handlers
+  const handleDuplicateItem = useCallback((item: Item) => {
+    const duplicatedItem: Omit<Item, "id"> = {
+      name: `${item.name} (copy)`,
+      price: item.price,
+      quantity: item.quantity,
+      splitWith: [...item.splitWith],
+      method: item.method,
+      customSplits: item.customSplits ? { ...item.customSplits } : undefined,
+    }
+    dispatch({ type: "ADD_ITEM", payload: duplicatedItem })
+  }, [dispatch])
+
+  const handleAssignAllPeople = useCallback((itemId: string) => {
+    handleUpdateItem(itemId, { splitWith: people.map(p => p.id) })
+  }, [people, handleUpdateItem])
+
+  const handleUnassignAllPeople = useCallback((itemId: string) => {
+    handleUpdateItem(itemId, { splitWith: [] })
+  }, [handleUpdateItem])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, item: Item, index: number) => {
+    // Ctrl+D: Duplicate item
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+      e.preventDefault()
+      handleDuplicateItem(item)
+      return
+    }
+
+    // Delete key: Delete item
+    if (e.key === "Delete" && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      e.preventDefault()
+      handleDeleteItem(item.id)
+      return
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleAddItem(true)
+    } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault()
+      const nextIndex = e.key === "ArrowUp" ? index - 1 : index + 1
+      if (nextIndex >= 0 && nextIndex < items.length) {
+        const nextItem = items[nextIndex]
+        if (nextItem) {
+          const targetInput = e.target as HTMLInputElement
+          const currentField =
+            targetInput === itemInputRefs.current[item.id]?.name
+              ? "name"
+              : "price"
+          itemInputRefs.current[nextItem.id]?.[currentField]?.focus()
+          itemInputRefs.current[nextItem.id]?.[currentField]?.select()
+        }
+      }
+    }
+  }, [items, handleAddItem, handleDuplicateItem, handleDeleteItem])
 
   if (items.length === 0) {
     return (
@@ -313,8 +355,16 @@ export function LedgerItemsTable() {
 
               return (
                 <React.Fragment key={item.id}>
-                  {/* Main Row */}
-                  <tr className="ledger-row">
+                  {/* Main Row with Context Menu */}
+                  <ItemContextMenu
+                    item={item}
+                    onDuplicate={() => handleDuplicateItem(item)}
+                    onDelete={() => handleDeleteItem(item.id)}
+                    onAssignAll={() => handleAssignAllPeople(item.id)}
+                    onUnassignAll={() => handleUnassignAllPeople(item.id)}
+                    peopleCount={people.length}
+                  >
+                    <tr className="ledger-row">
                     {/* Row Number */}
                     <td className="ledger-cell ledger-row-number sticky left-0 z-10 bg-card">
                       #{String(index + 1).padStart(2, '0')}
@@ -468,6 +518,7 @@ export function LedgerItemsTable() {
                       </Button>
                     </td>
                   </tr>
+                  </ItemContextMenu>
                 </React.Fragment>
               )
             })}
