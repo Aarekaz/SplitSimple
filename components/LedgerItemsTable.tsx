@@ -326,17 +326,11 @@ export function LedgerItemsTable() {
               <th className="ledger-header-cell-right min-w-[120px]">Price</th>
               {people.map((person) => (
                 <th key={person.id} className={`ledger-header-cell-right ${personColumnClass}`}>
-                  <div className="flex items-center justify-end gap-1.5" title={person.name}>
-                    <div
-                      className="person-dot"
-                      style={{ backgroundColor: person.color }}
-                    >
-                      {person.name.charAt(0).toUpperCase()}
-                    </div>
+                  <div className="flex items-center justify-end" title={person.name}>
                     {people.length <= 6 ? (
-                      <span className="truncate">{person.name.toUpperCase()}</span>
+                      <span className="truncate" style={{ color: person.color }}>{person.name.toUpperCase()}</span>
                     ) : (
-                      <span className="text-[10px] font-bold">{person.name.charAt(0).toUpperCase()}</span>
+                      <span className="text-[10px] font-bold" style={{ color: person.color }}>{person.name.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
                 </th>
