@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { formatNumber } from "@/lib/utils"
 
 interface AnimatedNumberProps {
   value: number
@@ -14,7 +15,7 @@ interface AnimatedNumberProps {
 export function AnimatedNumber({
   value,
   className = "",
-  formatFn = (v) => v.toFixed(2),
+  formatFn = formatNumber, // Use smart number formatting by default
   duration = 300,
   prefix = "",
   suffix = ""
