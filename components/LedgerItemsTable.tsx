@@ -516,25 +516,6 @@ export function LedgerItemsTable() {
                 </React.Fragment>
               )
             })}
-
-            {/* Person Totals Row */}
-            <tr className="ledger-footer">
-              <td colSpan={4} className="ledger-footer-cell text-right">
-                SUBTOTAL
-              </td>
-              {people.map((person) => {
-                const personTotal = summary.personTotals.find(pt => pt.personId === person.id)
-                return (
-                  <td key={person.id} className="ledger-footer-cell text-right" style={{ color: person.color }}>
-                    <AnimatedNumber value={personTotal?.subtotal || 0} prefix="$" />
-                  </td>
-                )
-              })}
-              <td className="ledger-footer-cell text-right">
-                <AnimatedNumber value={summary.subtotal} prefix="$" />
-              </td>
-              <td></td>
-            </tr>
           </tbody>
         </table>
       </div>
