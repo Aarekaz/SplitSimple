@@ -262,6 +262,7 @@ function billReducer(state: BillState, action: BillAction): BillState {
           ...state,
           currentBill: previousBill,
           historyIndex: state.historyIndex - 1,
+          syncStatus: "never_synced", // Mark as needing sync after undo
         }
       }
       return state

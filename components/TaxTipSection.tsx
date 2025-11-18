@@ -10,6 +10,7 @@ import { cn, formatCurrency } from "@/lib/utils"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
 import { useToast } from "@/hooks/use-toast"
 import { useBillAnalytics } from "@/hooks/use-analytics"
+import { validateCurrencyInput } from "@/lib/validation"
 
 interface TaxTipSectionProps {
   className?: string
@@ -23,25 +24,25 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
   const { toast } = useToast()
   const analytics = useBillAnalytics()
 
-  const sanitizeNumericInput = (value: string) => {
-    let sanitized = value.replace(/[^0-9.]/g, "")
-    const parts = sanitized.split(".")
-    if (parts.length > 2) {
-      sanitized = `${parts[0]}.${parts.slice(1).join("")}`
-    }
-    return sanitized
-  }
-
   const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch({ type: "SET_TAX", payload: sanitizeNumericInput(e.target.value) })
+    const validation = validateCurrencyInput(e.target.value)
+    if (validation.isValid) {
+      dispatch({ type: "SET_TAX", payload: validation.value.toString() })
+    }
   }
 
   const handleTipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch({ type: "SET_TIP", payload: sanitizeNumericInput(e.target.value) })
+    const validation = validateCurrencyInput(e.target.value)
+    if (validation.isValid) {
+      dispatch({ type: "SET_TIP", payload: validation.value.toString() })
+    }
   }
 
   const handleDiscountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch({ type: "SET_DISCOUNT", payload: sanitizeNumericInput(e.target.value) })
+    const validation = validateCurrencyInput(e.target.value)
+    if (validation.isValid) {
+      dispatch({ type: "SET_DISCOUNT", payload: validation.value.toString() })
+    }
   }
 
   const handleTaxTipAllocationChange = (value: "proportional" | "even") => {
@@ -49,7 +50,10 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
   }
 
   const handleTipPercentage = (percentage: number) => {
-    const tipAmount = (subtotal * percentage / 100).toFixed(2)
+    // Calculate tip using cents to ensure precision
+    const subtotalInCents = Math.round(subtotal * 100)
+    const tipInCents = Math.round(subtotalInCents * percentage / 100)
+    const tipAmount = (tipInCents / 100).toFixed(2)
     dispatch({ type: "SET_TIP", payload: tipAmount })
   }
 
