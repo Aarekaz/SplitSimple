@@ -14,7 +14,9 @@ import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Receipt, Plus, Copy, Share2, Users } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Receipt, Plus, Copy, Share2, Users, Download } from "lucide-react"
+import { getBillFromCloud } from "@/lib/sharing"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
@@ -30,6 +32,8 @@ export default function HomePage() {
   const analytics = useBillAnalytics()
   const [isAddingPerson, setIsAddingPerson] = useState(false)
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false)
+  const [showLoadBillDialog, setShowLoadBillDialog] = useState(false)
+  const [loadBillId, setLoadBillId] = useState("")
   const personInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const isMobile = useIsMobile()
@@ -52,6 +56,38 @@ export default function HomePage() {
       setTimeout(() => personInputRef.current?.focus(), 0)
     }
   }, [isAddingPerson])
+
+  // Listen for bill load events from BillContext
+  useEffect(() => {
+    const handleBillLoaded = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const { title, people, items } = customEvent.detail
+      toast({
+        title: "Bill loaded!",
+        description: `"${title}" with ${people} people and ${items} items`,
+      })
+      analytics.trackFeatureUsed("load_shared_bill_success")
+    }
+
+    const handleBillLoadFailed = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const { billId, error } = customEvent.detail
+      toast({
+        title: "Failed to load bill",
+        description: error || `Bill ${billId.slice(0, 8)}... not found or expired`,
+        variant: "destructive",
+      })
+      analytics.trackError("load_shared_bill_failed", error || "Bill not found")
+    }
+
+    window.addEventListener('bill-loaded-success', handleBillLoaded)
+    window.addEventListener('bill-load-failed', handleBillLoadFailed)
+
+    return () => {
+      window.removeEventListener('bill-loaded-success', handleBillLoaded)
+      window.removeEventListener('bill-load-failed', handleBillLoadFailed)
+    }
+  }, [toast, analytics])
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value
@@ -124,6 +160,58 @@ export default function HomePage() {
 
   const handleAddItem = () => {
     analytics.trackFeatureUsed("mobile_add_item")
+  }
+
+  const handleLoadBill = async () => {
+    if (!loadBillId.trim()) {
+      toast({
+        title: "Enter a bill ID",
+        description: "Please enter a valid bill ID to load",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const result = await getBillFromCloud(loadBillId.trim())
+
+      if (result.bill) {
+        // Migration: Add missing fields
+        if (!result.bill.status) result.bill.status = "draft"
+        if (!result.bill.notes) result.bill.notes = ""
+        if (!result.bill.discount) result.bill.discount = ""
+        if (result.bill.items) {
+          result.bill.items = result.bill.items.map((item: any) => ({
+            ...item,
+            quantity: item.quantity || 1
+          }))
+        }
+
+        dispatch({ type: "LOAD_BILL", payload: result.bill })
+        setShowLoadBillDialog(false)
+        setLoadBillId("")
+
+        toast({
+          title: "Bill loaded!",
+          description: `"${result.bill.title}" with ${result.bill.people.length} people and ${result.bill.items.length} items`,
+        })
+        analytics.trackFeatureUsed("manual_load_bill")
+      } else {
+        toast({
+          title: "Bill not found",
+          description: result.error || "The bill ID may be invalid or expired",
+          variant: "destructive",
+        })
+        analytics.trackError("manual_load_bill_failed", result.error || "Bill not found")
+      }
+    } catch (error) {
+      toast({
+        title: "Error loading bill",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      })
+      analytics.trackError("manual_load_bill_error", error instanceof Error ? error.message : "Unknown error")
+    }
   }
 
   // Global keyboard shortcuts
@@ -355,6 +443,57 @@ export default function HomePage() {
                   <ShareBill id="share-bill-trigger" variant="ghost" size="sm" showText={false} />
                 </div>
               </div>
+
+              <div className="w-px h-4 bg-border" />
+
+              {/* Load Bill Dialog */}
+              <Dialog open={showLoadBillDialog} onOpenChange={setShowLoadBillDialog}>
+                <DialogTrigger asChild>
+                  <button
+                    className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                    title="Load bill by ID"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Load</span>
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Load Bill by ID</DialogTitle>
+                    <DialogDescription>
+                      Enter a bill ID to load a shared bill. You can find the bill ID in the share URL (after ?bill=)
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-4 py-4">
+                    <div className="flex flex-col gap-2">
+                      <Input
+                        placeholder="1763442653885-vlpkbu4"
+                        value={loadBillId}
+                        onChange={(e) => setLoadBillId(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleLoadBill()
+                          }
+                        }}
+                        className="font-mono text-sm"
+                        autoFocus
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Example: If the URL is <code className="px-1 bg-muted rounded">?bill=1763442653885-vlpkbu4</code>,<br />
+                        enter <code className="px-1 bg-muted rounded">1763442653885-vlpkbu4</code>
+                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowLoadBillDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleLoadBill}>
+                        Load Bill
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               <div className="w-px h-4 bg-border" />
 

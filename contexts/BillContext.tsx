@@ -388,14 +388,17 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadBill = async () => {
       try {
-        // Check for shared bill in URL
+        // Check for shared bill in URL - support both ?bill= and ?share= parameters
         const urlParams = new URLSearchParams(window.location.search)
-        const sharedBillId = urlParams.get("bill")
-        
+        const sharedBillId = urlParams.get("bill") || urlParams.get("share")
+
         if (sharedBillId) {
+          console.log(`[BillContext] Loading shared bill: ${sharedBillId}`)
+
           // First try to load from Redis (cloud)
           const cloudResult = await getBillFromCloud(sharedBillId)
           if (cloudResult.bill) {
+            console.log(`[BillContext] Successfully loaded bill from cloud`)
             // Migration: Add missing fields to existing shared bills
             if (!cloudResult.bill.status) {
               cloudResult.bill.status = "draft"
@@ -414,12 +417,25 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
               }))
             }
             dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
+
+            // Dispatch success event for toast notification
+            if (typeof window !== 'undefined') {
+              const event = new CustomEvent('bill-loaded-success', {
+                detail: {
+                  title: cloudResult.bill.title,
+                  people: cloudResult.bill.people.length,
+                  items: cloudResult.bill.items.length
+                }
+              })
+              window.dispatchEvent(event)
+            }
             return
           }
-          
+
           // Fallback to localStorage for backwards compatibility
           const localSharedBill = loadBillFromLocalStorage(sharedBillId)
           if (localSharedBill) {
+            console.log(`[BillContext] Successfully loaded bill from localStorage`)
             // Migration: Add missing fields to existing local shared bills
             if (!localSharedBill.status) {
               localSharedBill.status = "draft"
@@ -438,11 +454,32 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
               }))
             }
             dispatch({ type: "LOAD_BILL", payload: localSharedBill })
+
+            // Dispatch success event for toast notification
+            if (typeof window !== 'undefined') {
+              const event = new CustomEvent('bill-loaded-success', {
+                detail: {
+                  title: localSharedBill.title,
+                  people: localSharedBill.people.length,
+                  items: localSharedBill.items.length
+                }
+              })
+              window.dispatchEvent(event)
+            }
             return
           }
-          
-          // If shared bill not found, show error but continue with default
-          console.warn(`Shared bill ${sharedBillId} not found in cloud or local storage`)
+
+          // If shared bill not found, dispatch error event
+          console.error(`[BillContext] Shared bill ${sharedBillId} not found in cloud or local storage`)
+          if (typeof window !== 'undefined') {
+            const event = new CustomEvent('bill-load-failed', {
+              detail: {
+                billId: sharedBillId,
+                error: cloudResult.error || 'Bill not found or expired'
+              }
+            })
+            window.dispatchEvent(event)
+          }
         }
         
         // Load current bill from localStorage
