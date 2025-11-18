@@ -338,10 +338,10 @@ export default function HomePage() {
                 <span>Copy</span>
               </button>
 
-              <div className="pointer-events-auto relative">
+              <div className="pointer-events-auto">
                 <button
                   onClick={() => {
-                    // Trigger the hidden ShareBill button
+                    // Trigger the ShareBill button directly
                     document.getElementById('share-bill-trigger')?.click()
                   }}
                   className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
@@ -350,11 +350,9 @@ export default function HomePage() {
                   <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">S</kbd>
                   <span>Share</span>
                 </button>
-                {/* Hidden ShareBill trigger */}
+                {/* Hidden ShareBill trigger with id */}
                 <div className="hidden">
-                  <div id="share-bill-trigger">
-                    <ShareBill variant="ghost" size="sm" showText={false} />
-                  </div>
+                  <ShareBill id="share-bill-trigger" variant="ghost" size="sm" showText={false} />
                 </div>
               </div>
 
