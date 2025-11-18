@@ -170,3 +170,36 @@ export function sanitizeInput(input: string): string {
     .replace(/'/g, '&#x27;')
     .replace(/\//g, '&#x2F;')
 }
+
+/**
+ * Migrate bill schema to add missing fields for backward compatibility
+ * This ensures old shared bills work with the current schema
+ */
+export function migrateBillSchema<T extends Record<string, any>>(bill: T): T {
+  const migrated: any = { ...bill }
+
+  // Add missing status field
+  if (!migrated.status) {
+    migrated.status = "draft"
+  }
+
+  // Add missing notes field
+  if (!migrated.notes) {
+    migrated.notes = ""
+  }
+
+  // Add missing discount field
+  if (!migrated.discount) {
+    migrated.discount = ""
+  }
+
+  // Add quantity field to items that don't have it
+  if (migrated.items && Array.isArray(migrated.items)) {
+    migrated.items = migrated.items.map((item: any) => ({
+      ...item,
+      quantity: item.quantity || 1
+    }))
+  }
+
+  return migrated as T
+}

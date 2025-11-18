@@ -20,6 +20,7 @@ import { getBillFromCloud } from "@/lib/sharing"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
+import { migrateBillSchema } from "@/lib/validation"
 import { useState, useEffect, useRef } from "react"
 import { useBillAnalytics } from "@/hooks/use-analytics"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -177,17 +178,9 @@ export default function HomePage() {
 
       if (result.bill) {
         // Migration: Add missing fields
-        if (!result.bill.status) result.bill.status = "draft"
-        if (!result.bill.notes) result.bill.notes = ""
-        if (!result.bill.discount) result.bill.discount = ""
-        if (result.bill.items) {
-          result.bill.items = result.bill.items.map((item: any) => ({
-            ...item,
-            quantity: item.quantity || 1
-          }))
-        }
+        const migratedBill = migrateBillSchema(result.bill)
 
-        dispatch({ type: "LOAD_BILL", payload: result.bill })
+        dispatch({ type: "LOAD_BILL", payload: migratedBill })
         setShowLoadBillDialog(false)
         setLoadBillId("")
 

@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useReducer, useEffect } from "react"
 import { getBillFromCloud, storeBillInCloud } from "@/lib/sharing"
+import { migrateBillSchema } from "@/lib/validation"
 
 // Types
 export type SyncStatus = "never_synced" | "syncing" | "synced" | "error"
@@ -393,30 +394,12 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         const sharedBillId = urlParams.get("bill") || urlParams.get("share")
 
         if (sharedBillId) {
-          console.log(`[BillContext] Loading shared bill: ${sharedBillId}`)
-
           // First try to load from Redis (cloud)
           const cloudResult = await getBillFromCloud(sharedBillId)
           if (cloudResult.bill) {
-            console.log(`[BillContext] Successfully loaded bill from cloud`)
             // Migration: Add missing fields to existing shared bills
-            if (!cloudResult.bill.status) {
-              cloudResult.bill.status = "draft"
-            }
-            if (!cloudResult.bill.notes) {
-              cloudResult.bill.notes = ""
-            }
-            if (!cloudResult.bill.discount) {
-              cloudResult.bill.discount = ""
-            }
-            // Add quantity field to items that don't have it
-            if (cloudResult.bill.items) {
-              cloudResult.bill.items = cloudResult.bill.items.map((item: any) => ({
-                ...item,
-                quantity: item.quantity || 1
-              }))
-            }
-            dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
+            const migratedBill = migrateBillSchema(cloudResult.bill)
+            dispatch({ type: "LOAD_BILL", payload: migratedBill })
 
             // Dispatch success event for toast notification
             if (typeof window !== 'undefined') {
@@ -435,25 +418,9 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           // Fallback to localStorage for backwards compatibility
           const localSharedBill = loadBillFromLocalStorage(sharedBillId)
           if (localSharedBill) {
-            console.log(`[BillContext] Successfully loaded bill from localStorage`)
             // Migration: Add missing fields to existing local shared bills
-            if (!localSharedBill.status) {
-              localSharedBill.status = "draft"
-            }
-            if (!localSharedBill.notes) {
-              localSharedBill.notes = ""
-            }
-            if (!localSharedBill.discount) {
-              localSharedBill.discount = ""
-            }
-            // Add quantity field to items that don't have it
-            if (localSharedBill.items) {
-              localSharedBill.items = localSharedBill.items.map((item: any) => ({
-                ...item,
-                quantity: item.quantity || 1
-              }))
-            }
-            dispatch({ type: "LOAD_BILL", payload: localSharedBill })
+            const migratedBill = migrateBillSchema(localSharedBill)
+            dispatch({ type: "LOAD_BILL", payload: migratedBill })
 
             // Dispatch success event for toast notification
             if (typeof window !== 'undefined') {

@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from "react"
 import { useAnalytics, getBillAnalytics, type AnalyticsEvents } from "@/lib/analytics"
-import { useBill } from "@/contexts/BillContext"
+import { useBill, type SyncStatus } from "@/contexts/BillContext"
 import type { SplitMethod } from "@/components/SplitMethodSelector"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -161,7 +161,7 @@ export function useBillAnalytics() {
   }, [state.currentBill.id, analytics])
 
   // Track sync events
-  const trackBillSynced = useCallback((syncStatus: any, syncDuration?: number) => {
+  const trackBillSynced = useCallback((syncStatus: SyncStatus, syncDuration?: number) => {
     analytics.trackEvent("bill_synced", {
       bill_id: state.currentBill.id,
       sync_status: syncStatus,

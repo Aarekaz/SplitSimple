@@ -20,12 +20,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         maskTextSelector: '.receipt-title', // Mask bill titles for privacy
       },
       loaded: (posthog) => {
-        console.log('✅ PostHog loaded successfully!')
-        console.log('PostHog config:', {
-          api_host: "/ingest",
-          ui_host: "https://us.posthog.com",
-          key: process.env.NEXT_PUBLIC_POSTHOG_KEY ? 'Key found' : 'Key missing'
-        })
+        // PostHog loaded successfully
       }
     })
 

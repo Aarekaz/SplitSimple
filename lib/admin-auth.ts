@@ -50,8 +50,14 @@ export async function clearAdminSession(): Promise<void> {
   cookieStore.delete(SESSION_COOKIE_NAME)
 }
 
-export function adminAuthMiddleware(handler: Function) {
-  return async (req: NextRequest, context?: any) => {
+type RouteContext<T = Record<string, string>> = {
+  params: Promise<T>
+}
+
+export function adminAuthMiddleware<T = Record<string, string>>(
+  handler: (req: NextRequest, context: RouteContext<T>) => Promise<NextResponse>
+) {
+  return async (req: NextRequest, context: RouteContext<T>) => {
     const isAuthenticated = await validateAdminSession()
 
     if (!isAuthenticated) {
