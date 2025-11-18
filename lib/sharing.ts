@@ -99,7 +99,16 @@ export async function getBillFromCloud(billId: string): Promise<{ bill?: Bill; e
 
 // Generate shareable URL
 export function generateCloudShareUrl(billId: string): string {
+  console.log("generateCloudShareUrl called with billId:", billId)
+  console.log("billId type:", typeof billId)
+  console.log("billId length:", billId?.length)
+
   // Ensure we always use the root path for sharing
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-  return `${baseUrl}/?bill=${billId}`
+  console.log("Base URL:", baseUrl)
+
+  const fullUrl = `${baseUrl}/?bill=${billId}`
+  console.log("Full URL constructed:", fullUrl)
+
+  return fullUrl
 }

@@ -30,15 +30,23 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
   const [shareUrl, setShareUrl] = useState("")
   const [storeError, setStoreError] = useState<string | null>(null)
 
+  // Debug: Log current bill state
+  console.log("ShareBill - Current bill ID:", state.currentBill?.id)
+  console.log("ShareBill - Current bill title:", state.currentBill?.title)
+  console.log("ShareBill - Share URL state:", shareUrl)
+
   // Generate share URL when dialog opens
   const handleOpenDialog = async (open: boolean) => {
+    console.log("handleOpenDialog called with open:", open)
     setIsOpen(open)
     if (open) {
+      console.log("Dialog opening, current bill:", state.currentBill)
       analytics.trackShareBillClicked("link")
 
       // Validate bill ID exists
       if (!state.currentBill.id) {
-        console.error("Bill ID is missing")
+        console.error("Bill ID is missing!")
+        console.error("Current bill object:", state.currentBill)
         setStoreError("Invalid bill - no ID found")
         toast({
           title: "Error",
@@ -48,17 +56,22 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
         return
       }
 
+      console.log("Generating URL for bill ID:", state.currentBill.id)
       const url = generateCloudShareUrl(state.currentBill.id)
-      console.log("Generated share URL:", url) // Debug logging
+      console.log("Generated share URL:", url)
+      console.log("Setting share URL to:", url)
       setShareUrl(url)
 
       // Store bill in Redis when dialog opens
       setIsStoring(true)
       setStoreError(null)
+      console.log("Storing bill in cloud...")
       const result = await storeBillInCloud(state.currentBill)
       setIsStoring(false)
+      console.log("Store result:", result)
 
       if (!result.success) {
+        console.error("Failed to store bill:", result.error)
         setStoreError(result.error || "Failed to store bill for sharing")
         toast({
           title: "Storage failed",
@@ -68,6 +81,8 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
       } else {
         console.log("Bill stored successfully in cloud")
       }
+    } else {
+      console.log("Dialog closing")
     }
   }
 
@@ -199,6 +214,12 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
             <Label htmlFor="share-url" className="text-sm font-medium">
               Shareable Link
             </Label>
+            {/* Debug output */}
+            <div className="text-xs text-muted-foreground bg-muted p-2 rounded font-mono">
+              <div>Debug: shareUrl = "{shareUrl}"</div>
+              <div>Debug: shareUrl length = {shareUrl.length}</div>
+              <div>Debug: isStoring = {isStoring ? "true" : "false"}</div>
+            </div>
             <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
               <Input
                 id="share-url"
@@ -207,7 +228,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
                 disabled={isStoring}
                 className="flex-1 font-mono text-sm"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
-                placeholder={isStoring ? "Generating link..." : ""}
+                placeholder={isStoring ? "Generating link..." : "Ready to share"}
               />
               <div className="flex gap-2 justify-center sm:justify-start">
                 <Button
