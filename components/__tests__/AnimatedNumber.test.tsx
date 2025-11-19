@@ -31,7 +31,8 @@ describe('AnimatedNumber', () => {
 
   it('renders initial value immediately', () => {
     render(<AnimatedNumber value={100} />)
-    expect(screen.getByText('100.00')).toBeInTheDocument()
+    // Smart formatting: whole numbers don't show decimals
+    expect(screen.getByText('100')).toBeInTheDocument()
   })
 
   it('formats currency by default', () => {
@@ -47,12 +48,13 @@ describe('AnimatedNumber', () => {
 
   it('renders new value when changed', () => {
     const { rerender } = render(<AnimatedNumber value={0} />)
-    expect(screen.getByText('0.00')).toBeInTheDocument()
+    // Smart formatting: whole numbers don't show decimals
+    expect(screen.getByText('0')).toBeInTheDocument()
 
-    // Change value - should show initial value immediately  
+    // Change value - should show initial value immediately
     rerender(<AnimatedNumber value={100} />)
-    // Component shows initial value, then animates
-    expect(screen.getByText(/\d+\.\d{2}/)).toBeInTheDocument()
+    // Component shows initial value, then animates - accepts both with and without decimals
+    expect(screen.getByText(/\d+(\.\d{1,2})?/)).toBeInTheDocument()
   })
 
   it('handles negative values', () => {
@@ -62,34 +64,37 @@ describe('AnimatedNumber', () => {
 
   it('handles zero value', () => {
     render(<AnimatedNumber value={0} />)
-    expect(screen.getByText('0.00')).toBeInTheDocument()
+    // Smart formatting: whole numbers don't show decimals
+    expect(screen.getByText('0')).toBeInTheDocument()
   })
 
   it('applies custom className', () => {
     render(<AnimatedNumber value={100} className="custom-class" />)
-    const element = screen.getByText('100.00')
+    // Smart formatting: whole numbers don't show decimals
+    const element = screen.getByText('100')
     expect(element).toHaveClass('custom-class')
   })
 
   it('accepts custom duration prop', () => {
     const { rerender } = render(<AnimatedNumber value={0} duration={2000} />)
-    expect(screen.getByText('0.00')).toBeInTheDocument()
-    
+    // Smart formatting: whole numbers don't show decimals
+    expect(screen.getByText('0')).toBeInTheDocument()
+
     rerender(<AnimatedNumber value={100} duration={2000} />)
     // Just verify it renders - animation timing is hard to test reliably
-    expect(screen.getByText(/\d+\.\d{2}/)).toBeInTheDocument()
+    expect(screen.getByText(/\d+(\.\d{1,2})?/)).toBeInTheDocument()
   })
 
   it('handles rapid value changes', () => {
     const { rerender } = render(<AnimatedNumber value={0} />)
-    
+
     // Rapid changes
     rerender(<AnimatedNumber value={50} />)
     rerender(<AnimatedNumber value={100} />)
     rerender(<AnimatedNumber value={75} />)
 
-    // Should render some numeric value (animation in progress)
-    expect(screen.getByText(/\d+\.\d{2}/)).toBeInTheDocument()
+    // Should render some numeric value (animation in progress) - can be with or without decimals
+    expect(screen.getByText(/\d+(\.\d{1,2})?/)).toBeInTheDocument()
   })
 
   it('preserves accessibility', () => {
@@ -100,7 +105,8 @@ describe('AnimatedNumber', () => {
 
   it('handles very large numbers', () => {
     render(<AnimatedNumber value={999999.99} />)
-    expect(screen.getByText('999999.99')).toBeInTheDocument()
+    // Numbers are formatted with thousands separators
+    expect(screen.getByText('999,999.99')).toBeInTheDocument()
   })
 
   it('handles very small numbers', () => {

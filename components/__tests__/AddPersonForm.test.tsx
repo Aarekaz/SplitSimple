@@ -187,15 +187,16 @@ describe('AddPersonForm', () => {
     const input = screen.getByPlaceholderText('Enter name')
     const submitButton = screen.getByRole('button', { name: /add/i })
 
-    // Test very long name
+    // Test very long name (over 50 character limit)
     const longName = 'a'.repeat(100)
     await user.type(input, longName)
     await user.click(submitButton)
 
-    // Should still work with long names (validation handles this)
+    // Should NOT call onPersonAdded because name is too long (validation rejects it)
     await waitFor(() => {
-      expect(onPersonAdded).toHaveBeenCalled()
+      expect(screen.getByText(/Name cannot exceed 50 characters/i)).toBeInTheDocument()
     })
+    expect(onPersonAdded).not.toHaveBeenCalled()
   })
 
   it('handles special characters in name', async () => {
