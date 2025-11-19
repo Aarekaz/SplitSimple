@@ -11,6 +11,7 @@ import { MobileFirstUI } from "@/components/MobileFirstUI"
 import { MobileActionButton, MobileActionSpacer } from "@/components/MobileActionButton"
 import { ShareBill } from "@/components/ShareBill"
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp"
+import { BillLookup } from "@/components/BillLookup"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -514,26 +515,60 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <footer className="fixed bottom-0 left-0 right-0 px-6 py-3 text-xs text-muted-foreground border-t-2 border-border bg-background/95 backdrop-blur-sm z-40 pointer-events-none font-receipt">
-        <div className="container mx-auto max-w-5xl flex justify-between items-center">
-          <span className="pointer-events-auto">
-            Crafted by{' '}
-            <a
-              href="https://anuragd.me"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium hover:text-primary transition-colors underline"
-            >
-              anuragdhungana
-            </a>
-          </span>
-          <a
-            href="https://github.com/aarekaz/splitsimple"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium hover:text-primary transition-colors pointer-events-auto underline"
-          >
-            View Source on GitHub
-          </a>
+        <div className="container mx-auto max-w-5xl">
+          {/* Desktop Layout */}
+          <div className="hidden md:flex justify-between items-center gap-4">
+            <BillLookup />
+            <div className="flex items-center gap-4">
+              <span className="pointer-events-auto">
+                Crafted by{' '}
+                <a
+                  href="https://anuragd.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium hover:text-primary transition-colors underline"
+                >
+                  anuragdhungana
+                </a>
+              </span>
+              <a
+                href="https://github.com/aarekaz/splitsimple"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium hover:text-primary transition-colors pointer-events-auto underline"
+              >
+                View Source on GitHub
+              </a>
+            </div>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="md:hidden flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <BillLookup />
+            </div>
+            <div className="flex justify-between items-center text-[10px]">
+              <span className="pointer-events-auto">
+                Crafted by{' '}
+                <a
+                  href="https://anuragd.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium hover:text-primary transition-colors underline"
+                >
+                  anuragd
+                </a>
+              </span>
+              <a
+                href="https://github.com/aarekaz/splitsimple"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium hover:text-primary transition-colors pointer-events-auto underline"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
