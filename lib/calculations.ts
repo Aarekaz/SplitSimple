@@ -142,13 +142,16 @@ export function calculatePersonTotals(bill: Bill): PersonTotal[] {
     total: 0,
   }))
 
-  // Calculate subtotals from items
+  // Calculate subtotals from items using cents to avoid floating point errors
   bill.items.forEach((item) => {
     const itemSplits = calculateItemSplits(item, bill.people)
     Object.entries(itemSplits).forEach(([personId, amount]) => {
       const personTotal = totals.find((t) => t.personId === personId)
       if (personTotal) {
-        personTotal.subtotal += amount
+        // Use cents-based addition for precision
+        const currentSubtotalInCents = Math.round(personTotal.subtotal * 100)
+        const amountInCents = Math.round(amount * 100)
+        personTotal.subtotal = (currentSubtotalInCents + amountInCents) / 100
       }
     })
   })

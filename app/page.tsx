@@ -1,33 +1,40 @@
 "use client"
 
-import type React from "react"
-
-import { CollapsibleItemsTable } from "@/components/CollapsibleItemsTable"
+import React from "react"
+import { LedgerItemsTable } from "@/components/LedgerItemsTable"
+import { MobileLedgerView } from "@/components/MobileLedgerView"
+import { PeopleBreakdownTable } from "@/components/PeopleBreakdownTable"
+import { TaxTipSection } from "@/components/TaxTipSection"
 import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { MobileFirstUI } from "@/components/MobileFirstUI"
 import { MobileActionButton, MobileActionSpacer } from "@/components/MobileActionButton"
 import { ShareBill } from "@/components/ShareBill"
+import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Receipt, Plus, Copy, Share2 } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Receipt, Plus, Copy, Share2, Users, Download } from "lucide-react"
+import { getBillFromCloud } from "@/lib/sharing"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { generateSummaryText, copyToClipboard } from "@/lib/export"
+import { migrateBillSchema } from "@/lib/validation"
 import { useState, useEffect, useRef } from "react"
 import { useBillAnalytics } from "@/hooks/use-analytics"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { BillStatusIndicator } from "@/components/BillStatusIndicator"
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
-import { Users } from "lucide-react"
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
   const [isAddingPerson, setIsAddingPerson] = useState(false)
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false)
+  const [showLoadBillDialog, setShowLoadBillDialog] = useState(false)
+  const [loadBillId, setLoadBillId] = useState("")
   const personInputRef = useRef<HTMLInputElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const isMobile = useIsMobile()
@@ -50,6 +57,38 @@ export default function HomePage() {
       setTimeout(() => personInputRef.current?.focus(), 0)
     }
   }, [isAddingPerson])
+
+  // Listen for bill load events from BillContext
+  useEffect(() => {
+    const handleBillLoaded = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const { title, people, items } = customEvent.detail
+      toast({
+        title: "Bill loaded!",
+        description: `"${title}" with ${people} people and ${items} items`,
+      })
+      analytics.trackFeatureUsed("load_shared_bill_success")
+    }
+
+    const handleBillLoadFailed = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const { billId, error } = customEvent.detail
+      toast({
+        title: "Failed to load bill",
+        description: error || `Bill ${billId.slice(0, 8)}... not found or expired`,
+        variant: "destructive",
+      })
+      analytics.trackError("load_shared_bill_failed", error || "Bill not found")
+    }
+
+    window.addEventListener('bill-loaded-success', handleBillLoaded)
+    window.addEventListener('bill-load-failed', handleBillLoadFailed)
+
+    return () => {
+      window.removeEventListener('bill-loaded-success', handleBillLoaded)
+      window.removeEventListener('bill-load-failed', handleBillLoadFailed)
+    }
+  }, [toast, analytics])
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value
@@ -78,13 +117,13 @@ export default function HomePage() {
     }
   }
 
-  const handleNewBill = () => {
+  const handleNewBill = React.useCallback(() => {
     dispatch({ type: "NEW_BILL" })
     analytics.trackBillCreated()
     analytics.trackFeatureUsed("new_bill")
-  }
+  }, [dispatch, analytics])
 
-  const handleCopySummary = async () => {
+  const handleCopySummary = React.useCallback(async () => {
     if (state.currentBill.people.length === 0) {
       toast({
         title: "No data to copy",
@@ -113,7 +152,7 @@ export default function HomePage() {
       })
       analytics.trackError("copy_summary_failed", "Clipboard API failed")
     }
-  }
+  }, [state.currentBill, toast, analytics])
 
   const handleAddPerson = () => {
     setIsAddingPerson(true)
@@ -124,34 +163,157 @@ export default function HomePage() {
     analytics.trackFeatureUsed("mobile_add_item")
   }
 
+  const handleLoadBill = async () => {
+    if (!loadBillId.trim()) {
+      toast({
+        title: "Enter a bill ID",
+        description: "Please enter a valid bill ID to load",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const result = await getBillFromCloud(loadBillId.trim())
+
+      if (result.bill) {
+        // Migration: Add missing fields
+        const migratedBill = migrateBillSchema(result.bill)
+
+        dispatch({ type: "LOAD_BILL", payload: migratedBill })
+        setShowLoadBillDialog(false)
+        setLoadBillId("")
+
+        toast({
+          title: "Bill loaded!",
+          description: `"${result.bill.title}" with ${result.bill.people.length} people and ${result.bill.items.length} items`,
+        })
+        analytics.trackFeatureUsed("manual_load_bill")
+      } else {
+        toast({
+          title: "Bill not found",
+          description: result.error || "The bill ID may be invalid or expired",
+          variant: "destructive",
+        })
+        analytics.trackError("manual_load_bill_failed", result.error || "Bill not found")
+      }
+    } catch (error) {
+      toast({
+        title: "Error loading bill",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      })
+      analytics.trackError("manual_load_bill_error", error instanceof Error ? error.message : "Unknown error")
+    }
+  }
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only trigger if not in an input field
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return
+      }
+
+      // N: Add new item
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault()
+        const newItem = {
+          name: "",
+          price: "",
+          quantity: 1,
+          splitWith: state.currentBill.people.map((p) => p.id),
+          method: "even" as const,
+        }
+        dispatch({ type: "ADD_ITEM", payload: newItem })
+        analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+      }
+
+      // P: Add person
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault()
+        setIsAddingPerson(true)
+        analytics.trackFeatureUsed("keyboard_shortcut_add_person")
+      }
+
+      // C: Copy summary
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault()
+        handleCopySummary()
+        analytics.trackFeatureUsed("keyboard_shortcut_copy")
+      }
+
+      // S: Share
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault()
+        analytics.trackFeatureUsed("keyboard_shortcut_share")
+        document.getElementById('share-bill-trigger')?.click()
+      }
+
+      // Cmd/Ctrl + N: New bill
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault()
+        handleNewBill()
+        analytics.trackFeatureUsed("keyboard_shortcut_new_bill")
+      }
+
+      // Cmd/Ctrl + Z: Undo
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        dispatch({ type: 'UNDO' })
+        analytics.trackFeatureUsed("keyboard_shortcut_undo")
+      }
+
+      // Cmd/Ctrl + Shift + Z: Redo
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault()
+        dispatch({ type: 'REDO' })
+        analytics.trackFeatureUsed("keyboard_shortcut_redo")
+      }
+
+      // ?: Show keyboard shortcuts help
+      if (e.key === '?') {
+        e.preventDefault()
+        setShowShortcutsHelp(true)
+        analytics.trackFeatureUsed("keyboard_shortcut_help")
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [dispatch, analytics, handleCopySummary, handleNewBill, setIsAddingPerson, state.currentBill.people])
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Minimal Header with Glass Effect */}
+      {/* Receipt-Style Header */}
       <header className="glass-header px-4 py-3 sticky top-0 z-50">
         <div className="container mx-auto max-w-5xl">
-          <div className="flex items-center justify-between gap-4">
-            {/* Left: Minimal Logo & Title */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            {/* Left: App branding & Receipt ID */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-md">
-                  <Receipt className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">SplitSimple</span>
+              <div className="flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-primary" />
+                <span className="text-receipt-header hidden sm:inline">SPLITSIMPLE</span>
               </div>
-              <div className="w-px h-6 bg-border/30" />
+              <div className="w-px h-5 bg-border" />
+              <span className="text-receipt-id">#{state.currentBill.id.slice(0, 8).toUpperCase()}</span>
+            </div>
+
+            {/* Center: Bill Title */}
+            <div className="flex-1 min-w-0 max-w-md">
               <Input
                 ref={titleInputRef}
                 value={state.currentBill.title}
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
                 placeholder="Untitled Bill"
-                className="text-title h-10 w-40 sm:w-56 border-0 bg-muted/30 text-foreground px-3 rounded-xl hover:bg-muted/50 focus:bg-card focus:shadow-md transition-all duration-200 font-semibold"
+                className="text-receipt-title h-9 w-full border-2 border-border bg-card text-foreground px-3 hover:border-primary/50 focus:border-primary transition-all font-ui"
               />
             </div>
 
-            {/* Right: Status Only */}
-            <div className="flex items-center gap-2">
+            {/* Right: Status & Sync */}
+            <div className="flex items-center gap-3">
               <BillStatusIndicator compact={true} showSelector={true} />
               <SyncStatusIndicator compact />
             </div>
@@ -159,48 +321,45 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main Content - Canvas with floating cards (ORIGINAL LAYOUT) */}
-      <main className="container mx-auto px-4 py-6 lg:py-8 max-w-5xl">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5 lg:gap-6">
-          {/* Items Section - LEFT */}
-          <div className="space-y-5">
-            {isMobile && state.currentBill.people.length === 0 ? (
-              <MobileFirstUI />
-            ) : state.currentBill.people.length > 0 ? (
-              <CollapsibleItemsTable />
-            ) : (
-              <Card className="float-card p-12 border-0">
-                <CardHeader className="text-center p-0">
-                  <div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-6">
-                    <Users className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-title mb-3">
-                    {isNewBillFlow ? "Welcome to SplitSimple!" : "Who's splitting the bill?"}
-                  </CardTitle>
-                  <p className="text-subtitle max-w-md mx-auto">
-                    {isNewBillFlow
-                      ? "First, give your bill a name above."
-                      : isMobile
-                      ? "Tap 'View Details' below to add people."
-                      : "Add the first person on the right to get started."}
-                  </p>
-                </CardHeader>
-              </Card>
-            )}
-          </div>
+      {/* Main Content - Receipt Container */}
+      <main className="container mx-auto px-4 py-6 lg:py-8 max-w-6xl">
+        {/* Vertical Stack Layout */}
+        <div className="space-y-6">
+          {/* Mobile First UI */}
+          {isMobile && state.currentBill.people.length === 0 ? (
+            <MobileFirstUI />
+          ) : null}
 
-          {/* Totals Panel - RIGHT - RESTORED! */}
-          <div className="hidden lg:block">
-            <div className="sticky top-24">
-              <div className="float-panel border-0 p-5">
-                <TotalsPanel
-                  isAddingPerson={isAddingPerson}
-                  setIsAddingPerson={setIsAddingPerson}
-                  personInputRef={personInputRef}
-                />
-              </div>
-            </div>
-          </div>
+          {/* Desktop Layout - Always show on desktop */}
+          {!isMobile && (
+            <>
+              {/* Section 1: People Breakdown - Always visible */}
+              <PeopleBreakdownTable
+                isAddingPerson={isAddingPerson}
+                setIsAddingPerson={setIsAddingPerson}
+                personInputRef={personInputRef}
+              />
+
+              {/* Section 2: Items Ledger - Only when people exist - Staggered animation */}
+              {state.currentBill.people.length > 0 && (
+                <div className="animate-slide-in-1">
+                  <LedgerItemsTable />
+                </div>
+              )}
+
+              {/* Section 3: Payment Summary - Only when people exist - Staggered animation */}
+              {state.currentBill.people.length > 0 && (
+                <div className="animate-slide-in-2">
+                  <TaxTipSection />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Mobile Ledger - Only when people exist */}
+          {isMobile && state.currentBill.people.length > 0 && (
+            <MobileLedgerView />
+          )}
         </div>
         
         {/* Mobile Action Button */}
@@ -217,45 +376,144 @@ export default function HomePage() {
 
       <MobileTotalsBar />
 
-      {/* FLOATING DOCK - Bottom Center (Desktop Only) */}
+      {/* KEYBOARD SHORTCUTS BAR - Desktop Only */}
       {!isMobile && state.currentBill.people.length > 0 && (
-        <div className="floating-dock">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  onClick={handleCopySummary}
-                  className="dock-item"
-                  aria-label="Copy Summary"
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+          <div className="receipt-container px-4 py-2 pointer-events-auto">
+            <div className="flex items-center gap-6 text-xs font-receipt text-muted-foreground">
+              <KeyboardShortcutsHelp />
+              <button
+                onClick={() => {
+                  const newItem = {
+                    name: "",
+                    price: "",
+                    quantity: 1,
+                    splitWith: state.currentBill.people.map((p) => p.id),
+                    method: "even" as const,
+                  }
+                  dispatch({ type: "ADD_ITEM", payload: newItem })
+                  analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+                }}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Add new item"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">N</kbd>
+                <span>New item</span>
+              </button>
+
+              <button
+                onClick={() => setIsAddingPerson(true)}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Add person"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">P</kbd>
+                <span>Add person</span>
+              </button>
+
+              <button
+                onClick={handleCopySummary}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Copy summary"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">C</kbd>
+                <span>Copy</span>
+              </button>
+
+              <div className="pointer-events-auto">
+                <button
+                  onClick={() => {
+                    // Trigger the ShareBill button directly
+                    document.getElementById('share-bill-trigger')?.click()
+                  }}
+                  className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                  title="Share bill"
                 >
-                  <Copy className="h-5 w-5 text-foreground" />
+                  <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">S</kbd>
+                  <span>Share</span>
                 </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Copy Summary</TooltipContent>
-            </Tooltip>
+                {/* Hidden ShareBill trigger with id */}
+                <div className="hidden">
+                  <ShareBill id="share-bill-trigger" variant="ghost" size="sm" showText={false} />
+                </div>
+              </div>
 
-            <ShareBill variant="ghost" size="sm" showText={false} />
+              <div className="w-px h-4 bg-border" />
 
-            <div className="dock-divider" />
+              {/* Load Bill Dialog */}
+              <Dialog open={showLoadBillDialog} onOpenChange={setShowLoadBillDialog}>
+                <DialogTrigger asChild>
+                  <button
+                    className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                    title="Load bill by ID"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Load</span>
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Load Bill by ID</DialogTitle>
+                    <DialogDescription>
+                      Enter a bill ID to load a shared bill. You can find the bill ID in the share URL (after ?bill=)
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-4 py-4">
+                    <div className="flex flex-col gap-2">
+                      <Input
+                        placeholder="1763442653885-vlpkbu4"
+                        value={loadBillId}
+                        onChange={(e) => setLoadBillId(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleLoadBill()
+                          }
+                        }}
+                        className="font-mono text-sm"
+                        autoFocus
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Example: If the URL is <code className="px-1 bg-muted rounded">?bill=1763442653885-vlpkbu4</code>,<br />
+                        enter <code className="px-1 bg-muted rounded">1763442653885-vlpkbu4</code>
+                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowLoadBillDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleLoadBill}>
+                        Load Bill
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  onClick={handleNewBill}
-                  className="dock-item"
-                  aria-label="New Bill"
-                >
-                  <Plus className="h-5 w-5 text-foreground" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">New Bill</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              <div className="w-px h-4 bg-border" />
+
+              <button
+                onClick={() => dispatch({ type: 'UNDO' })}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Undo"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">⌘Z</kbd>
+                <span>Undo</span>
+              </button>
+
+              <button
+                onClick={() => dispatch({ type: 'REDO' })}
+                className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+                title="Redo"
+              >
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground rounded text-[10px] font-medium border border-border/50 transition-colors">⌘⇧Z</kbd>
+                <span>Redo</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* FOOTER - Bottom Left & Right */}
-      <footer className="fixed bottom-0 left-0 right-0 px-6 py-3 text-xs text-muted-foreground border-t border-border/30 bg-background/80 backdrop-blur-sm z-40 pointer-events-none">
+      {/* FOOTER */}
+      <footer className="fixed bottom-0 left-0 right-0 px-6 py-3 text-xs text-muted-foreground border-t-2 border-border bg-background/95 backdrop-blur-sm z-40 pointer-events-none font-receipt">
         <div className="container mx-auto max-w-5xl flex justify-between items-center">
           <span className="pointer-events-auto">
             Crafted by{' '}
@@ -263,7 +521,7 @@ export default function HomePage() {
               href="https://anuragd.me"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium hover:text-primary transition-colors"
+              className="font-medium hover:text-primary transition-colors underline"
             >
               anuragdhungana
             </a>
@@ -272,7 +530,7 @@ export default function HomePage() {
             href="https://github.com/aarekaz/splitsimple"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium hover:text-primary transition-colors pointer-events-auto"
+            className="font-medium hover:text-primary transition-colors pointer-events-auto underline"
           >
             View Source on GitHub
           </a>

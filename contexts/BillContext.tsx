@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useReducer, useEffect } from "react"
 import { getBillFromCloud, storeBillInCloud } from "@/lib/sharing"
+import { migrateBillSchema } from "@/lib/validation"
 
 // Types
 export type SyncStatus = "never_synced" | "syncing" | "synced" | "error"
@@ -261,6 +262,7 @@ function billReducer(state: BillState, action: BillAction): BillState {
           ...state,
           currentBill: previousBill,
           historyIndex: state.historyIndex - 1,
+          syncStatus: "never_synced", // Mark as needing sync after undo
         }
       }
       return state
@@ -324,7 +326,9 @@ const loadBillFromLocalStorage = (billId: string): Bill | null => {
 }
 
 const generateShareUrl = (billId: string): string => {
-  return `${window.location.origin}${window.location.pathname}?bill=${billId}`
+  // Ensure we always use the root path for sharing
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  return `${baseUrl}/?bill=${billId}`
 }
 
 export { saveBillToLocalStorage, loadBillFromLocalStorage, generateShareUrl }
@@ -386,61 +390,64 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadBill = async () => {
       try {
-        // Check for shared bill in URL
+        // Check for shared bill in URL - support both ?bill= and ?share= parameters
         const urlParams = new URLSearchParams(window.location.search)
-        const sharedBillId = urlParams.get("bill")
-        
+        const sharedBillId = urlParams.get("bill") || urlParams.get("share")
+
         if (sharedBillId) {
           // First try to load from Redis (cloud)
           const cloudResult = await getBillFromCloud(sharedBillId)
           if (cloudResult.bill) {
             // Migration: Add missing fields to existing shared bills
-            if (!cloudResult.bill.status) {
-              cloudResult.bill.status = "draft"
+            const migratedBill = migrateBillSchema(cloudResult.bill)
+            dispatch({ type: "LOAD_BILL", payload: migratedBill })
+
+            // Dispatch success event for toast notification
+            if (typeof window !== 'undefined') {
+              const event = new CustomEvent('bill-loaded-success', {
+                detail: {
+                  title: cloudResult.bill.title,
+                  people: cloudResult.bill.people.length,
+                  items: cloudResult.bill.items.length
+                }
+              })
+              window.dispatchEvent(event)
             }
-            if (!cloudResult.bill.notes) {
-              cloudResult.bill.notes = ""
-            }
-            if (!cloudResult.bill.discount) {
-              cloudResult.bill.discount = ""
-            }
-            // Add quantity field to items that don't have it
-            if (cloudResult.bill.items) {
-              cloudResult.bill.items = cloudResult.bill.items.map((item: any) => ({
-                ...item,
-                quantity: item.quantity || 1
-              }))
-            }
-            dispatch({ type: "LOAD_BILL", payload: cloudResult.bill })
             return
           }
-          
+
           // Fallback to localStorage for backwards compatibility
           const localSharedBill = loadBillFromLocalStorage(sharedBillId)
           if (localSharedBill) {
             // Migration: Add missing fields to existing local shared bills
-            if (!localSharedBill.status) {
-              localSharedBill.status = "draft"
+            const migratedBill = migrateBillSchema(localSharedBill)
+            dispatch({ type: "LOAD_BILL", payload: migratedBill })
+
+            // Dispatch success event for toast notification
+            if (typeof window !== 'undefined') {
+              const event = new CustomEvent('bill-loaded-success', {
+                detail: {
+                  title: localSharedBill.title,
+                  people: localSharedBill.people.length,
+                  items: localSharedBill.items.length
+                }
+              })
+              window.dispatchEvent(event)
             }
-            if (!localSharedBill.notes) {
-              localSharedBill.notes = ""
-            }
-            if (!localSharedBill.discount) {
-              localSharedBill.discount = ""
-            }
-            // Add quantity field to items that don't have it
-            if (localSharedBill.items) {
-              localSharedBill.items = localSharedBill.items.map((item: any) => ({
-                ...item,
-                quantity: item.quantity || 1
-              }))
-            }
-            dispatch({ type: "LOAD_BILL", payload: localSharedBill })
             return
           }
-          
-          // If shared bill not found, show error but continue with default
-          console.warn(`Shared bill ${sharedBillId} not found in cloud or local storage`)
+
+          // If shared bill not found, dispatch error event
+          console.error(`[BillContext] Shared bill ${sharedBillId} not found in cloud or local storage`)
+          if (typeof window !== 'undefined') {
+            const event = new CustomEvent('bill-load-failed', {
+              detail: {
+                billId: sharedBillId,
+                error: cloudResult.error || 'Bill not found or expired'
+              }
+            })
+            window.dispatchEvent(event)
+          }
         }
         
         // Load current bill from localStorage

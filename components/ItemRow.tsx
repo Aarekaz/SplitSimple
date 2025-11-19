@@ -24,9 +24,21 @@ interface ItemRowProps {
 export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
   const [priceInput, setPriceInput] = useState(item.price.toString())
   const [isExpanded, setIsExpanded] = useState(false)
+  const [nameValidationError, setNameValidationError] = useState<string>("")
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate({ ...item, name: e.target.value })
+    const newName = e.target.value
+    const validation = validateItemName(newName)
+
+    // Update the item even if validation fails to allow typing
+    onUpdate({ ...item, name: newName })
+
+    // Show validation error if any
+    if (!validation.isValid && newName.trim() !== "") {
+      setNameValidationError(validation.error || "Invalid name")
+    } else {
+      setNameValidationError("")
+    }
   }
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,12 +70,20 @@ export function ItemRow({ item, people, onUpdate, onDelete }: ItemRowProps) {
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <Input
-                  value={item.name}
-                  onChange={handleNameChange}
-                  placeholder="Item name"
-                  className="h-9 text-sm font-medium"
-                />
+                <div className="flex-1">
+                  <Input
+                    value={item.name}
+                    onChange={handleNameChange}
+                    placeholder="Item name"
+                    className={`h-9 text-sm font-medium ${nameValidationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    aria-invalid={nameValidationError ? 'true' : 'false'}
+                  />
+                  {nameValidationError && !isExpanded && (
+                    <div className="text-xs text-destructive mt-0.5" role="alert">
+                      {nameValidationError}
+                    </div>
+                  )}
+                </div>
                 <div className="text-xs text-muted-foreground whitespace-nowrap">${parseFloat(item.price || '0').toFixed(2)}</div>
               </div>
               {!isExpanded && selectedPeople.length > 0 && (

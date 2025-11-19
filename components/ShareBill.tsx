@@ -18,9 +18,10 @@ interface ShareBillProps {
   variant?: "default" | "outline" | "ghost"
   size?: "default" | "sm" | "lg"
   showText?: boolean
+  id?: string  // Add id prop to allow external triggering
 }
 
-export function ShareBill({ variant = "outline", size = "sm", showText = true }: ShareBillProps) {
+export function ShareBill({ variant = "outline", size = "sm", showText = true, id }: ShareBillProps) {
   const { state } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
@@ -35,15 +36,27 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
     setIsOpen(open)
     if (open) {
       analytics.trackShareBillClicked("link")
+
+      // Validate bill ID exists
+      if (!state.currentBill.id) {
+        setStoreError("Invalid bill - no ID found")
+        toast({
+          title: "Error",
+          description: "Cannot share bill - missing bill ID",
+          variant: "destructive",
+        })
+        return
+      }
+
       const url = generateCloudShareUrl(state.currentBill.id)
       setShareUrl(url)
-      
+
       // Store bill in Redis when dialog opens
       setIsStoring(true)
       setStoreError(null)
       const result = await storeBillInCloud(state.currentBill)
       setIsStoring(false)
-      
+
       if (!result.success) {
         setStoreError(result.error || "Failed to store bill for sharing")
         toast({
@@ -141,9 +154,10 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true }:
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenDialog}>
       <DialogTrigger asChild>
-        <Button 
-          variant={variant} 
-          size={size} 
+        <Button
+          id={id}  // Allow external triggering via document.getElementById()
+          variant={variant}
+          size={size}
           className={showText ? "flex items-center gap-1.5 btn-smooth" : "dock-item p-0 h-auto bg-transparent border-0 hover:bg-primary/10"}
         >
           <Share2 className={showText ? "h-4 w-4 transition-transform duration-200 group-hover:scale-110" : "h-5 w-5 text-foreground"} />

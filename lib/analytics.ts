@@ -1,6 +1,7 @@
 "use client"
 
 import { usePostHog } from "posthog-js/react"
+import type { PostHog } from "posthog-js"
 import { useEffect } from "react"
 import type { Bill, Person, Item, SyncStatus } from "@/contexts/BillContext"
 import type { SplitMethod } from "@/components/SplitMethodSelector"
@@ -162,7 +163,7 @@ export interface UserFlowTracking {
 }
 
 class AnalyticsManager {
-  private posthog: any = null
+  private posthog: PostHog | null = null
   private userFlow: UserFlowTracking = {
     sessionId: this.generateSessionId(),
     billCreatedAt: null,
@@ -176,13 +177,13 @@ class AnalyticsManager {
   private stuckDetectionTimeout: NodeJS.Timeout | null = null
   private readonly STUCK_THRESHOLD = 30000 // 30 seconds
 
-  constructor(posthogInstance?: any) {
+  constructor(posthogInstance?: PostHog) {
     if (posthogInstance) {
       this.posthog = posthogInstance
     }
   }
 
-  setPostHog(posthogInstance: any) {
+  setPostHog(posthogInstance: PostHog) {
     this.posthog = posthogInstance
   }
 

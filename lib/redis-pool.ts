@@ -39,15 +39,15 @@ class RedisPool {
     })
 
     client.on('connect', () => {
-      console.log('Redis Client Connected')
+      // Redis client connected
     })
 
     client.on('reconnecting', () => {
-      console.log('Redis Client Reconnecting...')
+      // Redis client reconnecting
     })
 
     client.on('ready', () => {
-      console.log('Redis Client Ready')
+      // Redis client ready
     })
 
     return client

@@ -281,27 +281,6 @@ async function getAllBillsHandler(req: NextRequest) {
         : sorted[mid]
     }
     
-    // Debug logging (remove in production)
-    console.log('Admin Stats Debug:', {
-      totalBills,
-      sampleBill: bills[0] ? {
-        id: bills[0].id,
-        createdAt: bills[0].createdAt,
-        status: bills[0].bill.status,
-        accessCount: bills[0].accessCount,
-        itemsCount: bills[0].bill.items?.length,
-        peopleCount: bills[0].bill.people?.length
-      } : null,
-      todayStart: todayStart.toISOString(),
-      weekStart: weekStart.toISOString(),
-      monthStart: monthStart.toISOString(),
-      billsCreatedToday,
-      billsCreatedThisWeek,
-      billsCreatedThisMonth,
-      sharedBills,
-      completedBills
-    })
-
     const stats = {
       // Core metrics
       totalBills,
