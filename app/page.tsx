@@ -317,7 +317,30 @@ export default function HomePage() {
                 <span className="text-receipt-header hidden sm:inline" aria-label="Application name">SPLITSIMPLE</span>
               </div>
               <div className="w-px h-5 bg-border" aria-hidden="true" />
-              <span className="text-receipt-id" aria-label="Bill ID">#{state.currentBill.id.slice(0, 8).toUpperCase()}</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        copyToClipboard(state.currentBill.id)
+                        toast({
+                          title: "Bill ID copied!",
+                          description: `Full ID: ${state.currentBill.id}`,
+                          duration: 3000,
+                        })
+                      }}
+                      className="text-receipt-id hover:text-primary transition-colors cursor-pointer"
+                      aria-label="Copy full bill ID"
+                    >
+                      #{state.currentBill.id.slice(0, 8).toUpperCase()}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="font-mono text-xs">
+                    <p className="font-semibold mb-1">Click to copy full Bill ID</p>
+                    <p className="text-muted-foreground">{state.currentBill.id}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             {/* Center: Bill Title */}

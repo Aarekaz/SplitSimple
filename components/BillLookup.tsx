@@ -26,12 +26,15 @@ export function BillLookup() {
   const validateBillId = (id: string): boolean => {
     // Bill ID format: {timestamp}-{randomString}
     // Example: 1763442653885-vlpkbu4
-    const billIdPattern = /^\d{13}-[a-z0-9]+$/i
-    return billIdPattern.test(id.trim())
+    // Also accept just timestamp for better UX (we'll show helpful error)
+    const fullPattern = /^\d{13}-[a-z0-9]+$/i
+    const shortPattern = /^#?\d{7,13}$/i  // Accepts with or without # prefix
+
+    return fullPattern.test(id.trim()) || shortPattern.test(id.trim())
   }
 
   const handleLoadBill = async () => {
-    const trimmedId = billId.trim()
+    let trimmedId = billId.trim().replace(/^#/, '') // Remove # if present
 
     if (!trimmedId) {
       setError("Please enter a bill ID")
@@ -43,7 +46,22 @@ export function BillLookup() {
       return
     }
 
-    if (!validateBillId(trimmedId)) {
+    // Check if they entered just the short format (numbers only)
+    const shortPattern = /^\d{7,13}$/i
+    if (shortPattern.test(trimmedId)) {
+      setError("Need full bill ID with code (e.g., 1234567890123-abc1234)")
+      toast({
+        title: "Incomplete bill ID",
+        description: "The # number shown in the header is just for reference. You need the full bill ID from the share URL (includes the code after the dash).",
+        variant: "destructive",
+        duration: 6000,
+      })
+      return
+    }
+
+    // Validate full format
+    const fullPattern = /^\d{13}-[a-z0-9]+$/i
+    if (!fullPattern.test(trimmedId)) {
       setError("Invalid format. Expected: 1234567890123-abc1234")
       toast({
         title: "Invalid bill ID format",
