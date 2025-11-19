@@ -922,6 +922,42 @@
     10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
     20%, 40%, 60%, 80% { transform: translateX(4px); }
   }
+
+  /* Long press feedback animation */
+  @keyframes long-press-pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.98); opacity: 0.8; }
+    100% { transform: scale(0.96); opacity: 0.7; }
+  }
+
+  .long-press-active {
+    animation: long-press-pulse 0.5s ease-out;
+  }
+
+  /* Touch-specific improvements */
+  @media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets on mobile */
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Better tap highlighting */
+    * {
+      -webkit-tap-highlight-color: rgba(30, 64, 175, 0.1);
+    }
+
+    /* Disable hover states on touch devices */
+    .hover\:bg-muted:hover {
+      background-color: inherit;
+    }
+
+    /* Active states for touch */
+    button:active, a:active, [role="button"]:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+  }
 }
 
 /* Ensure proper font rendering */

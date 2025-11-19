@@ -503,11 +503,26 @@ export function LedgerItemsTable() {
                         >
                           <button
                             onClick={() => handleTogglePersonAssignment(item.id, person.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                handleTogglePersonAssignment(item.id, person.id)
+                              }
+                            }}
+                            tabIndex={0}
+                            aria-label={isAssigned
+                              ? `${person.name}: ${formatCurrency(personSplit)}. Press Enter to unassign`
+                              : `${person.name}: Not assigned. Press Enter to assign`
+                            }
+                            aria-checked={isAssigned}
+                            role="switch"
                             className={`
                               w-full h-full px-3 py-3 text-right cursor-pointer transition-all duration-200 group
+                              focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset
+                              active:scale-95 touch-manipulation
                               ${isAssigned
-                                ? 'person-cell-assigned hover:brightness-95'
-                                : 'person-cell-unassigned bg-muted/40 hover:bg-muted/60'
+                                ? 'person-cell-assigned hover:brightness-95 active:brightness-90'
+                                : 'person-cell-unassigned bg-muted/40 hover:bg-muted/60 active:bg-muted/70'
                               }
                             `}
                             style={isAssigned ? {

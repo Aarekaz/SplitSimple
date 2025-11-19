@@ -307,17 +307,17 @@ export default function HomePage() {
   return (
     <div className="min-h-screen pb-32">
       {/* Receipt-Style Header */}
-      <header className="glass-header px-4 py-3 sticky top-0 z-50">
+      <header className="glass-header px-4 py-3 sticky top-0 z-50" role="banner" aria-label="Bill header">
         <div className="container mx-auto max-w-5xl">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {/* Left: App branding & Receipt ID */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-primary" />
-                <span className="text-receipt-header hidden sm:inline">SPLITSIMPLE</span>
+              <div className="flex items-center gap-2" role="img" aria-label="SplitSimple logo">
+                <Receipt className="h-5 w-5 text-primary" aria-hidden="true" />
+                <span className="text-receipt-header hidden sm:inline" aria-label="Application name">SPLITSIMPLE</span>
               </div>
-              <div className="w-px h-5 bg-border" />
-              <span className="text-receipt-id">#{state.currentBill.id.slice(0, 8).toUpperCase()}</span>
+              <div className="w-px h-5 bg-border" aria-hidden="true" />
+              <span className="text-receipt-id" aria-label="Bill ID">#{state.currentBill.id.slice(0, 8).toUpperCase()}</span>
             </div>
 
             {/* Center: Bill Title */}
@@ -328,12 +328,13 @@ export default function HomePage() {
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
                 placeholder="Untitled Bill"
+                aria-label="Bill title"
                 className="text-receipt-title h-9 w-full border-2 border-border bg-card text-foreground px-3 hover:border-primary/50 focus:border-primary transition-all font-ui"
               />
             </div>
 
             {/* Right: Status & Sync */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" role="group" aria-label="Bill status and sync controls">
               <BillStatusIndicator compact={true} showSelector={true} />
               <SyncStatusIndicator compact />
             </div>
