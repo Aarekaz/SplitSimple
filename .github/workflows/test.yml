@@ -102,8 +102,7 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     needs: test
-    # Only run if SNYK_TOKEN is available (skip for forks)
-    if: secrets.SNYK_TOKEN != ''
+    # Will skip gracefully if SNYK_TOKEN is not available (continue-on-error is set below)
 
     steps:
     - name: Checkout code
