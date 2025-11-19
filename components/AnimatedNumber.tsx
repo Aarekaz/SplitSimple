@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, memo } from "react"
 import { formatNumber } from "@/lib/utils"
 
 interface AnimatedNumberProps {
@@ -12,7 +12,7 @@ interface AnimatedNumberProps {
   suffix?: string
 }
 
-export function AnimatedNumber({
+export const AnimatedNumber = memo(function AnimatedNumber({
   value,
   className = "",
   formatFn = formatNumber, // Use smart number formatting by default
@@ -85,4 +85,4 @@ export function AnimatedNumber({
       {prefix}{formatFn(displayValue)}{suffix}
     </span>
   )
-}
+})

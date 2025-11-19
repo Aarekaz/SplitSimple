@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import dynamic from "next/dynamic"
 import { LedgerItemsTable } from "@/components/LedgerItemsTable"
 import { MobileLedgerView } from "@/components/MobileLedgerView"
 import { PeopleBreakdownTable } from "@/components/PeopleBreakdownTable"
@@ -9,8 +10,6 @@ import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { MobileFirstUI } from "@/components/MobileFirstUI"
 import { MobileActionButton, MobileActionSpacer } from "@/components/MobileActionButton"
-import { ShareBill } from "@/components/ShareBill"
-import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp"
 import { BillLookup } from "@/components/BillLookup"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -27,6 +26,16 @@ import { useBillAnalytics } from "@/hooks/use-analytics"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { BillStatusIndicator } from "@/components/BillStatusIndicator"
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
+import { TIMING } from "@/lib/constants"
+
+// Lazy load heavy components
+const ShareBill = dynamic(() => import("@/components/ShareBill").then(mod => ({ default: mod.ShareBill })), {
+  loading: () => <Button size="sm" disabled><Share2 className="h-3.5 w-3.5" /></Button>
+})
+
+const KeyboardShortcutsHelp = dynamic(() => import("@/components/KeyboardShortcutsHelp").then(mod => ({ default: mod.KeyboardShortcutsHelp })), {
+  loading: () => null
+})
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
@@ -263,6 +272,11 @@ export default function HomePage() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault()
         dispatch({ type: 'UNDO' })
+        toast({
+          title: "Undo",
+          description: "Previous action has been undone",
+          duration: TIMING.TOAST_SHORT,
+        })
         analytics.trackFeatureUsed("keyboard_shortcut_undo")
       }
 
@@ -270,6 +284,11 @@ export default function HomePage() {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
         e.preventDefault()
         dispatch({ type: 'REDO' })
+        toast({
+          title: "Redo",
+          description: "Action has been restored",
+          duration: TIMING.TOAST_SHORT,
+        })
         analytics.trackFeatureUsed("keyboard_shortcut_redo")
       }
 
@@ -492,7 +511,14 @@ export default function HomePage() {
               <div className="w-px h-4 bg-border" />
 
               <button
-                onClick={() => dispatch({ type: 'UNDO' })}
+                onClick={() => {
+                  dispatch({ type: 'UNDO' })
+                  toast({
+                    title: "Undo",
+                    description: "Previous action has been undone",
+                    duration: TIMING.TOAST_SHORT,
+                  })
+                }}
                 className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
                 title="Undo"
               >
@@ -501,7 +527,14 @@ export default function HomePage() {
               </button>
 
               <button
-                onClick={() => dispatch({ type: 'REDO' })}
+                onClick={() => {
+                  dispatch({ type: 'REDO' })
+                  toast({
+                    title: "Redo",
+                    description: "Action has been restored",
+                    duration: TIMING.TOAST_SHORT,
+                  })
+                }}
                 className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
                 title="Redo"
               >

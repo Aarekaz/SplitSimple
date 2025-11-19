@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,7 +16,7 @@ interface PersonChipProps {
   size?: "sm" | "md" | "lg"
 }
 
-export function PersonChip({
+export const PersonChip = memo(function PersonChip({
   person,
   onRemove,
   isSelected,
@@ -85,4 +86,4 @@ export function PersonChip({
       )}
     </div>
   )
-}
+})

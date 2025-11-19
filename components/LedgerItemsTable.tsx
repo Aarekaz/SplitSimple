@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
-import { Plus, Trash2, Check, AlertCircle, Receipt, Split, BarChart2, Percent, DollarSign, ChevronRight } from "lucide-react"
+import { Plus, Trash2, Check, AlertCircle, Receipt, Split, BarChart2, Percent, DollarSign, ChevronRight, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useBill } from "@/contexts/BillContext"
@@ -12,7 +12,7 @@ import { AnimatedNumber } from "./AnimatedNumber"
 import { ItemContextMenu } from "./ItemContextMenu"
 import { calculateItemSplits, getBillSummary } from "@/lib/calculations"
 import { validateCurrencyInput } from "@/lib/validation"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, parseQuantityFromName } from "@/lib/utils"
 import type { Item, Person } from "@/contexts/BillContext"
 
 function getSplitMethodLabel(method: "even" | "shares" | "percent" | "exact"): string {
@@ -90,11 +90,26 @@ function getItemValidationStatus(item: Item): { isValid: boolean; warnings: stri
 export function LedgerItemsTable() {
   const { state, dispatch } = useBill()
   const [focusNewItem, setFocusNewItem] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const itemInputRefs = useRef<Record<string, { name: HTMLInputElement | null; price: HTMLInputElement | null }>>({})
 
   const items = state.currentBill.items
   const people = state.currentBill.people
   const summary = getBillSummary(state.currentBill)
+
+  // Filter items based on search query
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return items
+    const query = searchQuery.toLowerCase()
+    return items.filter(item =>
+      item.name.toLowerCase().includes(query) ||
+      item.price.includes(query) ||
+      people.some(person =>
+        item.splitWith.includes(person.id) &&
+        person.name.toLowerCase().includes(query)
+      )
+    )
+  }, [items, searchQuery, people])
 
   // Calculate responsive column width based on number of people
   const getPersonColumnWidth = () => {
@@ -304,6 +319,36 @@ export function LedgerItemsTable() {
         </Button>
       </div>
 
+      {/* Search Bar - shown only when there are 3 or more items */}
+      {items.length >= 3 && (
+        <div className="px-6 pt-4 pb-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search items by name, price, or person..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10 h-9 text-sm border-border/50 bg-background/50 focus:bg-background focus:border-primary/50 transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                title="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Showing {filteredItems.length} of {items.length} items
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Table */}
       <div className="overflow-x-auto relative">
         {/* Scroll indicator for many people */}
@@ -342,7 +387,7 @@ export function LedgerItemsTable() {
 
           {/* Body */}
           <tbody>
-            {items.map((item, index) => {
+            {filteredItems.map((item, index) => {
               const splits = getItemSplits(item.id)
               const validationStatus = getItemValidationStatus(item)
               const itemTotal = getItemTotal(item)
@@ -374,9 +419,20 @@ export function LedgerItemsTable() {
                             itemInputRefs.current[item.id]!.name = el
                           }}
                           value={item.name}
-                          onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
+                          onChange={(e) => {
+                            const inputValue = e.target.value
+                            // Parse quantity from name (e.g., "2x Coffee" → name: "Coffee", quantity: 2)
+                            const parsed = parseQuantityFromName(inputValue)
+                            if (parsed.quantity > 1) {
+                              // Only auto-set quantity if user typed a quantity pattern
+                              handleUpdateItem(item.id, { name: parsed.name, quantity: parsed.quantity })
+                            } else {
+                              // Just update the name
+                              handleUpdateItem(item.id, { name: inputValue })
+                            }
+                          }}
                           onKeyDown={(e) => handleKeyDown(e, item, index)}
-                          placeholder="Item name..."
+                          placeholder="Item name (e.g., 2x Coffee)..."
                           className="h-8 border-none bg-transparent focus-visible:ring-1 text-sm font-medium flex-1"
                         />
                         {/* Clickable split method badge */}
@@ -516,6 +572,28 @@ export function LedgerItemsTable() {
                 </React.Fragment>
               )
             })}
+            {/* No results message */}
+            {filteredItems.length === 0 && searchQuery && (
+              <tr>
+                <td colSpan={people.length + 5} className="py-12 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <Search className="h-8 w-8 text-muted-foreground/50" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-1">No items found</p>
+                      <p className="text-xs text-muted-foreground">
+                        Try a different search term or{" "}
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="text-primary hover:underline"
+                        >
+                          clear search
+                        </button>
+                      </p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
