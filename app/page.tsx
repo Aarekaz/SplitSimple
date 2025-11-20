@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import dynamic from "next/dynamic"
 import { LedgerItemsTable } from "@/components/LedgerItemsTable"
 import { MobileLedgerView } from "@/components/MobileLedgerView"
 import { PeopleBreakdownTable } from "@/components/PeopleBreakdownTable"
@@ -9,8 +10,7 @@ import { TotalsPanel } from "@/components/TotalsPanel"
 import { MobileTotalsBar } from "@/components/MobileTotalsBar"
 import { MobileFirstUI } from "@/components/MobileFirstUI"
 import { MobileActionButton, MobileActionSpacer } from "@/components/MobileActionButton"
-import { ShareBill } from "@/components/ShareBill"
-import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp"
+import { BillLookup } from "@/components/BillLookup"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -26,6 +26,16 @@ import { useBillAnalytics } from "@/hooks/use-analytics"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { BillStatusIndicator } from "@/components/BillStatusIndicator"
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator"
+import { TIMING } from "@/lib/constants"
+
+// Lazy load heavy components
+const ShareBill = dynamic(() => import("@/components/ShareBill").then(mod => ({ default: mod.ShareBill })), {
+  loading: () => <Button size="sm" disabled><Share2 className="h-3.5 w-3.5" /></Button>
+})
+
+const KeyboardShortcutsHelp = dynamic(() => import("@/components/KeyboardShortcutsHelp").then(mod => ({ default: mod.KeyboardShortcutsHelp })), {
+  loading: () => null
+})
 
 export default function HomePage() {
   const { state, dispatch } = useBill()
@@ -262,6 +272,11 @@ export default function HomePage() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault()
         dispatch({ type: 'UNDO' })
+        toast({
+          title: "Undo",
+          description: "Previous action has been undone",
+          duration: TIMING.TOAST_SHORT,
+        })
         analytics.trackFeatureUsed("keyboard_shortcut_undo")
       }
 
@@ -269,6 +284,11 @@ export default function HomePage() {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
         e.preventDefault()
         dispatch({ type: 'REDO' })
+        toast({
+          title: "Redo",
+          description: "Action has been restored",
+          duration: TIMING.TOAST_SHORT,
+        })
         analytics.trackFeatureUsed("keyboard_shortcut_redo")
       }
 
@@ -287,17 +307,40 @@ export default function HomePage() {
   return (
     <div className="min-h-screen pb-32">
       {/* Receipt-Style Header */}
-      <header className="glass-header px-4 py-3 sticky top-0 z-50">
+      <header className="glass-header px-4 py-3 sticky top-0 z-50" role="banner" aria-label="Bill header">
         <div className="container mx-auto max-w-5xl">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {/* Left: App branding & Receipt ID */}
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-primary" />
-                <span className="text-receipt-header hidden sm:inline">SPLITSIMPLE</span>
+              <div className="flex items-center gap-2" role="img" aria-label="SplitSimple logo">
+                <Receipt className="h-5 w-5 text-primary" aria-hidden="true" />
+                <span className="text-receipt-header hidden sm:inline" aria-label="Application name">SPLITSIMPLE</span>
               </div>
-              <div className="w-px h-5 bg-border" />
-              <span className="text-receipt-id">#{state.currentBill.id.slice(0, 8).toUpperCase()}</span>
+              <div className="w-px h-5 bg-border" aria-hidden="true" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        copyToClipboard(state.currentBill.id)
+                        toast({
+                          title: "Bill ID copied!",
+                          description: `Full ID: ${state.currentBill.id}`,
+                          duration: 3000,
+                        })
+                      }}
+                      className="text-receipt-id hover:text-primary transition-colors cursor-pointer"
+                      aria-label="Copy full bill ID"
+                    >
+                      #{state.currentBill.id.slice(0, 8).toUpperCase()}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="font-mono text-xs">
+                    <p className="font-semibold mb-1">Click to copy full Bill ID</p>
+                    <p className="text-muted-foreground">{state.currentBill.id}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             {/* Center: Bill Title */}
@@ -308,12 +351,13 @@ export default function HomePage() {
                 onChange={handleTitleChange}
                 onKeyDown={handleTitleKeyDown}
                 placeholder="Untitled Bill"
+                aria-label="Bill title"
                 className="text-receipt-title h-9 w-full border-2 border-border bg-card text-foreground px-3 hover:border-primary/50 focus:border-primary transition-all font-ui"
               />
             </div>
 
             {/* Right: Status & Sync */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" role="group" aria-label="Bill status and sync controls">
               <BillStatusIndicator compact={true} showSelector={true} />
               <SyncStatusIndicator compact />
             </div>
@@ -491,7 +535,14 @@ export default function HomePage() {
               <div className="w-px h-4 bg-border" />
 
               <button
-                onClick={() => dispatch({ type: 'UNDO' })}
+                onClick={() => {
+                  dispatch({ type: 'UNDO' })
+                  toast({
+                    title: "Undo",
+                    description: "Previous action has been undone",
+                    duration: TIMING.TOAST_SHORT,
+                  })
+                }}
                 className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
                 title="Undo"
               >
@@ -500,7 +551,14 @@ export default function HomePage() {
               </button>
 
               <button
-                onClick={() => dispatch({ type: 'REDO' })}
+                onClick={() => {
+                  dispatch({ type: 'REDO' })
+                  toast({
+                    title: "Redo",
+                    description: "Action has been restored",
+                    duration: TIMING.TOAST_SHORT,
+                  })
+                }}
                 className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
                 title="Redo"
               >
@@ -514,26 +572,60 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <footer className="fixed bottom-0 left-0 right-0 px-6 py-3 text-xs text-muted-foreground border-t-2 border-border bg-background/95 backdrop-blur-sm z-40 pointer-events-none font-receipt">
-        <div className="container mx-auto max-w-5xl flex justify-between items-center">
-          <span className="pointer-events-auto">
-            Crafted by{' '}
-            <a
-              href="https://anuragd.me"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium hover:text-primary transition-colors underline"
-            >
-              anuragdhungana
-            </a>
-          </span>
-          <a
-            href="https://github.com/aarekaz/splitsimple"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium hover:text-primary transition-colors pointer-events-auto underline"
-          >
-            View Source on GitHub
-          </a>
+        <div className="container mx-auto max-w-5xl">
+          {/* Desktop Layout */}
+          <div className="hidden md:flex justify-between items-center gap-4">
+            <BillLookup />
+            <div className="flex items-center gap-4">
+              <span className="pointer-events-auto">
+                Crafted by{' '}
+                <a
+                  href="https://anuragd.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium hover:text-primary transition-colors underline"
+                >
+                  anuragdhungana
+                </a>
+              </span>
+              <a
+                href="https://github.com/aarekaz/splitsimple"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium hover:text-primary transition-colors pointer-events-auto underline"
+              >
+                View Source on GitHub
+              </a>
+            </div>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="md:hidden flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <BillLookup />
+            </div>
+            <div className="flex justify-between items-center text-[10px]">
+              <span className="pointer-events-auto">
+                Crafted by{' '}
+                <a
+                  href="https://anuragd.me"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium hover:text-primary transition-colors underline"
+                >
+                  anuragd
+                </a>
+              </span>
+              <a
+                href="https://github.com/aarekaz/splitsimple"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium hover:text-primary transition-colors pointer-events-auto underline"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

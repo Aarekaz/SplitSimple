@@ -481,37 +481,41 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
     loadBill()
   }, [])
 
-  // Auto-save to localStorage whenever state changes
+  // Debounced auto-save to localStorage whenever state changes (500ms delay)
   useEffect(() => {
-    try {
-      // Save current bill to main storage
-      localStorage.setItem("splitSimple_currentBill", JSON.stringify(state.currentBill))
-      
-      // Also save to shared bills storage for sharing
-      saveBillToLocalStorage(state.currentBill)
-    } catch (error) {
-      console.error("Failed to save bill to localStorage:", error)
-      
-      // Try to save with a smaller payload if the bill is too large
+    const timeoutId = setTimeout(() => {
       try {
-        const minimalBill = {
-          ...state.currentBill,
-          items: state.currentBill.items.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            splitWith: item.splitWith,
-            method: item.method,
-            customSplits: item.customSplits
-          }))
+        // Save current bill to main storage
+        localStorage.setItem("splitSimple_currentBill", JSON.stringify(state.currentBill))
+
+        // Also save to shared bills storage for sharing
+        saveBillToLocalStorage(state.currentBill)
+      } catch (error) {
+        console.error("Failed to save bill to localStorage:", error)
+
+        // Try to save with a smaller payload if the bill is too large
+        try {
+          const minimalBill = {
+            ...state.currentBill,
+            items: state.currentBill.items.map(item => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              splitWith: item.splitWith,
+              method: item.method,
+              customSplits: item.customSplits
+            }))
+          }
+          localStorage.setItem("splitSimple_currentBill", JSON.stringify(minimalBill))
+        } catch (fallbackError) {
+          console.error("Failed to save even minimal bill:", fallbackError)
+          // At this point, we've exhausted our options - could show a user notification
         }
-        localStorage.setItem("splitSimple_currentBill", JSON.stringify(minimalBill))
-      } catch (fallbackError) {
-        console.error("Failed to save even minimal bill:", fallbackError)
-        // At this point, we've exhausted our options - could show a user notification
       }
-    }
+    }, 500)
+
+    return () => clearTimeout(timeoutId)
   }, [state.currentBill])
 
   // Debounced auto-sync to cloud when bill changes

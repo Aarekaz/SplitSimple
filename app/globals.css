@@ -922,6 +922,42 @@
     10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
     20%, 40%, 60%, 80% { transform: translateX(4px); }
   }
+
+  /* Long press feedback animation */
+  @keyframes long-press-pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.98); opacity: 0.8; }
+    100% { transform: scale(0.96); opacity: 0.7; }
+  }
+
+  .long-press-active {
+    animation: long-press-pulse 0.5s ease-out;
+  }
+
+  /* Touch-specific improvements */
+  @media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets on mobile */
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Better tap highlighting */
+    * {
+      -webkit-tap-highlight-color: rgba(30, 64, 175, 0.1);
+    }
+
+    /* Disable hover states on touch devices */
+    .hover\:bg-muted:hover {
+      background-color: inherit;
+    }
+
+    /* Active states for touch */
+    button:active, a:active, [role="button"]:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+  }
 }
 
 /* Ensure proper font rendering */
@@ -941,5 +977,54 @@
 
   .tabular-nums {
     font-feature-settings: "tnum" 1;
+  }
+
+  /* Custom scrollbar styling to match receipt theme */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #D4D2CC #FFFEF9;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #FFFEF9;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #D4D2CC;
+    border-radius: 4px;
+    border: 2px solid #FFFEF9;
+    transition: background 0.2s ease;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #A8A29E;
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background: #78716C;
+  }
+
+  /* Darker scrollbar for dark mode (if ever implemented) */
+  .dark *::-webkit-scrollbar-track {
+    background: #1A1918;
+  }
+
+  .dark *::-webkit-scrollbar-thumb {
+    background: #44403C;
+    border-color: #1A1918;
+  }
+
+  .dark *::-webkit-scrollbar-thumb:hover {
+    background: #57534E;
+  }
+
+  .dark * {
+    scrollbar-color: #44403C #1A1918;
   }
 }

@@ -71,6 +71,8 @@ export function logValidationResults(result: ValidationResult): void {
   if (!result.isValid) {
     console.error('❌ Environment validation failed:')
     result.errors.forEach(error => console.error(`  - ${error}`))
+  } else {
+    console.log('✅ Environment validation passed')
   }
 
   if (result.warnings.length > 0) {
