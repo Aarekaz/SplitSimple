@@ -12,6 +12,7 @@ export interface Person {
   id: string
   name: string
   color: string
+  colorIdx?: number  // Index into the COLORS array for Pro design
 }
 
 export interface Item {
@@ -176,6 +177,7 @@ function billReducer(state: BillState, action: BillAction): BillState {
         id: simpleUUID(),
         name: action.payload.name,
         color: newColor,
+        colorIdx: state.currentBill.people.length % 6, // Assign color index for Pro design (0-5)
       }
       const newBill = {
         ...state.currentBill,
@@ -469,6 +471,13 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             bill.items = bill.items.map((item: any) => ({
               ...item,
               quantity: item.quantity || 1
+            }))
+          }
+          // Add colorIdx to people that don't have it
+          if (bill.people) {
+            bill.people = bill.people.map((person: any, idx: number) => ({
+              ...person,
+              colorIdx: person.colorIdx !== undefined ? person.colorIdx : idx % 6
             }))
           }
           dispatch({ type: "LOAD_BILL", payload: bill })
