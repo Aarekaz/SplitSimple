@@ -13,7 +13,12 @@ import {
   Eraser,
   RotateCcw,
   RotateCw,
-  FileQuestion
+  FileQuestion,
+  Users,
+  Scale,
+  Percent,
+  Calculator,
+  ChevronDown
 } from 'lucide-react'
 import { useBill } from '@/contexts/BillContext'
 import type { Item, Person } from '@/contexts/BillContext'
@@ -26,6 +31,10 @@ import { BillStatusIndicator } from '@/components/BillStatusIndicator'
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator'
 import { useBillAnalytics } from '@/hooks/use-analytics'
 import { TIMING } from '@/lib/constants'
+import { getBillFromCloud } from '@/lib/sharing'
+import { migrateBillSchema } from '@/lib/validation'
+
+export type SplitMethod = "even" | "shares" | "percent" | "exact"
 
 // --- DESIGN TOKENS ---
 const COLORS = [
@@ -52,6 +61,8 @@ export function ProBillSplitter() {
   const [editingPerson, setEditingPerson] = useState<Person | null>(null)
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemId: string; personId?: string } | null>(null)
+  const [splitMethodDropdown, setSplitMethodDropdown] = useState<string | null>(null)
+  const [isLoadingBill, setIsLoadingBill] = useState(false)
 
   const editInputRef = useRef<HTMLInputElement>(null)
 
@@ -236,6 +247,82 @@ export function ProBillSplitter() {
     setEditingPerson(null)
   }
 
+  // --- Split Method Management ---
+  const splitMethodOptions = [
+    { value: 'even' as SplitMethod, label: 'Even Split', icon: Users },
+    { value: 'shares' as SplitMethod, label: 'By Shares', icon: Scale },
+    { value: 'percent' as SplitMethod, label: 'By Percent', icon: Percent },
+    { value: 'exact' as SplitMethod, label: 'Exact Amount', icon: Calculator },
+  ]
+
+  const getSplitMethodIcon = (method: SplitMethod) => {
+    const option = splitMethodOptions.find(o => o.value === method)
+    return option?.icon || Users
+  }
+
+  const changeSplitMethod = (itemId: string, newMethod: SplitMethod) => {
+    const item = items.find(i => i.id === itemId)
+    if (!item) return
+
+    const oldMethod = item.method
+    updateItem(itemId, { method: newMethod })
+    analytics.trackSplitMethodChanged(itemId, oldMethod, newMethod, item.splitWith.length)
+    toast({
+      title: "Split method changed",
+      description: `Changed to ${splitMethodOptions.find(o => o.value === newMethod)?.label}`,
+      duration: TIMING.TOAST_SHORT
+    })
+    setSplitMethodDropdown(null)
+  }
+
+  // --- Bill ID Loading ---
+  const handleLoadBill = useCallback(async () => {
+    const trimmedId = billId.trim()
+    if (!trimmedId) {
+      toast({
+        title: "Enter Bill ID",
+        description: "Please enter a bill ID to load",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsLoadingBill(true)
+    analytics.trackFeatureUsed("load_bill_by_id", { bill_id: trimmedId })
+
+    try {
+      const result = await getBillFromCloud(trimmedId)
+
+      if (result.error || !result.bill) {
+        toast({
+          title: "Bill not found",
+          description: result.error || "Could not find bill with that ID",
+          variant: "destructive"
+        })
+        analytics.trackError("load_bill_failed", result.error || "Bill not found")
+        return
+      }
+
+      const migratedBill = migrateBillSchema(result.bill)
+      dispatch({ type: 'LOAD_BILL', payload: migratedBill })
+      toast({
+        title: "Bill loaded!",
+        description: `Loaded "${migratedBill.title}"`
+      })
+      analytics.trackSharedBillLoaded("cloud")
+      setBillId('') // Clear input after successful load
+    } catch (error) {
+      toast({
+        title: "Load failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive"
+      })
+      analytics.trackError("load_bill_failed", error instanceof Error ? error.message : "Unknown error")
+    } finally {
+      setIsLoadingBill(false)
+    }
+  }, [billId, dispatch, toast, analytics])
+
   // --- Copy Breakdown ---
   const copyBreakdown = useCallback(async () => {
     if (people.length === 0) {
@@ -279,7 +366,10 @@ export function ProBillSplitter() {
   }
 
   useEffect(() => {
-    const handleClick = () => setContextMenu(null)
+    const handleClick = () => {
+      setContextMenu(null)
+      setSplitMethodDropdown(null)
+    }
     window.addEventListener('click', handleClick)
     return () => window.removeEventListener('click', handleClick)
   }, [])
@@ -500,6 +590,40 @@ export function ProBillSplitter() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Bill ID Loader */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+              <input
+                type="text"
+                value={billId}
+                onChange={(e) => setBillId(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleLoadBill()
+                  }
+                }}
+                placeholder="Bill ID..."
+                disabled={isLoadingBill}
+                className="h-8 w-32 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
+              />
+            </div>
+            <button
+              onClick={handleLoadBill}
+              disabled={isLoadingBill || !billId.trim()}
+              className="h-8 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              title="Load Bill (Enter)"
+            >
+              {isLoadingBill ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
+              ) : (
+                'Load'
+              )}
+            </button>
+          </div>
+
+          <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
+
           {/* Status & Sync */}
           <BillStatusIndicator compact={true} showSelector={true} />
           <SyncStatusIndicator compact />
@@ -610,14 +734,46 @@ export function ProBillSplitter() {
                         </button>
                       </div>
 
-                      {/* Name */}
-                      <div className="w-72 border-r border-slate-100 pro-sticky-left group-hover:bg-slate-50 transition-colors relative p-0">
-                        <GridCell
-                          row={rIdx}
-                          col="name"
-                          value={item.name}
-                          className="text-slate-700 font-medium bg-transparent font-inter"
-                        />
+                      {/* Name + Split Method Selector */}
+                      <div className="w-72 border-r border-slate-100 pro-sticky-left group-hover:bg-slate-50 transition-colors relative p-0 flex items-center">
+                        <div className="flex-1">
+                          <GridCell
+                            row={rIdx}
+                            col="name"
+                            value={item.name}
+                            className="text-slate-700 font-medium bg-transparent font-inter"
+                          />
+                        </div>
+                        <div className="relative pr-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSplitMethodDropdown(splitMethodDropdown === item.id ? null : item.id)
+                            }}
+                            className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors flex items-center gap-1"
+                            title="Change split method"
+                          >
+                            {React.createElement(getSplitMethodIcon(item.method), { size: 12 })}
+                            <ChevronDown size={10} />
+                          </button>
+                          {splitMethodDropdown === item.id && (
+                            <div
+                              className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-slate-200 w-40 py-1 z-50"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {splitMethodOptions.map(option => (
+                                <button
+                                  key={option.value}
+                                  onClick={() => changeSplitMethod(item.id, option.value)}
+                                  className={`w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 transition-colors font-inter ${item.method === option.value ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600'}`}
+                                >
+                                  {React.createElement(option.icon, { size: 12 })}
+                                  {option.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Price */}
@@ -908,7 +1064,7 @@ export function ProBillSplitter() {
                   value={state.currentBill.tax}
                   onChange={(e) => {
                     dispatch({ type: 'SET_TAX', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("tax", e.target.value)
+                    analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
                   }}
                   className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
                 />
@@ -920,7 +1076,7 @@ export function ProBillSplitter() {
                   value={state.currentBill.tip}
                   onChange={(e) => {
                     dispatch({ type: 'SET_TIP', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("tip", e.target.value)
+                    analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
                   }}
                   className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
                 />
@@ -932,11 +1088,40 @@ export function ProBillSplitter() {
                   value={state.currentBill.discount}
                   onChange={(e) => {
                     dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("discount", e.target.value)
+                    analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
                   }}
                   className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
                 />
               </div>
+
+              {/* Allocation Toggle */}
+              <div className="h-4 w-px bg-slate-200"></div>
+              <button
+                onClick={() => {
+                  const newAllocation = state.currentBill.taxTipAllocation === 'proportional' ? 'even' : 'proportional'
+                  dispatch({ type: 'SET_TAX_TIP_ALLOCATION', payload: newAllocation })
+                  toast({
+                    title: "Allocation changed",
+                    description: `Tax/Tip split ${newAllocation === 'proportional' ? 'proportionally' : 'evenly'}`,
+                    duration: TIMING.TOAST_SHORT
+                  })
+                  analytics.trackFeatureUsed("tax_tip_allocation_toggle", { allocation: newAllocation })
+                }}
+                className="flex flex-col items-center gap-0.5 px-2 py-1 hover:bg-slate-50 rounded transition-colors"
+                title={`Current: ${state.currentBill.taxTipAllocation === 'proportional' ? 'Proportional' : 'Even'} allocation`}
+              >
+                <div className="flex items-center gap-1">
+                  {state.currentBill.taxTipAllocation === 'proportional' ? (
+                    <Scale size={12} className="text-indigo-600" />
+                  ) : (
+                    <Equal size={12} className="text-indigo-600" />
+                  )}
+                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-inter">
+                    {state.currentBill.taxTipAllocation === 'proportional' ? 'Prop' : 'Even'}
+                  </span>
+                </div>
+                <span className="text-[8px] text-slate-400 font-inter">Allocation</span>
+              </button>
             </div>
           )}
           <div className="flex flex-col items-end justify-center">
