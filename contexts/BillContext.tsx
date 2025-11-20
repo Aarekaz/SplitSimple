@@ -61,6 +61,7 @@ type BillAction =
   | { type: "SET_DISCOUNT"; payload: string }
   | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" }
   | { type: "ADD_PERSON"; payload: { name: string; color: string } }
+  | { type: "UPDATE_PERSON"; payload: Person }
   | { type: "REMOVE_PERSON"; payload: string }
   | { type: "ADD_ITEM"; payload: Omit<Item, "id"> }
   | { type: "UPDATE_ITEM"; payload: Item }
@@ -182,6 +183,14 @@ function billReducer(state: BillState, action: BillAction): BillState {
       const newBill = {
         ...state.currentBill,
         people: [...state.currentBill.people, newPerson],
+      }
+      return addToHistory(state, newBill)
+    }
+
+    case "UPDATE_PERSON": {
+      const newBill = {
+        ...state.currentBill,
+        people: state.currentBill.people.map((p) => (p.id === action.payload.id ? action.payload : p)),
       }
       return addToHistory(state, newBill)
     }

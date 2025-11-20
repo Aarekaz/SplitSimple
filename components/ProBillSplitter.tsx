@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import {
   Plus,
-  Share2,
   Search,
   Trash2,
   Grid as GridIcon,
@@ -11,8 +10,10 @@ import {
   Equal,
   FileText,
   ClipboardCopy,
-  MoreHorizontal,
-  Eraser
+  Eraser,
+  RotateCcw,
+  RotateCw,
+  FileQuestion
 } from 'lucide-react'
 import { useBill } from '@/contexts/BillContext'
 import type { Item, Person } from '@/contexts/BillContext'
@@ -20,6 +21,11 @@ import { formatCurrency } from '@/lib/utils'
 import { getBillSummary, calculateItemSplits } from '@/lib/calculations'
 import { generateSummaryText, copyToClipboard } from '@/lib/export'
 import { useToast } from '@/hooks/use-toast'
+import { ShareBill } from '@/components/ShareBill'
+import { BillStatusIndicator } from '@/components/BillStatusIndicator'
+import { SyncStatusIndicator } from '@/components/SyncStatusIndicator'
+import { useBillAnalytics } from '@/hooks/use-analytics'
+import { TIMING } from '@/lib/constants'
 
 // --- DESIGN TOKENS ---
 const COLORS = [
@@ -36,8 +42,9 @@ const formatCurrencySimple = (amount: number) => {
 }
 
 export function ProBillSplitter() {
-  const { state, dispatch } = useBill()
+  const { state, dispatch, canUndo, canRedo } = useBill()
   const { toast } = useToast()
+  const analytics = useBillAnalytics()
   const [activeView, setActiveView] = useState<'ledger' | 'breakdown'>('ledger')
   const [billId, setBillId] = useState('')
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: string }>({ row: 0, col: 'name' })
@@ -111,7 +118,7 @@ export function ProBillSplitter() {
   }, [calculatedItems, people, subtotal, taxAmount, tipAmount, discountAmount])
 
   // --- Actions ---
-  const toggleAssignment = (itemId: string, personId: string) => {
+  const toggleAssignment = useCallback((itemId: string, personId: string) => {
     const item = items.find(i => i.id === itemId)
     if (!item) return
 
@@ -124,7 +131,7 @@ export function ProBillSplitter() {
       type: 'UPDATE_ITEM',
       payload: { ...item, splitWith: newSplitWith }
     })
-  }
+  }, [items, dispatch])
 
   const toggleAllAssignments = (itemId: string) => {
     const item = items.find(i => i.id === itemId)
@@ -157,7 +164,7 @@ export function ProBillSplitter() {
     })
   }
 
-  const addItem = () => {
+  const addItem = useCallback(() => {
     const newItem: Omit<Item, 'id'> = {
       name: '',
       price: '0',
@@ -166,13 +173,33 @@ export function ProBillSplitter() {
       method: 'even'
     }
     dispatch({ type: 'ADD_ITEM', payload: newItem })
-  }
+    analytics.trackItemAdded('0', 'even', people.length)
+  }, [people, dispatch, analytics])
 
   const deleteItem = (id: string) => {
+    const item = items.find(i => i.id === id)
     dispatch({ type: 'REMOVE_ITEM', payload: id })
+    if (item) {
+      analytics.trackItemRemoved(item.method)
+      toast({ title: "Item deleted", duration: TIMING.TOAST_SHORT })
+    }
   }
 
-  const addPerson = () => {
+  const duplicateItem = (item: Item) => {
+    const duplicated: Omit<Item, 'id'> = {
+      name: `${item.name} (copy)`,
+      price: item.price,
+      quantity: item.quantity,
+      splitWith: [...item.splitWith],
+      method: item.method,
+      customSplits: item.customSplits ? { ...item.customSplits } : undefined
+    }
+    dispatch({ type: 'ADD_ITEM', payload: duplicated })
+    analytics.trackFeatureUsed("duplicate_item")
+    toast({ title: "Item duplicated" })
+  }
+
+  const addPerson = useCallback(() => {
     const newName = `Person ${people.length + 1}`
     dispatch({
       type: 'ADD_PERSON',
@@ -181,33 +208,64 @@ export function ProBillSplitter() {
         color: COLORS[people.length % COLORS.length].hex
       }
     })
-  }
+    analytics.trackPersonAdded("manual")
+    toast({ title: "Person added", description: newName })
+  }, [people, dispatch, analytics, toast])
 
   const updatePerson = (updatedPerson: Person) => {
-    const oldPerson = people.find(p => p.id === updatedPerson.id)
-    if (!oldPerson) return
-
-    // We need to update the person - but BillContext doesn't have UPDATE_PERSON action
-    // So we remove and re-add (preserving assignments)
-    // Actually, we should just update the color in the person object
-    // For now, let's just close the modal since BillContext doesn't support person updates
+    dispatch({
+      type: 'UPDATE_PERSON',
+      payload: updatedPerson
+    })
+    toast({
+      title: "Person updated",
+      description: `${updatedPerson.name}'s details have been updated`
+    })
+    analytics.trackFeatureUsed("update_person")
     setEditingPerson(null)
   }
 
   const removePerson = (personId: string) => {
+    const person = people.find(p => p.id === personId)
+    const hadItems = items.some(i => i.splitWith.includes(personId))
     dispatch({ type: 'REMOVE_PERSON', payload: personId })
+    if (person) {
+      analytics.trackPersonRemoved(hadItems)
+      toast({ title: "Person removed", description: person.name })
+    }
     setEditingPerson(null)
   }
 
   // --- Copy Breakdown ---
-  const copyBreakdown = () => {
+  const copyBreakdown = useCallback(async () => {
+    if (people.length === 0) {
+      toast({
+        title: "No data to copy",
+        description: "Add people and items to generate a summary",
+        variant: "destructive"
+      })
+      analytics.trackError("copy_summary_failed", "No data to copy")
+      return
+    }
+
     const text = generateSummaryText(state.currentBill)
-    copyToClipboard(text)
-    toast({
-      title: "Copied!",
-      description: "Bill summary copied to clipboard"
-    })
-  }
+    const success = await copyToClipboard(text)
+    if (success) {
+      toast({
+        title: "Copied!",
+        description: "Bill summary copied to clipboard"
+      })
+      analytics.trackBillSummaryCopied()
+      analytics.trackFeatureUsed("copy_summary")
+    } else {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy to clipboard. Please try again.",
+        variant: "destructive"
+      })
+      analytics.trackError("copy_summary_failed", "Clipboard API failed")
+    }
+  }, [people, state.currentBill, toast, analytics])
 
   // --- Context Menu ---
   const handleContextMenu = (e: React.MouseEvent, itemId: string, personId?: string) => {
@@ -226,8 +284,78 @@ export function ProBillSplitter() {
     return () => window.removeEventListener('click', handleClick)
   }, [])
 
-  // --- Keyboard Navigation ---
+  // --- Global Keyboard Shortcuts ---
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
+    // Check if we're in an input field
+    const target = e.target as HTMLElement
+    const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true'
+
+    // Global shortcuts that work even in inputs
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault()
+      dispatch({ type: 'UNDO' })
+      toast({ title: "Undo", duration: TIMING.TOAST_SHORT })
+      analytics.trackUndoRedoUsed("undo", state.historyIndex)
+      return
+    }
+
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+      e.preventDefault()
+      dispatch({ type: 'REDO' })
+      toast({ title: "Redo", duration: TIMING.TOAST_SHORT })
+      analytics.trackUndoRedoUsed("redo", state.historyIndex)
+      return
+    }
+
+    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+      e.preventDefault()
+      if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
+        dispatch({ type: 'NEW_BILL' })
+        toast({ title: "New bill created" })
+        analytics.trackBillCreated()
+        analytics.trackFeatureUsed("keyboard_shortcut_new_bill")
+      }
+      return
+    }
+
+    // Shortcuts that don't work in inputs
+    if (!isInInput) {
+      // N: Add new item
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault()
+        addItem()
+        analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+        return
+      }
+
+      // P: Add person
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault()
+        addPerson()
+        analytics.trackFeatureUsed("keyboard_shortcut_add_person")
+        return
+      }
+
+      // C: Copy summary
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault()
+        copyBreakdown()
+        analytics.trackFeatureUsed("keyboard_shortcut_copy")
+        return
+      }
+
+      // S: Share (trigger click on share button)
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault()
+        // Find and click the share button
+        const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
+        if (shareButton) shareButton.click()
+        analytics.trackFeatureUsed("keyboard_shortcut_share")
+        return
+      }
+    }
+
+    // Grid navigation (only when not editing)
     if (activeView !== 'ledger') return
     if (editing) {
       if (e.key === 'Enter') {
@@ -271,7 +399,7 @@ export function ProBillSplitter() {
         if (item) toggleAssignment(item.id, selectedCell.col)
       }
     }
-  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment])
+  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex])
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
@@ -344,34 +472,42 @@ export function ProBillSplitter() {
           <div>
             <input
               value={title}
-              onChange={(e) => dispatch({ type: 'SET_BILL_TITLE', payload: e.target.value })}
+              onChange={(e) => {
+                dispatch({ type: 'SET_BILL_TITLE', payload: e.target.value })
+                analytics.trackTitleChanged(e.target.value)
+              }}
               className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-48 hover:text-indigo-600 transition-colors truncate font-inter"
               placeholder="Project Name"
             />
             <div className="text-[10px] font-medium text-slate-400 tracking-wide mt-0.5">SPLIT SIMPLE PRO</div>
           </div>
+
+          {/* New Bill Button */}
+          <button
+            onClick={() => {
+              if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
+                dispatch({ type: 'NEW_BILL' })
+                toast({ title: "New bill created" })
+                analytics.trackBillCreated()
+                analytics.trackFeatureUsed("new_bill")
+              }
+            }}
+            className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter"
+            title="New Bill (Cmd+N)"
+          >
+            <FileQuestion size={14} /> <span className="hidden md:inline">New</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Bill ID Input */}
-          <div className="hidden md:flex items-center relative group">
-            <Search size={14} className="absolute left-3 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input
-              value={billId}
-              onChange={(e) => setBillId(e.target.value)}
-              placeholder="Bill ID"
-              className="pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-l-md text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none w-24 transition-all font-inter"
-            />
-            <button className="bg-indigo-400 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-r-md transition-colors shadow-sm border border-indigo-400 border-l-0">
-              Load
-            </button>
-          </div>
+          {/* Status & Sync */}
+          <BillStatusIndicator compact={true} showSelector={true} />
+          <SyncStatusIndicator compact />
 
           <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
 
-          <button className="h-8 px-3 bg-white border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:border-indigo-200 hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm flex items-center gap-2 font-inter">
-            <Share2 size={14} /> <span className="hidden sm:inline">Share</span>
-          </button>
+          {/* Share Button */}
+          <ShareBill variant="outline" size="sm" showText={true} />
 
           <div className="hidden lg:block ml-2">
             <a
@@ -735,14 +871,45 @@ export function ProBillSplitter() {
         </div>
 
         <div className="flex items-center gap-6">
+          {/* Undo/Redo */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                dispatch({ type: 'UNDO' })
+                toast({ title: "Undone", duration: TIMING.TOAST_SHORT })
+                analytics.trackUndoRedoUsed("undo", state.historyIndex)
+              }}
+              disabled={!canUndo}
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Undo (Cmd+Z)"
+            >
+              <RotateCcw size={16} />
+            </button>
+            <button
+              onClick={() => {
+                dispatch({ type: 'REDO' })
+                toast({ title: "Redone", duration: TIMING.TOAST_SHORT })
+                analytics.trackUndoRedoUsed("redo", state.historyIndex)
+              }}
+              disabled={!canRedo}
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Redo (Cmd+Shift+Z)"
+            >
+              <RotateCw size={16} />
+            </button>
+          </div>
+
           {activeView === 'ledger' && (
-            <div className="flex items-center gap-3 border-r border-slate-200 pr-6">
+            <div className="flex items-center gap-3 border-l border-r border-slate-200 px-6">
               <div className="flex items-center gap-2">
                 <label className="font-bold text-slate-400 uppercase text-[10px] font-inter">Tax</label>
                 <input
                   type="number"
                   value={state.currentBill.tax}
-                  onChange={(e) => dispatch({ type: 'SET_TAX', payload: e.target.value })}
+                  onChange={(e) => {
+                    dispatch({ type: 'SET_TAX', payload: e.target.value })
+                    analytics.trackTaxTipDiscountUsed("tax", e.target.value)
+                  }}
                   className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
                 />
               </div>
@@ -751,7 +918,22 @@ export function ProBillSplitter() {
                 <input
                   type="number"
                   value={state.currentBill.tip}
-                  onChange={(e) => dispatch({ type: 'SET_TIP', payload: e.target.value })}
+                  onChange={(e) => {
+                    dispatch({ type: 'SET_TIP', payload: e.target.value })
+                    analytics.trackTaxTipDiscountUsed("tip", e.target.value)
+                  }}
+                  className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="font-bold text-slate-400 uppercase text-[10px] font-inter">Disc</label>
+                <input
+                  type="number"
+                  value={state.currentBill.discount}
+                  onChange={(e) => {
+                    dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
+                    analytics.trackTaxTipDiscountUsed("discount", e.target.value)
+                  }}
                   className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
                 />
               </div>
@@ -790,6 +972,16 @@ export function ProBillSplitter() {
             </button>
           ) : (
             <>
+              <button
+                className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 font-inter"
+                onClick={() => {
+                  const item = items.find(i => i.id === contextMenu.itemId)
+                  if (item) duplicateItem(item)
+                  setContextMenu(null)
+                }}
+              >
+                <Plus size={14} /> Duplicate Item
+              </button>
               <button
                 className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 font-inter"
                 onClick={() => {
