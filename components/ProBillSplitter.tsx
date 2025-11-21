@@ -50,6 +50,60 @@ const formatCurrencySimple = (amount: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
 }
 
+// --- Grid Cell Component (moved outside to prevent re-creation on every render) ---
+const GridCell = React.memo(({
+  row,
+  col,
+  value,
+  type = 'text',
+  className = '',
+  isSelected,
+  isEditing,
+  onEdit,
+  onClick,
+  editInputRef
+}: {
+  row: number
+  col: string
+  value: string | number
+  type?: string
+  className?: string
+  isSelected: boolean
+  isEditing: boolean
+  onEdit: (value: string) => void
+  onClick: () => void
+  editInputRef: React.RefObject<HTMLInputElement | null>
+}) => {
+  if (isEditing) {
+    return (
+      <div className="absolute inset-0 z-30">
+        <input
+          ref={editInputRef}
+          type={type}
+          value={value}
+          onChange={e => onEdit(e.target.value)}
+          className={`w-full h-full px-4 py-3 text-sm border-2 border-indigo-500 focus:outline-none ${className}`}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      className={`
+        w-full h-full px-4 py-3 flex items-center cursor-text relative
+        ${isSelected ? 'ring-inset ring-2 ring-indigo-500 z-10' : ''}
+        ${className}
+      `}
+    >
+      <span className="truncate w-full">{value}</span>
+    </div>
+  )
+})
+
+GridCell.displayName = 'GridCell'
+
 export function ProBillSplitter() {
   const { state, dispatch, canUndo, canRedo } = useBill()
   const { toast } = useToast()
@@ -502,55 +556,6 @@ export function ProBillSplitter() {
     }
   }, [editing])
 
-  // --- Grid Cell Component ---
-  const GridCell = ({ row, col, value, type = 'text', className = '' }: {
-    row: number
-    col: string
-    value: string | number
-    type?: string
-    className?: string
-  }) => {
-    const isSelected = selectedCell.row === row && selectedCell.col === col
-    const isEditing = editing && isSelected
-
-    if (isEditing) {
-      return (
-        <div className="absolute inset-0 z-30">
-          <input
-            ref={editInputRef}
-            type={type}
-            value={value}
-            onChange={e => {
-              const item = items[row]
-              if (item) {
-                if (col === 'name') updateItem(item.id, { name: e.target.value })
-                else if (col === 'price') updateItem(item.id, { price: e.target.value })
-                else if (col === 'qty') updateItem(item.id, { quantity: parseInt(e.target.value) || 1 })
-              }
-            }}
-            className={`w-full h-full px-4 py-3 text-sm border-2 border-indigo-500 focus:outline-none ${className}`}
-          />
-        </div>
-      )
-    }
-
-    return (
-      <div
-        onClick={() => {
-          setSelectedCell({ row, col })
-          setEditing(true)
-        }}
-        className={`
-          w-full h-full px-4 py-3 flex items-center cursor-text relative
-          ${isSelected ? 'ring-inset ring-2 ring-indigo-500 z-10' : ''}
-          ${className}
-        `}
-      >
-        <span className="truncate w-full">{value}</span>
-      </div>
-    )
-  }
-
   return (
     <div className="pro-app-shell selection:bg-indigo-100 selection:text-indigo-900">
       {/* --- Header --- */}
@@ -742,6 +747,14 @@ export function ProBillSplitter() {
                             col="name"
                             value={item.name}
                             className="text-slate-700 font-medium bg-transparent font-inter"
+                            isSelected={selectedCell.row === rIdx && selectedCell.col === 'name'}
+                            isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'name'}
+                            onEdit={(value) => updateItem(item.id, { name: value })}
+                            onClick={() => {
+                              setSelectedCell({ row: rIdx, col: 'name' })
+                              setEditing(true)
+                            }}
+                            editInputRef={editInputRef}
                           />
                         </div>
                         <div className="relative pr-2">
@@ -784,6 +797,14 @@ export function ProBillSplitter() {
                           value={item.price}
                           type="number"
                           className="text-right font-space-mono text-slate-600 bg-slate-50/30"
+                          isSelected={selectedCell.row === rIdx && selectedCell.col === 'price'}
+                          isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'price'}
+                          onEdit={(value) => updateItem(item.id, { price: value })}
+                          onClick={() => {
+                            setSelectedCell({ row: rIdx, col: 'price' })
+                            setEditing(true)
+                          }}
+                          editInputRef={editInputRef}
                         />
                       </div>
 
@@ -795,6 +816,14 @@ export function ProBillSplitter() {
                           value={item.qty}
                           type="number"
                           className="text-center font-space-mono text-slate-500 bg-slate-50/30"
+                          isSelected={selectedCell.row === rIdx && selectedCell.col === 'qty'}
+                          isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'qty'}
+                          onEdit={(value) => updateItem(item.id, { quantity: parseInt(value) || 1 })}
+                          onClick={() => {
+                            setSelectedCell({ row: rIdx, col: 'qty' })
+                            setEditing(true)
+                          }}
+                          editInputRef={editInputRef}
                         />
                       </div>
 
