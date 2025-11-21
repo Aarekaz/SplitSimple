@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -1026,5 +1027,116 @@
 
   .dark * {
     scrollbar-color: #44403C #1A1918;
+  }
+
+  /* ===== Pro SaaS Design System ===== */
+  .pro-app-shell {
+    @apply h-screen w-full overflow-hidden relative;
+    background: #F8FAFC; /* slate-50 */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .pro-header {
+    @apply fixed top-0 left-0 right-0 flex items-center justify-between px-6;
+    height: 64px;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #E2E8F0; /* slate-200 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .pro-footer {
+    @apply fixed bottom-0 left-0 right-0 flex items-center justify-between px-6;
+    height: 56px;
+    z-index: 40;
+    background: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  .pro-main {
+    @apply absolute inset-0 overflow-hidden;
+    padding-top: 64px;
+    padding-bottom: 56px;
+    z-index: 10;
+  }
+
+  .pro-grid {
+    display: grid;
+    grid-template-columns:
+      48px
+      minmax(240px, 2fr)
+      100px
+      80px
+      repeat(var(--person-count, 3), minmax(100px, 1fr))
+      100px;
+  }
+
+  .pro-sticky-left {
+    @apply sticky left-0 bg-white z-20;
+    box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .pro-sticky-right {
+    @apply sticky right-0 bg-white z-20;
+    box-shadow: -2px 0 5px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .pro-grid-header {
+    @apply sticky top-0 bg-white border-b border-slate-200;
+    z-index: 30;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .pro-tile-inactive {
+    @apply flex items-center justify-center transition-all duration-100;
+    color: #94A3B8; /* slate-400 */
+    background: transparent;
+  }
+
+  .pro-tile-active {
+    @apply flex items-center justify-center rounded-md transition-all duration-100;
+    color: white;
+  }
+
+  .pro-tile-active:hover {
+    filter: brightness(0.95);
+  }
+
+  .pro-tile-active:active {
+    transform: scale(0.95);
+  }
+
+  .font-space-mono {
+    font-family: 'Space Mono', monospace;
+  }
+
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Minimal scrollbar for pro design */
+  .pro-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .pro-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .pro-scrollbar::-webkit-scrollbar-thumb {
+    background: #CBD5E1; /* slate-300 */
+    border-radius: 3px;
+  }
+
+  .pro-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8; /* slate-400 */
+  }
+
+  .pro-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
   }
 }
