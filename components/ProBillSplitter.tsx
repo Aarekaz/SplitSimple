@@ -59,8 +59,10 @@ const GridCell = React.memo(({
   className = '',
   isSelected,
   isEditing,
-  onEdit,
-  onClick,
+  itemId,
+  field,
+  onCellEdit,
+  onCellClick,
   editInputRef
 }: {
   row: number
@@ -70,8 +72,10 @@ const GridCell = React.memo(({
   className?: string
   isSelected: boolean
   isEditing: boolean
-  onEdit: (value: string) => void
-  onClick: () => void
+  itemId: string
+  field: 'name' | 'price' | 'qty'
+  onCellEdit: (itemId: string, field: 'name' | 'price' | 'qty', value: string) => void
+  onCellClick: (row: number, col: string) => void
   editInputRef: React.RefObject<HTMLInputElement | null>
 }) => {
   if (isEditing) {
@@ -81,7 +85,7 @@ const GridCell = React.memo(({
           ref={editInputRef}
           type={type}
           value={value}
-          onChange={e => onEdit(e.target.value)}
+          onChange={e => onCellEdit(itemId, field, e.target.value)}
           className={`w-full h-full px-4 py-3 text-sm border-2 border-indigo-500 focus:outline-none ${className}`}
         />
       </div>
@@ -90,7 +94,7 @@ const GridCell = React.memo(({
 
   return (
     <div
-      onClick={onClick}
+      onClick={() => onCellClick(row, col)}
       className={`
         w-full h-full px-4 py-3 flex items-center cursor-text relative
         ${isSelected ? 'ring-inset ring-2 ring-indigo-500 z-10' : ''}
@@ -103,6 +107,14 @@ const GridCell = React.memo(({
 })
 
 GridCell.displayName = 'GridCell'
+
+// --- Split Method Options (constant) ---
+const splitMethodOptions = [
+  { value: 'even' as SplitMethod, label: 'Even Split', icon: Users },
+  { value: 'shares' as SplitMethod, label: 'By Shares', icon: Scale },
+  { value: 'percent' as SplitMethod, label: 'By Percent', icon: Percent },
+  { value: 'exact' as SplitMethod, label: 'Exact Amount', icon: Calculator },
+]
 
 export function ProBillSplitter() {
   const { state, dispatch, canUndo, canRedo } = useBill()
@@ -207,7 +219,7 @@ export function ProBillSplitter() {
     })
   }, [items, dispatch])
 
-  const toggleAllAssignments = (itemId: string) => {
+  const toggleAllAssignments = useCallback((itemId: string) => {
     const item = items.find(i => i.id === itemId)
     if (!item) return
 
@@ -218,25 +230,25 @@ export function ProBillSplitter() {
       type: 'UPDATE_ITEM',
       payload: { ...item, splitWith: newSplitWith }
     })
-  }
+  }, [items, people, dispatch])
 
-  const clearRowAssignments = (itemId: string) => {
+  const clearRowAssignments = useCallback((itemId: string) => {
     const item = items.find(i => i.id === itemId)
     if (!item) return
     dispatch({
       type: 'UPDATE_ITEM',
       payload: { ...item, splitWith: [] }
     })
-  }
+  }, [items, dispatch])
 
-  const updateItem = (id: string, updates: Partial<Item>) => {
+  const updateItem = useCallback((id: string, updates: Partial<Item>) => {
     const item = items.find(i => i.id === id)
     if (!item) return
     dispatch({
       type: 'UPDATE_ITEM',
       payload: { ...item, ...updates }
     })
-  }
+  }, [items, dispatch])
 
   const addItem = useCallback(() => {
     const newItem: Omit<Item, 'id'> = {
@@ -250,16 +262,16 @@ export function ProBillSplitter() {
     analytics.trackItemAdded('0', 'even', people.length)
   }, [people, dispatch, analytics])
 
-  const deleteItem = (id: string) => {
+  const deleteItem = useCallback((id: string) => {
     const item = items.find(i => i.id === id)
     dispatch({ type: 'REMOVE_ITEM', payload: id })
     if (item) {
       analytics.trackItemRemoved(item.method)
       toast({ title: "Item deleted", duration: TIMING.TOAST_SHORT })
     }
-  }
+  }, [items, dispatch, analytics, toast])
 
-  const duplicateItem = (item: Item) => {
+  const duplicateItem = useCallback((item: Item) => {
     const duplicated: Omit<Item, 'id'> = {
       name: `${item.name} (copy)`,
       price: item.price,
@@ -271,7 +283,7 @@ export function ProBillSplitter() {
     dispatch({ type: 'ADD_ITEM', payload: duplicated })
     analytics.trackFeatureUsed("duplicate_item")
     toast({ title: "Item duplicated" })
-  }
+  }, [dispatch, analytics, toast])
 
   const addPerson = useCallback(() => {
     const newName = `Person ${people.length + 1}`
@@ -286,7 +298,7 @@ export function ProBillSplitter() {
     toast({ title: "Person added", description: newName })
   }, [people, dispatch, analytics, toast])
 
-  const updatePerson = (updatedPerson: Person) => {
+  const updatePerson = useCallback((updatedPerson: Person) => {
     dispatch({
       type: 'UPDATE_PERSON',
       payload: updatedPerson
@@ -297,9 +309,9 @@ export function ProBillSplitter() {
     })
     analytics.trackFeatureUsed("update_person")
     setEditingPerson(null)
-  }
+  }, [dispatch, toast, analytics])
 
-  const removePerson = (personId: string) => {
+  const removePerson = useCallback((personId: string) => {
     const person = people.find(p => p.id === personId)
     const hadItems = items.some(i => i.splitWith.includes(personId))
     dispatch({ type: 'REMOVE_PERSON', payload: personId })
@@ -308,22 +320,15 @@ export function ProBillSplitter() {
       toast({ title: "Person removed", description: person.name })
     }
     setEditingPerson(null)
-  }
+  }, [people, items, dispatch, analytics, toast])
 
   // --- Split Method Management ---
-  const splitMethodOptions = [
-    { value: 'even' as SplitMethod, label: 'Even Split', icon: Users },
-    { value: 'shares' as SplitMethod, label: 'By Shares', icon: Scale },
-    { value: 'percent' as SplitMethod, label: 'By Percent', icon: Percent },
-    { value: 'exact' as SplitMethod, label: 'Exact Amount', icon: Calculator },
-  ]
-
   const getSplitMethodIcon = (method: SplitMethod) => {
     const option = splitMethodOptions.find(o => o.value === method)
     return option?.icon || Users
   }
 
-  const changeSplitMethod = (itemId: string, newMethod: SplitMethod) => {
+  const changeSplitMethod = useCallback((itemId: string, newMethod: SplitMethod) => {
     const item = items.find(i => i.id === itemId)
     if (!item) return
 
@@ -336,7 +341,7 @@ export function ProBillSplitter() {
       duration: TIMING.TOAST_SHORT
     })
     setSplitMethodDropdown(null)
-  }
+  }, [items, updateItem, analytics, toast])
 
   // --- Bill ID Loading ---
   const handleLoadBill = useCallback(async () => {
@@ -433,8 +438,24 @@ export function ProBillSplitter() {
     }
   }, [people, state.currentBill, toast, analytics])
 
+  // --- Stable Grid Cell Callbacks (for performance) ---
+  const handleCellEdit = useCallback((itemId: string, field: 'name' | 'price' | 'qty', value: string) => {
+    if (field === 'name') {
+      updateItem(itemId, { name: value })
+    } else if (field === 'price') {
+      updateItem(itemId, { price: value })
+    } else if (field === 'qty') {
+      updateItem(itemId, { quantity: parseInt(value) || 1 })
+    }
+  }, [updateItem])
+
+  const handleCellClick = useCallback((row: number, col: string) => {
+    setSelectedCell({ row, col })
+    setEditing(true)
+  }, [])
+
   // --- Context Menu ---
-  const handleContextMenu = (e: React.MouseEvent, itemId: string, personId?: string) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, itemId: string, personId?: string) => {
     e.preventDefault()
     setContextMenu({
       x: e.clientX,
@@ -442,7 +463,7 @@ export function ProBillSplitter() {
       itemId,
       personId
     })
-  }
+  }, [])
 
   useEffect(() => {
     const handleClick = () => {
@@ -798,11 +819,10 @@ export function ProBillSplitter() {
                             className="text-slate-700 font-medium bg-transparent font-inter"
                             isSelected={selectedCell.row === rIdx && selectedCell.col === 'name'}
                             isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'name'}
-                            onEdit={(value) => updateItem(item.id, { name: value })}
-                            onClick={() => {
-                              setSelectedCell({ row: rIdx, col: 'name' })
-                              setEditing(true)
-                            }}
+                            itemId={item.id}
+                            field="name"
+                            onCellEdit={handleCellEdit}
+                            onCellClick={handleCellClick}
                             editInputRef={editInputRef}
                           />
                         </div>
@@ -848,11 +868,10 @@ export function ProBillSplitter() {
                           className="text-right font-space-mono text-slate-600 bg-slate-50/30"
                           isSelected={selectedCell.row === rIdx && selectedCell.col === 'price'}
                           isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'price'}
-                          onEdit={(value) => updateItem(item.id, { price: value })}
-                          onClick={() => {
-                            setSelectedCell({ row: rIdx, col: 'price' })
-                            setEditing(true)
-                          }}
+                          itemId={item.id}
+                          field="price"
+                          onCellEdit={handleCellEdit}
+                          onCellClick={handleCellClick}
                           editInputRef={editInputRef}
                         />
                       </div>
@@ -867,11 +886,10 @@ export function ProBillSplitter() {
                           className="text-center font-space-mono text-slate-500 bg-slate-50/30"
                           isSelected={selectedCell.row === rIdx && selectedCell.col === 'qty'}
                           isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'qty'}
-                          onEdit={(value) => updateItem(item.id, { quantity: parseInt(value) || 1 })}
-                          onClick={() => {
-                            setSelectedCell({ row: rIdx, col: 'qty' })
-                            setEditing(true)
-                          }}
+                          itemId={item.id}
+                          field="qty"
+                          onCellEdit={handleCellEdit}
+                          onCellClick={handleCellClick}
                           editInputRef={editInputRef}
                         />
                       </div>
