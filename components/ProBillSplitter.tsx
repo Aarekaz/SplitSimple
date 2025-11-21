@@ -119,6 +119,7 @@ export function ProBillSplitter() {
   const [isLoadingBill, setIsLoadingBill] = useState(false)
 
   const editInputRef = useRef<HTMLInputElement>(null)
+  const loadBillRequestRef = useRef<string | null>(null) // Track current load request to prevent race conditions
 
   const people = state.currentBill.people
   const items = state.currentBill.items
@@ -136,11 +137,19 @@ export function ProBillSplitter() {
     return { ...item, totalItemPrice, pricePerPerson, price, qty }
   }), [items])
 
-  const subtotal = calculatedItems.reduce((acc, item) => acc + item.totalItemPrice, 0)
-  const taxAmount = parseFloat(state.currentBill.tax || '0')
-  const tipAmount = parseFloat(state.currentBill.tip || '0')
-  const discountAmount = parseFloat(state.currentBill.discount || '0')
-  const grandTotal = subtotal + taxAmount + tipAmount - discountAmount
+  const { subtotal, taxAmount, tipAmount, discountAmount, grandTotal } = useMemo(() => {
+    const sub = calculatedItems.reduce((acc, item) => acc + item.totalItemPrice, 0)
+    const tax = parseFloat(state.currentBill.tax || '0')
+    const tip = parseFloat(state.currentBill.tip || '0')
+    const disc = parseFloat(state.currentBill.discount || '0')
+    return {
+      subtotal: sub,
+      taxAmount: tax,
+      tipAmount: tip,
+      discountAmount: disc,
+      grandTotal: sub + tax + tip - disc
+    }
+  }, [calculatedItems, state.currentBill.tax, state.currentBill.tip, state.currentBill.discount])
 
   const personFinalShares = useMemo(() => {
     const shares: Record<string, {
@@ -341,11 +350,21 @@ export function ProBillSplitter() {
       return
     }
 
+    // Create unique request ID to prevent race conditions
+    const requestId = `${Date.now()}-${Math.random()}`
+    loadBillRequestRef.current = requestId
+
     setIsLoadingBill(true)
     analytics.trackFeatureUsed("load_bill_by_id", { bill_id: trimmedId })
 
     try {
       const result = await getBillFromCloud(trimmedId)
+
+      // Check if this request is still current
+      if (loadBillRequestRef.current !== requestId) {
+        console.log('Bill load cancelled - newer request started')
+        return
+      }
 
       if (result.error || !result.bill) {
         toast({
@@ -366,14 +385,20 @@ export function ProBillSplitter() {
       analytics.trackSharedBillLoaded("cloud")
       setBillId('') // Clear input after successful load
     } catch (error) {
-      toast({
-        title: "Load failed",
-        description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive"
-      })
-      analytics.trackError("load_bill_failed", error instanceof Error ? error.message : "Unknown error")
+      // Only show error if this request is still current
+      if (loadBillRequestRef.current === requestId) {
+        toast({
+          title: "Load failed",
+          description: error instanceof Error ? error.message : "Unknown error",
+          variant: "destructive"
+        })
+        analytics.trackError("load_bill_failed", error instanceof Error ? error.message : "Unknown error")
+      }
     } finally {
-      setIsLoadingBill(false)
+      // Only clear loading state if this request is still current
+      if (loadBillRequestRef.current === requestId) {
+        setIsLoadingBill(false)
+      }
     }
   }, [billId, dispatch, toast, analytics])
 
@@ -433,6 +458,30 @@ export function ProBillSplitter() {
     // Check if we're in an input field
     const target = e.target as HTMLElement
     const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true'
+
+    // Escape key - close modals, menus, and exit edit mode
+    if (e.key === 'Escape') {
+      if (editingPerson) {
+        setEditingPerson(null)
+        e.preventDefault()
+        return
+      }
+      if (contextMenu) {
+        setContextMenu(null)
+        e.preventDefault()
+        return
+      }
+      if (splitMethodDropdown) {
+        setSplitMethodDropdown(null)
+        e.preventDefault()
+        return
+      }
+      if (editing) {
+        setEditing(false)
+        e.preventDefault()
+        return
+      }
+    }
 
     // Global shortcuts that work even in inputs
     if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
@@ -543,7 +592,7 @@ export function ProBillSplitter() {
         if (item) toggleAssignment(item.id, selectedCell.col)
       }
     }
-  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex])
+  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, contextMenu, splitMethodDropdown])
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
