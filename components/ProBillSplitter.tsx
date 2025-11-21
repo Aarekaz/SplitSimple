@@ -569,51 +569,120 @@ export function ProBillSplitter() {
       }
     }
 
-    // Grid navigation (only when not editing)
+    // Grid navigation - Excel-like behavior
     if (activeView !== 'ledger') return
-    if (editing) {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        setEditing(false)
-        if (selectedCell.row < items.length - 1) {
-          setSelectedCell(prev => ({ ...prev, row: prev.row + 1 }))
-        } else {
-          addItem()
+
+    // Define column order for navigation
+    const colOrder = ['name', 'price', 'qty', ...people.map(p => p.id)]
+    const currentColIdx = colOrder.indexOf(selectedCell.col)
+    const currentRowIdx = selectedCell.row
+
+    // Tab key - move to next cell (right), Shift+Tab - move to previous cell (left)
+    if (e.key === 'Tab') {
+      e.preventDefault()
+      setEditing(false)
+
+      if (e.shiftKey) {
+        // Shift+Tab: Move left
+        if (currentColIdx > 0) {
+          setSelectedCell({ row: currentRowIdx, col: colOrder[currentColIdx - 1] })
+        } else if (currentRowIdx > 0) {
+          // Wrap to end of previous row
+          setSelectedCell({ row: currentRowIdx - 1, col: colOrder[colOrder.length - 1] })
         }
-      } else if (e.key === 'Escape') {
-        setEditing(false)
+      } else {
+        // Tab: Move right
+        if (currentColIdx < colOrder.length - 1) {
+          setSelectedCell({ row: currentRowIdx, col: colOrder[currentColIdx + 1] })
+        } else if (currentRowIdx < items.length - 1) {
+          // Wrap to beginning of next row
+          setSelectedCell({ row: currentRowIdx + 1, col: colOrder[0] })
+        }
       }
       return
     }
 
+    // Enter key - move down to next row (same column), Shift+Enter - move up
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      setEditing(false)
+
+      if (e.shiftKey) {
+        // Shift+Enter: Move up
+        if (currentRowIdx > 0) {
+          setSelectedCell(prev => ({ ...prev, row: prev.row - 1 }))
+        }
+      } else {
+        // Enter: Move down
+        if (currentRowIdx < items.length - 1) {
+          setSelectedCell(prev => ({ ...prev, row: prev.row + 1 }))
+        } else {
+          // At last row, add new item and move to it
+          addItem()
+          // New item will be at items.length
+          setSelectedCell(prev => ({ ...prev, row: items.length }))
+        }
+      }
+      return
+    }
+
+    // Arrow keys - navigate grid (works even while editing)
     if (e.key.startsWith('Arrow')) {
       e.preventDefault()
-      const colOrder = ['name', 'price', 'qty', ...people.map(p => p.id)]
-      let colIdx = colOrder.indexOf(selectedCell.col)
-      let rowIdx = selectedCell.row
+      setEditing(false)
 
-      if (e.key === 'ArrowRight' && colIdx < colOrder.length - 1) colIdx++
-      if (e.key === 'ArrowLeft' && colIdx > 0) colIdx--
-      if (e.key === 'ArrowDown' && rowIdx < items.length - 1) rowIdx++
-      if (e.key === 'ArrowUp' && rowIdx > 0) rowIdx--
+      let newColIdx = currentColIdx
+      let newRowIdx = currentRowIdx
 
-      setSelectedCell({ row: rowIdx, col: colOrder[colIdx] })
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      if (people.some(p => p.id === selectedCell.col)) {
-        const item = items[selectedCell.row]
-        if (item) toggleAssignment(item.id, selectedCell.col)
-      } else {
-        setEditing(true)
-      }
-    } else if (e.key === ' ') {
-      e.preventDefault()
-      if (people.some(p => p.id === selectedCell.col)) {
-        const item = items[selectedCell.row]
-        if (item) toggleAssignment(item.id, selectedCell.col)
+      if (e.key === 'ArrowRight' && currentColIdx < colOrder.length - 1) newColIdx++
+      if (e.key === 'ArrowLeft' && currentColIdx > 0) newColIdx--
+      if (e.key === 'ArrowDown' && currentRowIdx < items.length - 1) newRowIdx++
+      if (e.key === 'ArrowUp' && currentRowIdx > 0) newRowIdx--
+
+      setSelectedCell({ row: newRowIdx, col: colOrder[newColIdx] })
+      return
+    }
+
+    // Space or Enter when not editing - toggle assignment or start editing
+    if (!editing) {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (people.some(p => p.id === selectedCell.col)) {
+          const item = items[selectedCell.row]
+          if (item) toggleAssignment(item.id, selectedCell.col)
+        } else {
+          setEditing(true)
+        }
+      } else if (e.key === ' ') {
+        e.preventDefault()
+        if (people.some(p => p.id === selectedCell.col)) {
+          const item = items[selectedCell.row]
+          if (item) toggleAssignment(item.id, selectedCell.col)
+        }
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // Auto-enter edit mode when typing (Excel-like behavior)
+        // Only for editable columns (name, price, qty)
+        if (['name', 'price', 'qty'].includes(selectedCell.col)) {
+          const item = items[selectedCell.row]
+          if (item) {
+            // Clear the current value and start fresh
+            if (selectedCell.col === 'name') {
+              updateItem(item.id, { name: e.key })
+            } else if (selectedCell.col === 'price') {
+              updateItem(item.id, { price: e.key })
+            } else if (selectedCell.col === 'qty') {
+              const num = parseInt(e.key)
+              if (!isNaN(num)) {
+                updateItem(item.id, { quantity: num })
+              }
+            }
+            setEditing(true)
+            e.preventDefault()
+          }
+        }
       }
     }
-  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, contextMenu, splitMethodDropdown])
+  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, contextMenu, splitMethodDropdown, updateItem])
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
