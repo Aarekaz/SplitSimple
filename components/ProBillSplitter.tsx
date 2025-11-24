@@ -389,7 +389,6 @@ function DesktopBillSplitter() {
       description: `Changed to ${splitMethodOptions.find(o => o.value === newMethod)?.label}`,
       duration: TIMING.TOAST_SHORT
     })
-    setSplitMethodDropdown(null)
   }, [items, updateItem, analytics, toast])
 
   // --- Bill ID Loading ---
