@@ -100,8 +100,18 @@ export async function POST(
       )
     }
 
-    const body = await request.json()
-    const bill: Bill = body.bill
+    let body: any
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      console.error("Invalid JSON body received:", parseError)
+      return NextResponse.json(
+        { error: "Invalid JSON body" },
+        { status: 400 }
+      )
+    }
+
+    const bill: Bill = body?.bill
 
     if (!bill || typeof bill !== 'object') {
       return NextResponse.json(

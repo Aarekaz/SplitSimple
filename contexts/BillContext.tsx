@@ -106,7 +106,7 @@ const simpleUUID = () => {
 const createInitialBill = (): Bill => ({
   id: simpleUUID(),
   title: "New Bill",
-  status: "draft",
+  status: "active",
   tax: "",
   tip: "",
   discount: "",
@@ -473,9 +473,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         if (saved) {
           const bill = JSON.parse(saved)
           // Migration: Add missing fields to existing bills
-          if (!bill.status) {
-            bill.status = "draft"
-          }
+          bill.status = "active"
           if (!bill.notes) {
             bill.notes = ""
           }

@@ -41,7 +41,7 @@ export const createMockItem = (overrides: Partial<Item> = {}): Item => ({
 export const createMockBill = (overrides: Partial<Bill> = {}): Bill => ({
   id: `bill-${Math.random().toString(36).substr(2, 9)}`,
   title: 'Test Bill',
-  status: 'draft',
+  status: 'active',
   tax: '',
   tip: '',
   discount: '',

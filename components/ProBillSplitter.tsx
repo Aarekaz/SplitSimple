@@ -18,7 +18,9 @@ import {
   Scale,
   Percent,
   Calculator,
-  ChevronDown
+  ChevronDown,
+  Code,
+  Camera
 } from 'lucide-react'
 import { useBill } from '@/contexts/BillContext'
 import type { Item, Person } from '@/contexts/BillContext'
@@ -27,7 +29,6 @@ import { getBillSummary, calculateItemSplits } from '@/lib/calculations'
 import { generateSummaryText, copyToClipboard } from '@/lib/export'
 import { useToast } from '@/hooks/use-toast'
 import { ShareBill } from '@/components/ShareBill'
-import { BillStatusIndicator } from '@/components/BillStatusIndicator'
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator'
 import { useBillAnalytics } from '@/hooks/use-analytics'
 import { TIMING } from '@/lib/constants'
@@ -35,6 +36,13 @@ import { getBillFromCloud } from '@/lib/sharing'
 import { migrateBillSchema } from '@/lib/validation'
 
 import { ReceiptScanner } from '@/components/ReceiptScanner'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export type SplitMethod = "even" | "shares" | "percent" | "exact"
 
@@ -47,6 +55,24 @@ const COLORS = [
   { id: 'blue', bg: 'bg-blue-100', solid: 'bg-blue-500', text: 'text-blue-700', textSolid: 'text-white', hex: '#3B82F6' },
   { id: 'amber', bg: 'bg-amber-100', solid: 'bg-amber-500', text: 'text-amber-700', textSolid: 'text-white', hex: '#F59E0B' },
 ]
+
+const SplitSimpleIcon = () => (
+  <div className="w-8 h-8 rounded-lg shadow-md flex items-center justify-center bg-white">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-6 h-6"
+      aria-hidden="true"
+    >
+      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1Z" fill="#16a34a" />
+      <path d="M16 8h-6a2 2 0 1 0 0 4h6" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 17.5v-11" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  </div>
+)
 
 const formatCurrencySimple = (amount: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
@@ -133,6 +159,7 @@ export function ProBillSplitter() {
   const [splitMethodDropdown, setSplitMethodDropdown] = useState<string | null>(null)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
   const [lastClickTime, setLastClickTime] = useState<{ row: number; col: string; time: number } | null>(null)
+  const [newLoadDropdownOpen, setNewLoadDropdownOpen] = useState(false)
 
   const editInputRef = useRef<HTMLInputElement>(null)
   const loadBillRequestRef = useRef<string | null>(null) // Track current load request to prevent race conditions
@@ -513,6 +540,7 @@ export function ProBillSplitter() {
     const handleClick = () => {
       setContextMenu(null)
       setSplitMethodDropdown(null)
+      // Don't force close the dropdown here - let Radix UI handle it
     }
     window.addEventListener('click', handleClick)
     return () => window.removeEventListener('click', handleClick)
@@ -733,10 +761,8 @@ export function ProBillSplitter() {
     <div className="pro-app-shell selection:bg-indigo-100 selection:text-indigo-900">
       {/* --- Header --- */}
       <header className="pro-header">
-        <div className="flex items-center gap-4">
-          <div className="w-8 h-8 bg-slate-900 rounded-lg shadow-md flex items-center justify-center text-white">
-            <GridIcon size={16} strokeWidth={2.5} />
-          </div>
+        <div className="flex items-center gap-3">
+          <SplitSimpleIcon />
           <div>
             <input
               value={title}
@@ -747,69 +773,124 @@ export function ProBillSplitter() {
               className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-48 hover:text-indigo-600 transition-colors truncate font-inter"
               placeholder="Project Name"
             />
-            <div className="text-[10px] font-medium text-slate-400 tracking-wide mt-0.5">SPLIT SIMPLE PRO</div>
+            <div className="text-[10px] font-medium text-slate-400 tracking-wide mt-0.5">SPLIT SIMPLE</div>
+          </div>
+
+          {/* New and Load buttons */}
+          <div className="flex items-center gap-1 ml-1">
+            <button
+              onClick={() => {
+                if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
+                  dispatch({ type: 'NEW_BILL' })
+                  toast({ title: "New bill created" })
+                  analytics.trackBillCreated()
+                  analytics.trackFeatureUsed("new_bill")
+                }
+              }}
+              className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter"
+              title="New Bill (Cmd+N)"
+            >
+              <FileQuestion size={14} />
+              <span>New</span>
+            </button>
+
+            <DropdownMenu open={newLoadDropdownOpen} onOpenChange={setNewLoadDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <button className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter">
+                  <Search size={14} />
+                  <span>Load</span>
+                  <ChevronDown size={12} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="px-2 py-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                  <label className="text-xs text-slate-500 font-medium">Enter Bill ID:</label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                    <input
+                      type="text"
+                      value={billId}
+                      onChange={(e) => setBillId(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && billId.trim()) {
+                          handleLoadBill()
+                          setNewLoadDropdownOpen(false)
+                        }
+                        if (e.key === 'Escape') {
+                          setNewLoadDropdownOpen(false)
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      placeholder="ABC123..."
+                      disabled={isLoadingBill}
+                      className="w-full h-8 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setNewLoadDropdownOpen(false)
+                        setBillId('')
+                      }}
+                      className="flex-1 h-7 px-2 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleLoadBill()
+                        setNewLoadDropdownOpen(false)
+                      }}
+                      disabled={isLoadingBill || !billId.trim()}
+                      className="flex-1 h-7 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                    >
+                      {isLoadingBill ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
+                      ) : (
+                        'Load'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Scan Receipt Button */}
-          <ReceiptScanner onImport={handleScanImport} />
-
-          {/* New Bill Button */}
-          <button
-            onClick={() => {
-              if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
-                dispatch({ type: 'NEW_BILL' })
-                toast({ title: "New bill created" })
-                analytics.trackBillCreated()
-                analytics.trackFeatureUsed("new_bill")
-              }
-            }}
-            className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter"
-            title="New Bill (Cmd+N)"
-          >
-            <FileQuestion size={14} /> <span className="hidden md:inline">New</span>
-          </button>
-
-          {/* Bill ID Loader */}
-          <div className="flex items-center gap-1.5">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
-              <input
-                type="text"
-                value={billId}
-                onChange={(e) => setBillId(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleLoadBill()
-                  }
-                }}
-                placeholder="Bill ID..."
-                disabled={isLoadingBill}
-                className="h-8 w-32 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
-              />
-            </div>
+          {/* Undo/Redo */}
+          <div className="flex items-center gap-1">
             <button
-              onClick={handleLoadBill}
-              disabled={isLoadingBill || !billId.trim()}
-              className="h-8 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-              title="Load Bill (Enter)"
+              onClick={() => {
+                dispatch({ type: 'UNDO' })
+                toast({ title: "Undone", duration: TIMING.TOAST_SHORT })
+                analytics.trackUndoRedoUsed("undo", state.historyIndex)
+              }}
+              disabled={!canUndo}
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Undo (Cmd+Z)"
             >
-              {isLoadingBill ? (
-                <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
-              ) : (
-                'Load'
-              )}
+              <RotateCcw size={16} />
+            </button>
+            <button
+              onClick={() => {
+                dispatch({ type: 'REDO' })
+                toast({ title: "Redone", duration: TIMING.TOAST_SHORT })
+                analytics.trackUndoRedoUsed("redo", state.historyIndex)
+              }}
+              disabled={!canRedo}
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Redo (Cmd+Shift+Z)"
+            >
+              <RotateCw size={16} />
             </button>
           </div>
 
-          <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
-
-          {/* Status & Sync */}
-          <BillStatusIndicator compact={true} showSelector={true} />
-          <SyncStatusIndicator compact />
-
-          <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
+          {/* Scan Receipt Button */}
+          <ReceiptScanner onImport={handleScanImport} />
 
           {/* Share Button */}
           <ShareBill variant="outline" size="sm" showText={true} />
@@ -1239,6 +1320,7 @@ export function ProBillSplitter() {
                         {grandTotal.toFixed(2)}
                       </div>
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -1372,7 +1454,21 @@ export function ProBillSplitter() {
 
       {/* --- Footer --- */}
       <footer className="pro-footer">
-        <div className="flex items-center gap-4">
+        {/* Left Section: GitHub Link */}
+        <div className="flex items-center">
+          <a
+            href="https://github.com/Aarekaz/SplitSimple"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors font-inter"
+          >
+            <Code size={14} />
+            <span>View Code</span>
+          </a>
+        </div>
+
+        {/* Center Section: View Switcher */}
+        <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 p-1 rounded-md">
             <button
               onClick={() => setActiveView('ledger')}
@@ -1388,58 +1484,24 @@ export function ProBillSplitter() {
             </button>
           </div>
 
-          <div className="h-4 w-px bg-slate-300 hidden md:block"></div>
-
-          {/* Copy Button (Breakdown Only) */}
-          {activeView === 'breakdown' && (
-            <button
-              onClick={copyBreakdown}
-              className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
-            >
-              <ClipboardCopy size={14} /> Copy Text
-            </button>
-          )}
-
-          <div className="hidden lg:flex items-center gap-1 ml-2">
-            <a
-              href="https://anuragd.me"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1 font-inter"
-            >
-              Crafted by <span className="underline decoration-slate-300 underline-offset-2">Anurag Dhungana</span>
-            </a>
-          </div>
+          <button
+            onClick={copyBreakdown}
+            className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
+          >
+            <ClipboardCopy size={14} /> Copy Summary
+          </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                dispatch({ type: 'UNDO' })
-                toast({ title: "Undone", duration: TIMING.TOAST_SHORT })
-                analytics.trackUndoRedoUsed("undo", state.historyIndex)
-              }}
-              disabled={!canUndo}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Undo (Cmd+Z)"
-            >
-              <RotateCcw size={16} />
-            </button>
-            <button
-              onClick={() => {
-                dispatch({ type: 'REDO' })
-                toast({ title: "Redone", duration: TIMING.TOAST_SHORT })
-                analytics.trackUndoRedoUsed("redo", state.historyIndex)
-              }}
-              disabled={!canRedo}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Redo (Cmd+Shift+Z)"
-            >
-              <RotateCw size={16} />
-            </button>
-          </div>
+        {/* Right Section: Creator Credit */}
+        <div className="flex items-center">
+          <a
+            href="https://anuragd.me"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1 font-inter"
+          >
+            Crafted by <span className="underline decoration-slate-300 underline-offset-2">Anurag Dhungana</span>
+          </a>
         </div>
       </footer>
 

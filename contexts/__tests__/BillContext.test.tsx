@@ -20,7 +20,7 @@ describe('BillContext', () => {
       expect(result.current.state.currentBill.title).toBe('New Bill')
       expect(result.current.state.currentBill.people).toEqual([])
       expect(result.current.state.currentBill.items).toEqual([])
-      expect(result.current.state.currentBill.status).toBe('draft')
+      expect(result.current.state.currentBill.status).toBe('active')
       expect(result.current.state.syncStatus).toBe('never_synced')
     })
 
