@@ -1056,6 +1056,190 @@ export function ProBillSplitter() {
                   >
                     <Plus size={14} /> Add Line Item
                   </button>
+
+                  {/* Summary Rows Section */}
+                  <div className="border-t-4 border-double border-slate-300">
+                    {/* Subtotal Row */}
+                    <div className="flex h-12 text-sm bg-slate-50/50">
+                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-72 p-3 border-r border-slate-100 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
+                        Subtotal
+                      </div>
+                      <div className="w-28 border-r border-slate-100 flex items-center justify-end px-4 font-space-mono text-xs font-bold text-slate-600">
+                        {subtotal.toFixed(2)}
+                      </div>
+                      <div className="w-20 border-r border-slate-100"></div>
+
+                      {people.map(p => {
+                        const stats = personFinalShares[p.id]
+                        return (
+                          <div key={p.id} className="w-28 border-r border-slate-100 flex items-center justify-center font-space-mono text-xs text-slate-600">
+                            {(stats?.subtotal || 0).toFixed(2)}
+                          </div>
+                        )
+                      })}
+
+                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
+                        {subtotal.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Tax Row */}
+                    <div className="flex h-12 text-sm bg-slate-50/50">
+                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-72 p-3 border-r border-slate-100 flex items-center justify-between pro-sticky-left bg-slate-50/50 font-inter">
+                        <span className="font-bold text-slate-700 uppercase text-xs tracking-wider">Tax</span>
+                        <button
+                          onClick={() => {
+                            const newAllocation = state.currentBill.taxTipAllocation === 'proportional' ? 'even' : 'proportional'
+                            dispatch({ type: 'SET_TAX_TIP_ALLOCATION', payload: newAllocation })
+                            toast({
+                              title: "Allocation changed",
+                              description: `Tax/Tip split ${newAllocation === 'proportional' ? 'proportionally' : 'evenly'}`,
+                              duration: TIMING.TOAST_SHORT
+                            })
+                            analytics.trackFeatureUsed("tax_tip_allocation_toggle", { allocation: newAllocation })
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 hover:bg-slate-100 rounded transition-colors"
+                          title={`Current: ${state.currentBill.taxTipAllocation === 'proportional' ? 'Proportional' : 'Even'} allocation`}
+                        >
+                          {state.currentBill.taxTipAllocation === 'proportional' ? (
+                            <Scale size={11} className="text-indigo-600" />
+                          ) : (
+                            <Equal size={11} className="text-indigo-600" />
+                          )}
+                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                            {state.currentBill.taxTipAllocation === 'proportional' ? 'Prop' : 'Even'}
+                          </span>
+                        </button>
+                      </div>
+                      <div className="w-28 border-r border-slate-100 flex items-center justify-end px-2">
+                        <input
+                          type="number"
+                          value={state.currentBill.tax}
+                          onChange={(e) => {
+                            dispatch({ type: 'SET_TAX', payload: e.target.value })
+                            analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
+                          }}
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="w-20 border-r border-slate-100"></div>
+
+                      {people.map(p => {
+                        const stats = personFinalShares[p.id]
+                        return (
+                          <div key={p.id} className="w-28 border-r border-slate-100 flex items-center justify-center font-space-mono text-xs text-slate-600">
+                            {(stats?.tax || 0).toFixed(2)}
+                          </div>
+                        )
+                      })}
+
+                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
+                        {taxAmount.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Tip Row */}
+                    <div className="flex h-12 text-sm bg-slate-50/50">
+                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-72 p-3 border-r border-slate-100 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
+                        Tip
+                      </div>
+                      <div className="w-28 border-r border-slate-100 flex items-center justify-end px-2">
+                        <input
+                          type="number"
+                          value={state.currentBill.tip}
+                          onChange={(e) => {
+                            dispatch({ type: 'SET_TIP', payload: e.target.value })
+                            analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
+                          }}
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="w-20 border-r border-slate-100"></div>
+
+                      {people.map(p => {
+                        const stats = personFinalShares[p.id]
+                        return (
+                          <div key={p.id} className="w-28 border-r border-slate-100 flex items-center justify-center font-space-mono text-xs text-slate-600">
+                            {(stats?.tip || 0).toFixed(2)}
+                          </div>
+                        )
+                      })}
+
+                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
+                        {tipAmount.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Discount Row */}
+                    <div className="flex h-12 text-sm bg-slate-50/50">
+                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-72 p-3 border-r border-slate-100 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
+                        Discount
+                      </div>
+                      <div className="w-28 border-r border-slate-100 flex items-center justify-end px-2">
+                        <input
+                          type="number"
+                          value={state.currentBill.discount}
+                          onChange={(e) => {
+                            dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
+                            analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
+                          }}
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="w-20 border-r border-slate-100"></div>
+
+                      {people.map(p => {
+                        const stats = personFinalShares[p.id]
+                        return (
+                          <div key={p.id} className="w-28 border-r border-slate-100 flex items-center justify-center font-space-mono text-xs text-slate-600">
+                            {(stats?.discount || 0).toFixed(2)}
+                          </div>
+                        )
+                      })}
+
+                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
+                        -{discountAmount.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Grand Total Row */}
+                    <div className="flex h-14 text-sm bg-slate-100 border-t-2 border-slate-300">
+                      <div className="w-12 border-r border-slate-200"></div>
+                      <div className="w-72 p-3 border-r border-slate-200 flex items-center font-bold text-slate-900 uppercase text-xs tracking-wider pro-sticky-left bg-slate-100 font-inter">
+                        Grand Total
+                      </div>
+                      <div className="w-28 border-r border-slate-200"></div>
+                      <div className="w-20 border-r border-slate-200"></div>
+
+                      {people.map(p => {
+                        const stats = personFinalShares[p.id]
+                        const colorObj = COLORS[p.colorIdx || 0]
+                        return (
+                          <div key={p.id} className="w-28 border-r border-slate-200 flex items-center justify-center">
+                            <div className={`px-3 py-1.5 rounded-md ${colorObj.solid} ${colorObj.textSolid} font-space-mono text-xs font-bold shadow-sm`}>
+                              {(stats?.total || 0).toFixed(2)}
+                            </div>
+                          </div>
+                        )
+                      })}
+
+                      <div className="w-12 border-r border-slate-200"></div>
+                      <div className="w-28 pro-sticky-right border-l border-slate-300 flex items-center justify-end px-4 bg-slate-100 font-space-mono text-sm font-bold text-slate-900">
+                        {grandTotal.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1228,7 +1412,7 @@ export function ProBillSplitter() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3">
           {/* Undo/Redo */}
           <div className="flex items-center gap-1">
             <button
@@ -1255,84 +1439,6 @@ export function ProBillSplitter() {
             >
               <RotateCw size={16} />
             </button>
-          </div>
-
-          {activeView === 'ledger' && (
-            <div className="flex items-center gap-3 border-l border-r border-slate-200 px-6">
-              <div className="flex items-center gap-2">
-                <label className="font-bold text-slate-400 uppercase text-[10px] font-inter">Tax</label>
-                <input
-                  type="number"
-                  value={state.currentBill.tax}
-                  onChange={(e) => {
-                    dispatch({ type: 'SET_TAX', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
-                  }}
-                  className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="font-bold text-slate-400 uppercase text-[10px] font-inter">Tip</label>
-                <input
-                  type="number"
-                  value={state.currentBill.tip}
-                  onChange={(e) => {
-                    dispatch({ type: 'SET_TIP', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
-                  }}
-                  className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="font-bold text-slate-400 uppercase text-[10px] font-inter">Disc</label>
-                <input
-                  type="number"
-                  value={state.currentBill.discount}
-                  onChange={(e) => {
-                    dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
-                  }}
-                  className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
-                />
-              </div>
-
-              {/* Allocation Toggle */}
-              <div className="h-4 w-px bg-slate-200"></div>
-              <button
-                onClick={() => {
-                  const newAllocation = state.currentBill.taxTipAllocation === 'proportional' ? 'even' : 'proportional'
-                  dispatch({ type: 'SET_TAX_TIP_ALLOCATION', payload: newAllocation })
-                  toast({
-                    title: "Allocation changed",
-                    description: `Tax/Tip split ${newAllocation === 'proportional' ? 'proportionally' : 'evenly'}`,
-                    duration: TIMING.TOAST_SHORT
-                  })
-                  analytics.trackFeatureUsed("tax_tip_allocation_toggle", { allocation: newAllocation })
-                }}
-                className="flex flex-col items-center gap-0.5 px-2 py-1 hover:bg-slate-50 rounded transition-colors"
-                title={`Current: ${state.currentBill.taxTipAllocation === 'proportional' ? 'Proportional' : 'Even'} allocation`}
-              >
-                <div className="flex items-center gap-1">
-                  {state.currentBill.taxTipAllocation === 'proportional' ? (
-                    <Scale size={12} className="text-indigo-600" />
-                  ) : (
-                    <Equal size={12} className="text-indigo-600" />
-                  )}
-                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-inter">
-                    {state.currentBill.taxTipAllocation === 'proportional' ? 'Prop' : 'Even'}
-                  </span>
-                </div>
-                <span className="text-[8px] text-slate-400 font-inter">Allocation</span>
-              </button>
-            </div>
-          )}
-          <div className="flex flex-col items-end justify-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-0.5 font-inter">
-              Grand Total
-            </span>
-            <span className="font-space-mono font-bold text-slate-900 leading-none text-lg">
-              {formatCurrencySimple(grandTotal)}
-            </span>
           </div>
         </div>
       </footer>
