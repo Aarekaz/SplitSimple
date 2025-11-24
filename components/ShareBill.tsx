@@ -155,7 +155,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
     <Dialog open={isOpen} onOpenChange={handleOpenDialog}>
       <DialogTrigger asChild>
         <Button
-          id={id}  // Allow external triggering via document.getElementById()
+          id={id ?? "share-bill-trigger"}  // Allow external triggering via document.getElementById()
           variant={variant}
           size={size}
           className={showText ? "flex items-center gap-1.5 btn-smooth" : "dock-item p-0 h-auto bg-transparent border-0 hover:bg-primary/10"}
@@ -171,7 +171,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
             Share & Export "{state.currentBill.title}"
           </DialogTitle>
           <DialogDescription>
-            Share a link with anyone or export your bill data. Bills are stored securely and expire after 30 days.
+            Share a link with anyone or export your bill data. Bills are stored securely and expire after 6 months.
           </DialogDescription>
         </DialogHeader>
         
@@ -197,6 +197,9 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
             <Label htmlFor="share-url" className="text-sm font-medium">
               Shareable Link
             </Label>
+            <p className="text-xs font-mono text-muted-foreground">
+              Bill ID: {state.currentBill.id || "unsaved"}
+            </p>
             <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
               <Input
                 id="share-url"
@@ -238,7 +241,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
 
           <Alert>
             <AlertDescription className="text-sm">
-              <strong>✅ Universal sharing:</strong> This link works for anyone and expires after 30 days. 
+              <strong>✅ Universal sharing:</strong> This link works for anyone and auto-deletes after 6 months. 
               Bills are stored securely in the cloud.
             </AlertDescription>
           </Alert>

@@ -12,6 +12,7 @@ export interface Person {
   id: string
   name: string
   color: string
+  colorIdx?: number  // Index into the COLORS array for Pro design
 }
 
 export interface Item {
@@ -60,6 +61,7 @@ type BillAction =
   | { type: "SET_DISCOUNT"; payload: string }
   | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" }
   | { type: "ADD_PERSON"; payload: { name: string; color: string } }
+  | { type: "UPDATE_PERSON"; payload: Person }
   | { type: "REMOVE_PERSON"; payload: string }
   | { type: "ADD_ITEM"; payload: Omit<Item, "id"> }
   | { type: "UPDATE_ITEM"; payload: Item }
@@ -104,13 +106,20 @@ const simpleUUID = () => {
 const createInitialBill = (): Bill => ({
   id: simpleUUID(),
   title: "New Bill",
-  status: "draft",
+  status: "active",
   tax: "",
   tip: "",
   discount: "",
   taxTipAllocation: "proportional",
   notes: "",
-  people: [],
+  people: [
+    {
+      id: simpleUUID(),
+      name: "Person 1",
+      color: PERSON_COLORS[0],
+      colorIdx: 0
+    }
+  ],
   items: [],
 })
 
@@ -176,10 +185,19 @@ function billReducer(state: BillState, action: BillAction): BillState {
         id: simpleUUID(),
         name: action.payload.name,
         color: newColor,
+        colorIdx: state.currentBill.people.length % 6, // Assign color index for Pro design (0-5)
       }
       const newBill = {
         ...state.currentBill,
         people: [...state.currentBill.people, newPerson],
+      }
+      return addToHistory(state, newBill)
+    }
+
+    case "UPDATE_PERSON": {
+      const newBill = {
+        ...state.currentBill,
+        people: state.currentBill.people.map((p) => (p.id === action.payload.id ? action.payload : p)),
       }
       return addToHistory(state, newBill)
     }
@@ -455,9 +473,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         if (saved) {
           const bill = JSON.parse(saved)
           // Migration: Add missing fields to existing bills
-          if (!bill.status) {
-            bill.status = "draft"
-          }
+          bill.status = "active"
           if (!bill.notes) {
             bill.notes = ""
           }
@@ -469,6 +485,13 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
             bill.items = bill.items.map((item: any) => ({
               ...item,
               quantity: item.quantity || 1
+            }))
+          }
+          // Add colorIdx to people that don't have it
+          if (bill.people) {
+            bill.people = bill.people.map((person: any, idx: number) => ({
+              ...person,
+              colorIdx: person.colorIdx !== undefined ? person.colorIdx : idx % 6
             }))
           }
           dispatch({ type: "LOAD_BILL", payload: bill })

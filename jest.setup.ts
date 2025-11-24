@@ -20,31 +20,52 @@ jest.mock('next/navigation', () => ({
   },
 }))
 
-// Mock window.matchMedia for mobile hook
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-})
-
-// Mock localStorage
 const localStorageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
 }
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
-})
+const clipboardMock = {
+  writeText: jest.fn(() => Promise.resolve()),
+  readText: jest.fn(() => Promise.resolve('')),
+}
+
+if (typeof window !== 'undefined') {
+  // Mock window.matchMedia for mobile hook
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(), // deprecated
+      removeListener: jest.fn(), // deprecated
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  })
+
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+  })
+
+  Object.assign(navigator, { clipboard: clipboardMock })
+} else {
+  // Node test environments (e.g. API route tests) still rely on localStorage mock
+  const mockWindow = {
+    navigator: {
+      clipboard: clipboardMock,
+    },
+  } as unknown as Window & typeof globalThis
+
+  ;(global as any).window = mockWindow
+  ;(global as any).navigator = mockWindow.navigator
+  Object.defineProperty(global, 'localStorage', {
+    value: localStorageMock,
+  })
+}
 
 // Mock ResizeObserver for drag-and-drop components
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
@@ -59,14 +80,6 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }))
-
-// Mock clipboard API
-Object.assign(navigator, {
-  clipboard: {
-    writeText: jest.fn(() => Promise.resolve()),
-    readText: jest.fn(() => Promise.resolve('')),
-  },
-})
 
 // Note: window.location is already mocked by jsdom
 // Additional location properties can be mocked in individual tests if needed

@@ -18,9 +18,10 @@ describe('BillContext', () => {
       const { result } = renderHook(() => useBill(), { wrapper })
       
       expect(result.current.state.currentBill.title).toBe('New Bill')
-      expect(result.current.state.currentBill.people).toEqual([])
+      expect(result.current.state.currentBill.people).toHaveLength(1)
+      expect(result.current.state.currentBill.people[0].name).toBe('Person 1')
       expect(result.current.state.currentBill.items).toEqual([])
-      expect(result.current.state.currentBill.status).toBe('draft')
+      expect(result.current.state.currentBill.status).toBe('active')
       expect(result.current.state.syncStatus).toBe('never_synced')
     })
 
@@ -87,10 +88,11 @@ describe('BillContext', () => {
         })
       })
       
-      expect(result.current.state.currentBill.people).toHaveLength(1)
-      expect(result.current.state.currentBill.people[0].name).toBe('Alice')
-      expect(result.current.state.currentBill.people[0].color).toBe('#6366f1') // First default color
-      expect(result.current.state.currentBill.people[0].id).toBeDefined()
+      expect(result.current.state.currentBill.people).toHaveLength(2)
+      const newest = result.current.state.currentBill.people.at(-1)!
+      expect(newest.name).toBe('Alice')
+      expect(newest.color).toBe('#d97706') // Second default color
+      expect(newest.id).toBeDefined()
     })
 
     it('should add person with specific color', () => {
@@ -103,7 +105,8 @@ describe('BillContext', () => {
         })
       })
       
-      expect(result.current.state.currentBill.people[0].color).toBe('#ff0000')
+      const added = result.current.state.currentBill.people.at(-1)!
+      expect(added.color).toBe('#ff0000')
     })
 
     it('should remove person and update items', () => {
@@ -117,7 +120,9 @@ describe('BillContext', () => {
         })
       })
       
-      const personId = result.current.state.currentBill.people[0].id
+      const addedPerson = result.current.state.currentBill.people.find(p => p.name === 'Alice')
+      expect(addedPerson).toBeTruthy()
+      const personId = addedPerson!.id
       
       // Add item with person
       act(() => {
@@ -138,7 +143,8 @@ describe('BillContext', () => {
         result.current.dispatch({ type: 'REMOVE_PERSON', payload: personId })
       })
       
-      expect(result.current.state.currentBill.people).toHaveLength(0)
+      expect(result.current.state.currentBill.people.find(p => p.id === personId)).toBeUndefined()
+      expect(result.current.state.currentBill.people).toHaveLength(1)
       expect(result.current.state.currentBill.items[0].splitWith).toEqual([])
     })
 
@@ -157,7 +163,7 @@ describe('BillContext', () => {
       })
       
       const colors = result.current.state.currentBill.people.map(p => p.color)
-      expect(new Set(colors).size).toBe(3) // All different colors
+      expect(new Set(colors).size).toBe(result.current.state.currentBill.people.length) // All different colors
     })
   })
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminAuthMiddleware } from '@/lib/admin-auth'
 import { executeRedisOperation } from '@/lib/redis-pool'
 import { validateEnvironment } from '@/lib/env-validation'
-import type { Bill } from '@/contexts/BillContext'
+import { STORAGE } from '@/lib/constants'
 
 async function getBillHandler(
   req: NextRequest,
@@ -67,7 +67,7 @@ async function updateBillHandler(
     updatedBill.lastModified = new Date().toISOString()
 
     await executeRedisOperation(async (redis) => {
-      await redis.setEx(key, 30 * 24 * 60 * 60, JSON.stringify(updatedBill))
+      await redis.setEx(key, STORAGE.BILL_TTL_SECONDS, JSON.stringify(updatedBill))
     })
 
     return NextResponse.json({

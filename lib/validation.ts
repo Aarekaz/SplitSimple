@@ -178,10 +178,8 @@ export function sanitizeInput(input: string): string {
 export function migrateBillSchema<T extends Record<string, any>>(bill: T): T {
   const migrated: any = { ...bill }
 
-  // Add missing status field
-  if (!migrated.status) {
-    migrated.status = "draft"
-  }
+  // Force status to active now that manual status changes are removed
+  migrated.status = "active"
 
   // Add missing notes field
   if (!migrated.notes) {

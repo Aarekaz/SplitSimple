@@ -4,6 +4,7 @@
 import { NextRequest } from 'next/server'
 import { GET, POST } from '../[id]/route'
 import { createMockBill } from '../../../../tests/utils/test-utils'
+import { STORAGE } from '@/lib/constants'
 
 // Mock Redis client
 const mockRedisClient = {
@@ -143,7 +144,7 @@ describe('/api/bills/[id] route', () => {
       expect(mockRedisClient.connect).toHaveBeenCalled()
       expect(mockRedisClient.setEx).toHaveBeenCalledWith(
         'bill:test-bill-id',
-        30 * 24 * 60 * 60, // 30 days
+        STORAGE.BILL_TTL_SECONDS,
         JSON.stringify(testBill)
       )
       expect(mockRedisClient.disconnect).toHaveBeenCalled()
@@ -286,7 +287,7 @@ describe('/api/bills/[id] route', () => {
 
       expect(mockRedisClient.setEx).toHaveBeenCalledWith(
         'bill:test-id',
-        2592000, // 30 days in seconds
+        STORAGE.BILL_TTL_SECONDS,
         expect.any(String)
       )
     })

@@ -209,14 +209,16 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
       </div>
 
       {/* Actions */}
-      <div className="p-4 flex gap-3">
-        <Button
-          onClick={handleCopySummary}
-          className="flex-1 receipt-button h-10 text-sm font-bold uppercase"
-        >
-          <Copy className="h-4 w-4 mr-2" />
-          Copy Summary
-        </Button>
+        <div className="p-4 flex gap-3">
+        <div className="flex-1">
+          <Button
+            onClick={handleCopySummary}
+            className="w-full receipt-button h-10 text-sm font-bold uppercase"
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Copy Summary
+          </Button>
+        </div>
         <Button
           onClick={() => document.getElementById('share-bill-trigger')?.click()}
           className="flex-1 receipt-button h-10 text-sm font-bold uppercase"

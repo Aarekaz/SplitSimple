@@ -13,7 +13,11 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { useBillAnalytics } from "@/hooks/use-analytics"
 import { cn } from "@/lib/utils"
 
-export function BillLookup() {
+interface BillLookupProps {
+  mode?: "auto" | "inline"
+}
+
+export function BillLookup({ mode = "auto" }: BillLookupProps) {
   const { dispatch } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
@@ -125,8 +129,10 @@ export function BillLookup() {
     if (error) setError(null)
   }
 
+  const shouldRenderSheet = mode === "auto" && isMobile
+
   // Mobile: Sheet/Bottom drawer
-  if (isMobile) {
+  if (shouldRenderSheet) {
     return (
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
@@ -187,7 +193,7 @@ export function BillLookup() {
     )
   }
 
-  // Desktop: Inline input
+  // Desktop or forced inline input
   return (
     <div className="flex items-center gap-2 pointer-events-auto">
       <div className="flex items-center gap-1.5">

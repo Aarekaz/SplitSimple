@@ -14,6 +14,13 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      REDIS_URL: redis://localhost:6379
+      NEXT_PUBLIC_POSTHOG_KEY: test-key
+      NEXT_PUBLIC_POSTHOG_HOST: https://app.posthog.com
+      OCR_PROVIDER: google
+      GOOGLE_API_KEY: placeholder
+      NODE_ENV: test
 
     strategy:
       matrix:

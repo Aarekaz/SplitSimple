@@ -7,6 +7,12 @@ interface EnvironmentConfig {
   NODE_ENV: string
   NEXT_PUBLIC_POSTHOG_KEY?: string
   NEXT_PUBLIC_POSTHOG_HOST?: string
+  OCR_PROVIDER?: string
+  GOOGLE_GENERATIVE_AI_API_KEY?: string
+  GEMINI_API_KEY?: string
+  GOOGLE_API_KEY?: string
+  OPENAI_API_KEY?: string
+  ANTHROPIC_API_KEY?: string
 }
 
 export interface ValidationResult {
@@ -28,6 +34,12 @@ export function validateEnvironment(): ValidationResult {
     NODE_ENV: process.env.NODE_ENV || 'development',
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    OCR_PROVIDER: process.env.OCR_PROVIDER,
+    GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   }
 
   // Validate Redis URL (required for sharing functionality)
@@ -49,6 +61,16 @@ export function validateEnvironment(): ValidationResult {
 
   if (!env.NEXT_PUBLIC_POSTHOG_HOST) {
     warnings.push('NEXT_PUBLIC_POSTHOG_HOST is not set - using default PostHog host')
+  }
+
+  // Validate OCR provider configuration (optional - will use mock in development)
+  const ocrProvider = env.OCR_PROVIDER || 'google'
+  if (ocrProvider === 'google' && !env.GOOGLE_GENERATIVE_AI_API_KEY && !env.GEMINI_API_KEY && !env.GOOGLE_API_KEY) {
+    warnings.push('GOOGLE_GENERATIVE_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY not set - receipt scanning will use mock data (default provider: google)')
+  } else if (ocrProvider === 'openai' && !env.OPENAI_API_KEY) {
+    warnings.push('OPENAI_API_KEY not set - receipt scanning will use mock data')
+  } else if (ocrProvider === 'anthropic' && !env.ANTHROPIC_API_KEY) {
+    warnings.push('ANTHROPIC_API_KEY not set - receipt scanning will use mock data')
   }
 
   // Validate NODE_ENV
