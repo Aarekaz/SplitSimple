@@ -34,6 +34,8 @@ import { TIMING } from '@/lib/constants'
 import { getBillFromCloud } from '@/lib/sharing'
 import { migrateBillSchema } from '@/lib/validation'
 
+import { ReceiptScanner } from '@/components/ReceiptScanner'
+
 export type SplitMethod = "even" | "shares" | "percent" | "exact"
 
 // --- DESIGN TOKENS ---
@@ -284,6 +286,18 @@ export function ProBillSplitter() {
     analytics.trackFeatureUsed("duplicate_item")
     toast({ title: "Item duplicated" })
   }, [dispatch, analytics, toast])
+
+  const handleScanImport = useCallback((scannedItems: Omit<Item, 'id' | 'splitWith' | 'method'>[]) => {
+    scannedItems.forEach(item => {
+      const newItem: Omit<Item, 'id'> = {
+        ...item,
+        splitWith: people.map(p => p.id), // Default split with everyone
+        method: 'even'
+      }
+      dispatch({ type: 'ADD_ITEM', payload: newItem })
+    })
+    analytics.trackFeatureUsed("scan_receipt_import", { count: scannedItems.length })
+  }, [people, dispatch, analytics])
 
   const addPerson = useCallback(() => {
     const newName = `Person ${people.length + 1}`
@@ -715,6 +729,11 @@ export function ProBillSplitter() {
             />
             <div className="text-[10px] font-medium text-slate-400 tracking-wide mt-0.5">SPLIT SIMPLE PRO</div>
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Scan Receipt Button */}
+          <ReceiptScanner onImport={handleScanImport} />
 
           {/* New Bill Button */}
           <button
@@ -731,9 +750,7 @@ export function ProBillSplitter() {
           >
             <FileQuestion size={14} /> <span className="hidden md:inline">New</span>
           </button>
-        </div>
 
-        <div className="flex items-center gap-3">
           {/* Bill ID Loader */}
           <div className="flex items-center gap-1.5">
             <div className="relative">
@@ -776,17 +793,6 @@ export function ProBillSplitter() {
 
           {/* Share Button */}
           <ShareBill variant="outline" size="sm" showText={true} />
-
-          <div className="hidden lg:block ml-2">
-            <a
-              href="https://anuragd.me"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1 font-inter"
-            >
-              Crafted by <span className="underline decoration-slate-300 underline-offset-2">Anurag Dhungana</span>
-            </a>
-          </div>
         </div>
       </header>
 
@@ -1189,6 +1195,17 @@ export function ProBillSplitter() {
               <ClipboardCopy size={14} /> Copy Text
             </button>
           )}
+
+          <div className="hidden lg:flex items-center gap-1 ml-2">
+            <a
+              href="https://anuragd.me"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1 font-inter"
+            >
+              Crafted by <span className="underline decoration-slate-300 underline-offset-2">Anurag Dhungana</span>
+            </a>
+          </div>
         </div>
 
         <div className="flex items-center gap-6">
