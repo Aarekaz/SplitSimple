@@ -410,7 +410,7 @@ export const trackPerformance = (metric: string, value: number) => {
 ```typescript
 // Redis caching configuration
 export const CACHE_CONFIG = {
-  // Bill data cache (30 days)
+  // Bill data cache (~6 months)
   BILL_TTL: 30 * 24 * 60 * 60,
   
   // Admin session cache (24 hours)
@@ -496,7 +496,7 @@ const securityHeaders = [
 ### Data Privacy
 
 - **No personal data collection**: Anonymous user IDs only
-- **Temporary storage**: 30-day automatic expiration
+- **Temporary storage**: auto-deletes after ~6 months
 - **Input masking**: Sensitive data masked in session recordings
 - **GDPR compliant**: No persistent user tracking
 

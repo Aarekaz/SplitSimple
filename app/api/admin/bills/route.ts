@@ -4,6 +4,7 @@ import { executeRedisOperation } from '@/lib/redis-pool'
 import { validateEnvironment } from '@/lib/env-validation'
 import { getBillSummary } from '@/lib/calculations'
 import type { Bill } from '@/contexts/BillContext'
+import { STORAGE } from '@/lib/constants'
 
 interface BillMetadata {
   id: string
@@ -68,7 +69,7 @@ async function getAllBillsHandler(req: NextRequest) {
         const billSummary = getBillSummary(billData)
         // For bills without timestamps, estimate based on Redis key order or use a reasonable fallback
         const estimatedCreatedAt = billData.createdAt || 
-          (ttl > 0 ? new Date(Date.now() - (30 * 24 * 60 * 60 * 1000 - ttl * 1000)).toISOString() : 
+          (ttl > 0 ? new Date(Date.now() - (STORAGE.BILL_TTL_SECONDS * 1000 - ttl * 1000)).toISOString() : 
           new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Default to 1 week ago
           
         const metadata: BillMetadata = {

@@ -40,6 +40,6 @@ export const LIMITS = {
 
 // Redis/Storage constants
 export const STORAGE = {
-  BILL_TTL_SECONDS: 2592000, // 30 days
+  BILL_TTL_SECONDS: 15552000, // ~6 months (6 * 30 days)
   BILL_KEY_PREFIX: 'bill:',
 } as const

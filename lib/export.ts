@@ -8,7 +8,8 @@ export function generateSummaryText(bill: Bill): string {
   const currencySymbol = "$"
 
   let text = `${bill.title}\n`
-  text += "=".repeat(bill.title.length) + "\n\n"
+  text += "=".repeat(bill.title.length) + "\n"
+  text += `Bill ID: ${bill.id || "unsaved"}\n\n`
 
   // Items section with total prices
   if (bill.items.length > 0) {
@@ -194,4 +195,3 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return false
   }
 }
-

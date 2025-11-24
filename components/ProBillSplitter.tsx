@@ -34,6 +34,8 @@ import { useBillAnalytics } from '@/hooks/use-analytics'
 import { TIMING } from '@/lib/constants'
 import { getBillFromCloud } from '@/lib/sharing'
 import { migrateBillSchema } from '@/lib/validation'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
 
 import { ReceiptScanner } from '@/components/ReceiptScanner'
 import {
@@ -56,7 +58,7 @@ const COLORS = [
   { id: 'amber', bg: 'bg-amber-100', solid: 'bg-amber-500', text: 'text-amber-700', textSolid: 'text-white', hex: '#F59E0B' },
 ]
 
-const SplitSimpleIcon = () => (
+export const SplitSimpleIcon = () => (
   <div className="w-8 h-8 rounded-lg shadow-md flex items-center justify-center bg-white">
     <svg
       width="24"
@@ -145,7 +147,7 @@ const splitMethodOptions = [
   { value: 'exact' as SplitMethod, label: 'Exact Amount', icon: Calculator },
 ]
 
-export function ProBillSplitter() {
+function DesktopBillSplitter() {
   const { state, dispatch, canUndo, canRedo } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
@@ -156,7 +158,6 @@ export function ProBillSplitter() {
   const [editingPerson, setEditingPerson] = useState<Person | null>(null)
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemId: string; personId?: string } | null>(null)
-  const [splitMethodDropdown, setSplitMethodDropdown] = useState<string | null>(null)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
   const [lastClickTime, setLastClickTime] = useState<{ row: number; col: string; time: number } | null>(null)
   const [newLoadDropdownOpen, setNewLoadDropdownOpen] = useState(false)
@@ -539,8 +540,6 @@ export function ProBillSplitter() {
   useEffect(() => {
     const handleClick = () => {
       setContextMenu(null)
-      setSplitMethodDropdown(null)
-      // Don't force close the dropdown here - let Radix UI handle it
     }
     window.addEventListener('click', handleClick)
     return () => window.removeEventListener('click', handleClick)
@@ -561,11 +560,6 @@ export function ProBillSplitter() {
       }
       if (contextMenu) {
         setContextMenu(null)
-        e.preventDefault()
-        return
-      }
-      if (splitMethodDropdown) {
-        setSplitMethodDropdown(null)
         e.preventDefault()
         return
       }
@@ -744,7 +738,7 @@ export function ProBillSplitter() {
       // Note: Auto-typing disabled - user must double-click or press Enter to edit
       // This provides more intentional, Excel-like behavior
     }
-  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, contextMenu, splitMethodDropdown, updateItem])
+  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, contextMenu, updateItem])
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
@@ -1003,34 +997,33 @@ export function ProBillSplitter() {
                           />
                         </div>
                         <div className="relative pr-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSplitMethodDropdown(splitMethodDropdown === item.id ? null : item.id)
-                            }}
-                            className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors flex items-center gap-1"
-                            title="Change split method"
-                          >
-                            {React.createElement(getSplitMethodIcon(item.method), { size: 12 })}
-                            <ChevronDown size={10} />
-                          </button>
-                          {splitMethodDropdown === item.id && (
-                            <div
-                              className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-slate-200 w-40 py-1 z-50"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                          <DropdownMenu modal={false}>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors flex items-center gap-1"
+                                title="Change split method"
+                              >
+                                {React.createElement(getSplitMethodIcon(item.method), { size: 12 })}
+                                <ChevronDown size={10} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-40">
                               {splitMethodOptions.map(option => (
-                                <button
+                                <DropdownMenuItem
                                   key={option.value}
-                                  onClick={() => changeSplitMethod(item.id, option.value)}
-                                  className={`w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 transition-colors font-inter ${item.method === option.value ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600'}`}
+                                  onSelect={(e) => {
+                                    e.preventDefault()
+                                    changeSplitMethod(item.id, option.value)
+                                  }}
+                                  className={`text-xs flex items-center gap-2 font-inter ${item.method === option.value ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600'}`}
                                 >
                                   {React.createElement(option.icon, { size: 12 })}
                                   {option.label}
-                                </button>
+                                </DropdownMenuItem>
                               ))}
-                            </div>
-                          )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
 
@@ -1638,4 +1631,12 @@ export function ProBillSplitter() {
       )}
     </div>
   )
+}
+
+export function ProBillSplitter() {
+  const isMobileView = useIsMobile()
+  if (isMobileView) {
+    return <MobileSpreadsheetView />
+  }
+  return <DesktopBillSplitter />
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { Bill } from "@/contexts/BillContext"
 import { executeRedisOperation } from "@/lib/redis-pool"
 import { validateEnvironment } from "@/lib/env-validation"
+import { STORAGE } from "@/lib/constants"
 
 // GET /api/bills/[id] - Retrieve a shared bill
 export async function GET(
@@ -44,7 +45,7 @@ export async function GET(
         // Update the bill with incremented access count
         await client.setEx(
           `bill:${billId}`,
-          30 * 24 * 60 * 60, // Maintain original TTL
+          STORAGE.BILL_TTL_SECONDS,
           JSON.stringify(updatedBill)
         )
         
@@ -131,10 +132,9 @@ export async function POST(
 
     // Use connection pool for Redis operation
     await executeRedisOperation(async (client) => {
-      // Store bill in Redis with 30-day expiration (2,592,000 seconds)
       await client.setEx(
         `bill:${billId}`,
-        30 * 24 * 60 * 60, // 30 days in seconds
+        STORAGE.BILL_TTL_SECONDS,
         JSON.stringify(billWithMetadata)
       )
     })

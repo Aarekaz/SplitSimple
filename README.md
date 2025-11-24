@@ -8,7 +8,7 @@ A modern, collaborative bill-splitting app with real-time sync and universal sha
 *   **Shareable Links**: Generate unique URLs that work for anyone, anywhere
 *   **Real-time Collaboration**: Multiple people can edit the same bill simultaneously
 *   **Cloud Sync**: Automatic syncing with visual status indicators
-*   **No Accounts Required**: Anonymous, temporary bill storage (30-day expiration)
+*   **No Accounts Required**: Anonymous, temporary bill storage (auto-deletes after ~6 months)
 
 ### 💰 **Smart Bill Management**
 *   **Intelligent Status System**: Draft → Active → Closed workflow with contextual actions
