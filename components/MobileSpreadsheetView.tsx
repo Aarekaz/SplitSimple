@@ -74,6 +74,19 @@ export function MobileSpreadsheetView() {
     }
   }
 
+  const handleScanImport = (scannedItems: Omit<Item, "id" | "splitWith" | "method">[]) => {
+    scannedItems.forEach((item) => {
+      const newItem: Omit<Item, "id"> = {
+        ...item,
+        splitWith: people.map((p) => p.id),
+        method: "even",
+      }
+      dispatch({ type: "ADD_ITEM", payload: newItem })
+    })
+    analytics.trackFeatureUsed("scan_receipt_import", { count: scannedItems.length })
+    toast({ title: "Items added from scan" })
+  }
+
   const personSplits = useMemo(() => {
     if (!currentItem) return {}
     return calculateItemSplits(currentItem, people)
@@ -328,15 +341,3 @@ export function MobileSpreadsheetView() {
     </div>
   )
 }
-  const handleScanImport = (scannedItems: Omit<Item, "id" | "splitWith" | "method">[]) => {
-    scannedItems.forEach((item) => {
-      const newItem: Omit<Item, "id"> = {
-        ...item,
-        splitWith: people.map((p) => p.id),
-        method: "even",
-      }
-      dispatch({ type: "ADD_ITEM", payload: newItem })
-    })
-    analytics.trackFeatureUsed("scan_receipt_import", { count: scannedItems.length })
-    toast({ title: "Items added from scan" })
-  }
