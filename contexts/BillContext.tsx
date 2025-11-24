@@ -112,7 +112,14 @@ const createInitialBill = (): Bill => ({
   discount: "",
   taxTipAllocation: "proportional",
   notes: "",
-  people: [],
+  people: [
+    {
+      id: simpleUUID(),
+      name: "Person 1",
+      color: PERSON_COLORS[0],
+      colorIdx: 0
+    }
+  ],
   items: [],
 })
 

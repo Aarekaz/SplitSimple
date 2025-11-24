@@ -88,6 +88,7 @@ const GridCell = React.memo(({
           type={type}
           value={value}
           onChange={e => onCellEdit(itemId, field, e.target.value)}
+          onClick={(e) => e.stopPropagation()}
           className={`w-full h-full px-4 py-3 text-sm border-2 border-indigo-500 focus:outline-none ${className}`}
         />
       </div>
@@ -131,6 +132,7 @@ export function ProBillSplitter() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemId: string; personId?: string } | null>(null)
   const [splitMethodDropdown, setSplitMethodDropdown] = useState<string | null>(null)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
+  const [lastClickTime, setLastClickTime] = useState<{ row: number; col: string; time: number } | null>(null)
 
   const editInputRef = useRef<HTMLInputElement>(null)
   const loadBillRequestRef = useRef<string | null>(null) // Track current load request to prevent race conditions
@@ -138,6 +140,11 @@ export function ProBillSplitter() {
   const people = state.currentBill.people
   const items = state.currentBill.items
   const title = state.currentBill.title
+
+  // Detect if device is touch-based (mobile/tablet)
+  const isTouchDevice = () => {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0
+  }
 
   // --- Derived Data ---
   const summary = getBillSummary(state.currentBill)
@@ -464,9 +471,32 @@ export function ProBillSplitter() {
   }, [updateItem])
 
   const handleCellClick = useCallback((row: number, col: string) => {
-    setSelectedCell({ row, col })
-    setEditing(true)
-  }, [])
+    const now = Date.now()
+    const isDoubleClick = lastClickTime &&
+      lastClickTime.row === row &&
+      lastClickTime.col === col &&
+      now - lastClickTime.time < 300
+
+    // Special case: person assignment cells always single-click toggle
+    if (people.some(p => p.id === col)) {
+      const item = items[row]
+      if (item) toggleAssignment(item.id, col)
+      return
+    }
+
+    // Touch devices: single tap enters edit mode
+    // Desktop: double-click enters edit mode
+    if (isTouchDevice() || isDoubleClick) {
+      setSelectedCell({ row, col })
+      setEditing(true)
+      setLastClickTime(null)
+    } else {
+      // Single-click: select only
+      setSelectedCell({ row, col })
+      setEditing(false)
+      setLastClickTime({ row, col, time: now })
+    }
+  }, [lastClickTime, people, items, toggleAssignment])
 
   // --- Context Menu ---
   const handleContextMenu = useCallback((e: React.MouseEvent, itemId: string, personId?: string) => {
@@ -640,8 +670,17 @@ export function ProBillSplitter() {
       return
     }
 
-    // Arrow keys - navigate grid (works even while editing)
+    // Arrow keys - navigate grid OR move cursor in edit mode
     if (e.key.startsWith('Arrow')) {
+      const target = e.target as HTMLElement
+      const isInTextInput = target.tagName === 'INPUT' && target.getAttribute('type') === 'text'
+
+      // If editing text, let arrow keys move cursor (don't intercept)
+      if (editing && isInTextInput) {
+        return
+      }
+
+      // Not editing or not in text input: navigate grid
       e.preventDefault()
       setEditing(false)
 
@@ -673,28 +712,9 @@ export function ProBillSplitter() {
           const item = items[selectedCell.row]
           if (item) toggleAssignment(item.id, selectedCell.col)
         }
-      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        // Auto-enter edit mode when typing (Excel-like behavior)
-        // Only for editable columns (name, price, qty)
-        if (['name', 'price', 'qty'].includes(selectedCell.col)) {
-          const item = items[selectedCell.row]
-          if (item) {
-            // Clear the current value and start fresh
-            if (selectedCell.col === 'name') {
-              updateItem(item.id, { name: e.key })
-            } else if (selectedCell.col === 'price') {
-              updateItem(item.id, { price: e.key })
-            } else if (selectedCell.col === 'qty') {
-              const num = parseInt(e.key)
-              if (!isNaN(num)) {
-                updateItem(item.id, { quantity: num })
-              }
-            }
-            setEditing(true)
-            e.preventDefault()
-          }
-        }
       }
+      // Note: Auto-typing disabled - user must double-click or press Enter to edit
+      // This provides more intentional, Excel-like behavior
     }
   }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, contextMenu, splitMethodDropdown, updateItem])
 
