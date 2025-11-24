@@ -54,8 +54,14 @@ if (typeof window !== 'undefined') {
   Object.assign(navigator, { clipboard: clipboardMock })
 } else {
   // Node test environments (e.g. API route tests) still rely on localStorage mock
-  ;(global as any).window = { navigator: { clipboard: clipboardMock } } as Window & typeof globalThis
-  ;(global as any).navigator = (global as any).window.navigator
+  const mockWindow = {
+    navigator: {
+      clipboard: clipboardMock,
+    },
+  } as unknown as Window & typeof globalThis
+
+  ;(global as any).window = mockWindow
+  ;(global as any).navigator = mockWindow.navigator
   Object.defineProperty(global, 'localStorage', {
     value: localStorageMock,
   })
