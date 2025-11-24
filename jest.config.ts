@@ -25,6 +25,7 @@ const config: Config = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/app/api/',
+    '<rootDir>/.conductor/',
   ],
   
   // Module name mapping for path aliases
@@ -38,6 +39,7 @@ const config: Config = {
     '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/.next/**',
+    '!**/.conductor/**',
     '!**/coverage/**',
     '!jest.config.ts',
     '!jest.setup.ts',
