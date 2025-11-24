@@ -699,45 +699,39 @@ export function ProBillSplitter() {
     <div className="pro-app-shell selection:bg-indigo-100 selection:text-indigo-900">
       {/* --- Header --- */}
       <header className="pro-header">
-        <div className="flex items-center gap-4">
+        {/* Left Section: Branding & Title */}
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-slate-900 rounded-lg shadow-md flex items-center justify-center text-white">
             <GridIcon size={16} strokeWidth={2.5} />
           </div>
-          <div>
+          <div className="flex items-baseline gap-3">
             <input
               value={title}
               onChange={(e) => {
                 dispatch({ type: 'SET_BILL_TITLE', payload: e.target.value })
                 analytics.trackTitleChanged(e.target.value)
               }}
-              className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-48 hover:text-indigo-600 transition-colors truncate font-inter"
-              placeholder="Project Name"
+              className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-56 hover:text-indigo-600 transition-colors truncate font-inter"
+              placeholder="Enter Bill Name"
             />
-            <div className="text-[10px] font-medium text-slate-400 tracking-wide mt-0.5">SPLIT SIMPLE PRO</div>
+            <div className="text-[10px] font-medium text-slate-400 tracking-wide hidden sm:block">SPLIT SIMPLE PRO</div>
           </div>
-
-          {/* New Bill Button */}
-          <button
-            onClick={() => {
-              if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
-                dispatch({ type: 'NEW_BILL' })
-                toast({ title: "New bill created" })
-                analytics.trackBillCreated()
-                analytics.trackFeatureUsed("new_bill")
-              }
-            }}
-            className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter"
-            title="New Bill (Cmd+N)"
-          >
-            <FileQuestion size={14} /> <span className="hidden md:inline">New</span>
-          </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Bill ID Loader */}
-          <div className="flex items-center gap-1.5">
+        {/* Right Section: Actions */}
+        <div className="flex items-center gap-2">
+          {/* Status Indicators - moved to be more prominent */}
+          <div className="flex items-center gap-2">
+            <BillStatusIndicator compact={true} showSelector={true} />
+            <SyncStatusIndicator compact />
+          </div>
+
+          <div className="h-6 w-px bg-slate-200"></div>
+
+          {/* Bill ID Loader - consolidated design */}
+          <div className="flex items-center gap-1">
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
               <input
                 type="text"
                 value={billId}
@@ -747,15 +741,15 @@ export function ProBillSplitter() {
                     handleLoadBill()
                   }
                 }}
-                placeholder="Bill ID..."
+                placeholder="Load by ID..."
                 disabled={isLoadingBill}
-                className="h-8 w-32 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
+                className="h-8 w-28 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
               />
             </div>
             <button
               onClick={handleLoadBill}
               disabled={isLoadingBill || !billId.trim()}
-              className="h-8 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              className="h-8 px-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               title="Load Bill (Enter)"
             >
               {isLoadingBill ? (
@@ -766,27 +760,26 @@ export function ProBillSplitter() {
             </button>
           </div>
 
-          <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
+          <div className="h-6 w-px bg-slate-200"></div>
 
-          {/* Status & Sync */}
-          <BillStatusIndicator compact={true} showSelector={true} />
-          <SyncStatusIndicator compact />
-
-          <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
+          {/* Primary Actions */}
+          <button
+            onClick={() => {
+              if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
+                dispatch({ type: 'NEW_BILL' })
+                toast({ title: "New bill created" })
+                analytics.trackBillCreated()
+                analytics.trackFeatureUsed("new_bill")
+              }
+            }}
+            className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-1.5 font-inter"
+            title="New Bill (Cmd+N)"
+          >
+            <FileQuestion size={14} /> <span className="hidden lg:inline">New</span>
+          </button>
 
           {/* Share Button */}
-          <ShareBill variant="outline" size="sm" showText={true} />
-
-          <div className="hidden lg:block ml-2">
-            <a
-              href="https://anuragd.me"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1 font-inter"
-            >
-              Crafted by <span className="underline decoration-slate-300 underline-offset-2">Anurag Dhungana</span>
-            </a>
-          </div>
+          <ShareBill variant="outline" size="sm" showText={false} />
         </div>
       </header>
 
@@ -797,25 +790,26 @@ export function ProBillSplitter() {
           <div className="h-full w-full">
             <div className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar" tabIndex={-1}>
               <div className="min-w-max mx-auto bg-white rounded-lg border border-slate-200 shadow-sm">
-                {/* Live Roster */}
-                <div className="flex items-center gap-6 px-4 py-3 bg-slate-50 border-b border-slate-200 overflow-x-auto">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 font-inter">
-                    Live Breakdown
+                {/* Live Roster - improved spacing and visual hierarchy */}
+                <div className="flex items-center gap-4 px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200 overflow-x-auto">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0 font-inter flex items-center gap-2">
+                    <div className="w-1 h-4 bg-indigo-600 rounded-full"></div>
+                    Live Split
                   </div>
-                  <div className="h-4 w-px bg-slate-200 shrink-0"></div>
                   {people.map(p => {
                     const stats = personFinalShares[p.id]
                     const colorObj = COLORS[p.colorIdx || 0]
                     const percent = stats ? (stats.total / (grandTotal || 1)) * 100 : 0
                     return (
-                      <div key={p.id} className="flex items-center gap-2 shrink-0">
-                        <div className={`w-2 h-2 rounded-full ${colorObj.solid}`}></div>
-                        <span className="text-xs font-medium text-slate-600 font-inter">{p.name.split(' ')[0]}</span>
+                      <div key={p.id} className="flex items-center gap-2 shrink-0 bg-white px-3 py-1.5 rounded-md border border-slate-200 shadow-sm">
+                        <div className={`w-2.5 h-2.5 rounded-full ${colorObj.solid}`}></div>
+                        <span className="text-xs font-semibold text-slate-700 font-inter">{p.name.split(' ')[0]}</span>
+                        <div className="h-3 w-px bg-slate-200"></div>
                         <span className="text-xs font-bold font-space-mono text-slate-900">
                           {formatCurrencySimple(stats?.total || 0)}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-space-mono">
-                          ({percent.toFixed(0)}%)
+                        <span className="text-[10px] text-slate-400 font-space-mono font-medium">
+                          {percent.toFixed(0)}%
                         </span>
                       </div>
                     )
@@ -1023,12 +1017,16 @@ export function ProBillSplitter() {
                     </div>
                   ))}
 
-                  {/* Add Row Button */}
+                  {/* Add Row Button - more prominent placement */}
                   <button
                     onClick={addItem}
-                    className="w-full py-3 text-slate-400 text-xs font-bold uppercase tracking-wider hover:text-indigo-600 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-2 border-t border-slate-200 font-inter"
+                    className="w-full py-3.5 text-slate-500 text-xs font-bold uppercase tracking-wider hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2 border-t-2 border-dashed border-slate-200 hover:border-indigo-300 font-inter group"
                   >
-                    <Plus size={14} /> Add Line Item
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 group-hover:bg-indigo-600 transition-colors">
+                      <Plus size={12} className="text-slate-600 group-hover:text-white" strokeWidth={3} />
+                    </div>
+                    <span>Add Line Item</span>
+                    <span className="text-[10px] text-slate-400 font-normal">(Press N)</span>
                   </button>
                 </div>
               </div>
@@ -1162,7 +1160,9 @@ export function ProBillSplitter() {
 
       {/* --- Footer --- */}
       <footer className="pro-footer">
-        <div className="flex items-center gap-4">
+        {/* Left Section: View Controls */}
+        <div className="flex items-center gap-3">
+          {/* View Toggle */}
           <div className="flex bg-slate-100 p-1 rounded-md">
             <button
               onClick={() => setActiveView('ledger')}
@@ -1178,22 +1178,8 @@ export function ProBillSplitter() {
             </button>
           </div>
 
-          <div className="h-4 w-px bg-slate-300 hidden md:block"></div>
-
-          {/* Copy Button (Breakdown Only) */}
-          {activeView === 'breakdown' && (
-            <button
-              onClick={copyBreakdown}
-              className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
-            >
-              <ClipboardCopy size={14} /> Copy Text
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-6">
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-1">
+          {/* Undo/Redo - moved next to view toggle for better workflow */}
+          <div className="flex items-center gap-0.5 bg-slate-50 rounded-md p-0.5">
             <button
               onClick={() => {
                 dispatch({ type: 'UNDO' })
@@ -1201,10 +1187,10 @@ export function ProBillSplitter() {
                 analytics.trackUndoRedoUsed("undo", state.historyIndex)
               }}
               disabled={!canUndo}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               title="Undo (Cmd+Z)"
             >
-              <RotateCcw size={16} />
+              <RotateCcw size={15} />
             </button>
             <button
               onClick={() => {
@@ -1213,54 +1199,74 @@ export function ProBillSplitter() {
                 analytics.trackUndoRedoUsed("redo", state.historyIndex)
               }}
               disabled={!canRedo}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               title="Redo (Cmd+Shift+Z)"
             >
-              <RotateCw size={16} />
+              <RotateCw size={15} />
             </button>
           </div>
 
+          {/* Copy Button (Breakdown Only) */}
+          {activeView === 'breakdown' && (
+            <>
+              <div className="h-4 w-px bg-slate-300"></div>
+              <button
+                onClick={copyBreakdown}
+                className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
+              >
+                <ClipboardCopy size={14} /> Copy
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Right Section: Financial Controls & Total */}
+        <div className="flex items-center gap-4">
           {activeView === 'ledger' && (
-            <div className="flex items-center gap-3 border-l border-r border-slate-200 px-6">
-              <div className="flex items-center gap-2">
-                <label className="font-bold text-slate-400 uppercase text-[10px] font-inter">Tax</label>
-                <input
-                  type="number"
-                  value={state.currentBill.tax}
-                  onChange={(e) => {
-                    dispatch({ type: 'SET_TAX', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
-                  }}
-                  className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="font-bold text-slate-400 uppercase text-[10px] font-inter">Tip</label>
-                <input
-                  type="number"
-                  value={state.currentBill.tip}
-                  onChange={(e) => {
-                    dispatch({ type: 'SET_TIP', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
-                  }}
-                  className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="font-bold text-slate-400 uppercase text-[10px] font-inter">Disc</label>
-                <input
-                  type="number"
-                  value={state.currentBill.discount}
-                  onChange={(e) => {
-                    dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
-                    analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
-                  }}
-                  className="w-16 bg-slate-50 rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 focus:bg-white transition-colors text-xs font-space-mono text-slate-700 text-right"
-                />
+            <>
+              {/* Financial Inputs - more compact grouping */}
+              <div className="flex items-center gap-2 bg-slate-50 rounded-md px-3 py-1.5">
+                <div className="flex items-center gap-1.5">
+                  <label className="font-bold text-slate-500 text-[10px] font-inter">Tax</label>
+                  <input
+                    type="number"
+                    value={state.currentBill.tax}
+                    onChange={(e) => {
+                      dispatch({ type: 'SET_TAX', payload: e.target.value })
+                      analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
+                    }}
+                    className="w-14 bg-white rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                  />
+                </div>
+                <div className="h-4 w-px bg-slate-200"></div>
+                <div className="flex items-center gap-1.5">
+                  <label className="font-bold text-slate-500 text-[10px] font-inter">Tip</label>
+                  <input
+                    type="number"
+                    value={state.currentBill.tip}
+                    onChange={(e) => {
+                      dispatch({ type: 'SET_TIP', payload: e.target.value })
+                      analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
+                    }}
+                    className="w-14 bg-white rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                  />
+                </div>
+                <div className="h-4 w-px bg-slate-200"></div>
+                <div className="flex items-center gap-1.5">
+                  <label className="font-bold text-slate-500 text-[10px] font-inter">Disc</label>
+                  <input
+                    type="number"
+                    value={state.currentBill.discount}
+                    onChange={(e) => {
+                      dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
+                      analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
+                    }}
+                    className="w-14 bg-white rounded px-2 py-1 border border-slate-200 focus:border-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                  />
+                </div>
               </div>
 
-              {/* Allocation Toggle */}
-              <div className="h-4 w-px bg-slate-200"></div>
+              {/* Allocation Toggle - more compact */}
               <button
                 onClick={() => {
                   const newAllocation = state.currentBill.taxTipAllocation === 'proportional' ? 'even' : 'proportional'
@@ -1272,28 +1278,29 @@ export function ProBillSplitter() {
                   })
                   analytics.trackFeatureUsed("tax_tip_allocation_toggle", { allocation: newAllocation })
                 }}
-                className="flex flex-col items-center gap-0.5 px-2 py-1 hover:bg-slate-50 rounded transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-md transition-colors border border-slate-200"
                 title={`Current: ${state.currentBill.taxTipAllocation === 'proportional' ? 'Proportional' : 'Even'} allocation`}
               >
-                <div className="flex items-center gap-1">
-                  {state.currentBill.taxTipAllocation === 'proportional' ? (
-                    <Scale size={12} className="text-indigo-600" />
-                  ) : (
-                    <Equal size={12} className="text-indigo-600" />
-                  )}
-                  <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-inter">
-                    {state.currentBill.taxTipAllocation === 'proportional' ? 'Prop' : 'Even'}
-                  </span>
-                </div>
-                <span className="text-[8px] text-slate-400 font-inter">Allocation</span>
+                {state.currentBill.taxTipAllocation === 'proportional' ? (
+                  <Scale size={13} className="text-indigo-600" />
+                ) : (
+                  <Equal size={13} className="text-indigo-600" />
+                )}
+                <span className="text-[10px] font-bold text-slate-600 font-inter">
+                  {state.currentBill.taxTipAllocation === 'proportional' ? 'Proportional' : 'Even'}
+                </span>
               </button>
-            </div>
+
+              <div className="h-6 w-px bg-slate-300"></div>
+            </>
           )}
-          <div className="flex flex-col items-end justify-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-0.5 font-inter">
-              Grand Total
+
+          {/* Grand Total - more prominent */}
+          <div className="flex items-center gap-3 bg-slate-900 text-white px-4 py-2 rounded-md">
+            <span className="text-[10px] font-bold uppercase tracking-wider font-inter">
+              Total
             </span>
-            <span className="font-space-mono font-bold text-slate-900 leading-none text-lg">
+            <span className="font-space-mono font-bold text-lg">
               {formatCurrencySimple(grandTotal)}
             </span>
           </div>
