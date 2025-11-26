@@ -132,7 +132,9 @@ const GridCell = React.memo(({
         ${className}
       `}
     >
-      <span className="truncate w-full">{value}</span>
+      <span className="truncate w-full">
+        {field === 'price' && value ? `$${value}` : value}
+      </span>
     </div>
   )
 })
@@ -528,9 +530,26 @@ function DesktopBillSplitter() {
   // --- Context Menu ---
   const handleContextMenu = useCallback((e: React.MouseEvent, itemId: string, personId?: string) => {
     e.preventDefault()
+
+    // Context menu dimensions
+    const menuWidth = 192 // 48 * 4 = w-48
+    const menuHeight = 200 // approximate height
+
+    // Calculate position with boundary detection
+    let x = e.clientX
+    let y = e.clientY
+
+    // Keep menu within viewport bounds
+    if (x + menuWidth > window.innerWidth) {
+      x = window.innerWidth - menuWidth - 10
+    }
+    if (y + menuHeight > window.innerHeight) {
+      y = window.innerHeight - menuHeight - 10
+    }
+
     setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
+      x,
+      y,
       itemId,
       personId
     })
@@ -780,7 +799,7 @@ function DesktopBillSplitter() {
                   analytics.trackFeatureUsed("new_bill")
                 }
               }}
-              className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter"
+              className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200/60 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter"
               title="New Bill (Cmd+N)"
             >
               <FileQuestion size={14} />
@@ -789,7 +808,7 @@ function DesktopBillSplitter() {
 
             <DropdownMenu open={newLoadDropdownOpen} onOpenChange={setNewLoadDropdownOpen}>
               <DropdownMenuTrigger asChild>
-                <button className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter">
+                <button className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200/60 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter">
                   <Search size={14} />
                   <span>Load</span>
                   <ChevronDown size={12} />
@@ -882,6 +901,9 @@ function DesktopBillSplitter() {
             </button>
           </div>
 
+          {/* Sync Status */}
+          <SyncStatusIndicator />
+
           {/* Scan Receipt Button */}
           <ReceiptScanner onImport={handleScanImport} />
 
@@ -894,40 +916,47 @@ function DesktopBillSplitter() {
       <main className="pro-main">
         {/* LEDGER VIEW */}
         {activeView === 'ledger' && (
-          <div className="h-full w-full">
+          <div className="h-full w-full animate-in fade-in duration-200">
             <div className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar" tabIndex={-1}>
-              <div className="min-w-max mx-auto bg-white rounded-lg border border-slate-200 shadow-sm">
+              <div className="min-w-max mx-auto bg-white rounded-lg border border-slate-200/80 shadow-sm">
                 {/* Live Roster */}
-                <div className="flex items-center gap-6 px-4 py-3 bg-slate-50 border-b border-slate-200 overflow-x-auto">
+                <div className="flex items-center gap-6 px-4 py-3 bg-slate-50/50 border-b border-slate-200/60 overflow-x-auto">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 font-inter">
                     Live Breakdown
                   </div>
                   <div className="h-4 w-px bg-slate-200 shrink-0"></div>
-                  {people.map(p => {
-                    const stats = personFinalShares[p.id]
-                    const colorObj = COLORS[p.colorIdx || 0]
-                    const percent = stats ? (stats.total / (grandTotal || 1)) * 100 : 0
-                    return (
-                      <div key={p.id} className="flex items-center gap-2 shrink-0">
-                        <div className={`w-2 h-2 rounded-full ${colorObj.solid}`}></div>
-                        <span className="text-xs font-medium text-slate-600 font-inter">{p.name.split(' ')[0]}</span>
-                        <span className="text-xs font-bold font-space-mono text-slate-900">
-                          {formatCurrencySimple(stats?.total || 0)}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-space-mono">
-                          ({percent.toFixed(0)}%)
-                        </span>
-                      </div>
-                    )
-                  })}
+                  {people.length === 0 ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-400 font-inter">
+                      <Users size={14} className="text-slate-300" />
+                      <span>Click <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600">+</kbd> above to add people or press <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600">P</kbd></span>
+                    </div>
+                  ) : (
+                    people.map(p => {
+                      const stats = personFinalShares[p.id]
+                      const colorObj = COLORS[p.colorIdx || 0]
+                      const percent = stats ? (stats.total / (grandTotal || 1)) * 100 : 0
+                      return (
+                        <div key={p.id} className="flex items-center gap-2 shrink-0">
+                          <div className={`w-2 h-2 rounded-full ${colorObj.solid}`}></div>
+                          <span className="text-xs font-medium text-slate-600 font-inter">{p.name.split(' ')[0]}</span>
+                          <span className="text-xs font-bold font-space-mono text-slate-900">
+                            {formatCurrencySimple(stats?.total || 0)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-space-mono">
+                            ({percent.toFixed(0)}%)
+                          </span>
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
 
                 {/* Sticky Header */}
                 <div className="pro-grid-header flex text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <div className="w-12 p-3 text-center border-r border-slate-100 flex items-center justify-center">#</div>
-                  <div className="w-72 p-3 border-r border-slate-100 flex items-center pro-sticky-left">Item Description</div>
-                  <div className="w-28 p-3 text-right border-r border-slate-100 flex items-center justify-end">Price</div>
-                  <div className="w-20 p-3 text-center border-r border-slate-100 flex items-center justify-center">Qty</div>
+                  <div className="w-12 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">#</div>
+                  <div className="w-72 p-3 border-r border-slate-100/60 flex items-center pro-sticky-left">Item Description</div>
+                  <div className="w-28 p-3 text-right border-r border-slate-100/60 flex items-center justify-end">Price</div>
+                  <div className="w-20 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">Qty</div>
 
                   {people.map(p => {
                     const colorObj = COLORS[p.colorIdx || 0]
@@ -935,7 +964,7 @@ function DesktopBillSplitter() {
                     return (
                       <div
                         key={p.id}
-                        className={`w-28 p-2 border-r border-slate-100 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors ${hoveredColumn === p.id ? 'bg-slate-50' : ''}`}
+                        className={`w-28 p-2 border-r border-slate-100/60 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors ${hoveredColumn === p.id ? 'bg-slate-50' : ''}`}
                         onMouseEnter={() => setHoveredColumn(p.id)}
                         onMouseLeave={() => setHoveredColumn(null)}
                         onClick={() => setEditingPerson(p)}
@@ -960,6 +989,25 @@ function DesktopBillSplitter() {
 
                 {/* Body */}
                 <div className="divide-y divide-slate-100">
+                  {calculatedItems.length === 0 && (
+                    <div className="py-16 px-6 flex flex-col items-center justify-center text-center">
+                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                        <Plus className="h-8 w-8 text-slate-400" />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 mb-2 font-inter">No items yet</h3>
+                      <p className="text-sm text-slate-500 mb-6 max-w-sm font-inter">
+                        Add your first item to start splitting the bill. Press <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">N</kbd> or click the button below.
+                      </p>
+                      <button
+                        onClick={addItem}
+                        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add First Item
+                      </button>
+                    </div>
+                  )}
+
                   {calculatedItems.map((item, rIdx) => (
                     <div
                       key={item.id}
@@ -967,7 +1015,7 @@ function DesktopBillSplitter() {
                       onContextMenu={(e) => handleContextMenu(e, item.id)}
                     >
                       {/* Index / "Equal" Button */}
-                      <div className="w-12 border-r border-slate-100 flex items-center justify-center text-[10px] text-slate-300 font-space-mono select-none bg-slate-50/30 group-hover:bg-white transition-colors">
+                      <div className="w-12 border-r border-slate-100/60 flex items-center justify-center text-[10px] text-slate-300 font-space-mono select-none bg-slate-50/30 group-hover:bg-white transition-colors">
                         <span className="group-hover:hidden">{String(rIdx + 1).padStart(2, '0')}</span>
                         <button
                           onClick={() => toggleAllAssignments(item.id)}
@@ -979,7 +1027,7 @@ function DesktopBillSplitter() {
                       </div>
 
                       {/* Name + Split Method Selector */}
-                      <div className="w-72 border-r border-slate-100 pro-sticky-left group-hover:bg-slate-50 transition-colors relative p-0 flex items-center">
+                      <div className="w-72 border-r border-slate-100/60 pro-sticky-left group-hover:bg-slate-50 transition-colors relative p-0 flex items-center">
                         <div className="flex-1">
                           <GridCell
                             row={rIdx}
@@ -1027,7 +1075,7 @@ function DesktopBillSplitter() {
                       </div>
 
                       {/* Price */}
-                      <div className="w-28 border-r border-slate-100 relative p-0">
+                      <div className="w-28 border-r border-slate-100/60 relative p-0">
                         <GridCell
                           row={rIdx}
                           col="price"
@@ -1045,7 +1093,7 @@ function DesktopBillSplitter() {
                       </div>
 
                       {/* Qty */}
-                      <div className="w-20 border-r border-slate-100 relative p-0">
+                      <div className="w-20 border-r border-slate-100/60 relative p-0">
                         <GridCell
                           row={rIdx}
                           col="qty"
@@ -1082,9 +1130,10 @@ function DesktopBillSplitter() {
                             onMouseEnter={() => setHoveredColumn(p.id)}
                             onMouseLeave={() => setHoveredColumn(null)}
                             className={`
-                              w-28 border-r border-slate-100 relative cursor-pointer flex items-center justify-center transition-all duration-100 select-none
+                              w-28 border-r border-slate-100/60 relative cursor-pointer flex items-center justify-center transition-all duration-100 select-none
                               ${isSelected ? `ring-inset ring-2 ring-indigo-600 z-10` : ''}
                               ${hoveredColumn === p.id && !isAssigned ? 'bg-slate-50' : ''}
+                              active:bg-slate-100
                             `}
                           >
                             {isAssigned ? (
@@ -1092,7 +1141,7 @@ function DesktopBillSplitter() {
                                 className={`w-20 py-1.5 rounded-md shadow-sm text-center transform transition-transform active:scale-95 ${color.solid} ${color.textSolid}`}
                               >
                                 <span className="font-space-mono text-xs font-bold">
-                                  {(item.pricePerPerson || 0).toFixed(2)}
+                                  ${(item.pricePerPerson || 0).toFixed(2)}
                                 </span>
                               </div>
                             ) : (
@@ -1105,7 +1154,7 @@ function DesktopBillSplitter() {
                       })}
 
                       {/* Empty Column */}
-                      <div className="w-12 border-r border-slate-100 flex items-center justify-center">
+                      <div className="w-12 border-r border-slate-100/60 flex items-center justify-center">
                         <button
                           onClick={() => deleteItem(item.id)}
                           className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
@@ -1117,51 +1166,54 @@ function DesktopBillSplitter() {
 
                       {/* Row Total */}
                       <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 group-hover:bg-slate-50 font-space-mono text-xs font-bold text-slate-800">
-                        {(item.totalItemPrice || 0).toFixed(2)}
+                        ${(item.totalItemPrice || 0).toFixed(2)}
                       </div>
                     </div>
                   ))}
 
                   {/* Add Row Button */}
-                  <button
-                    onClick={addItem}
-                    className="w-full py-3 text-slate-400 text-xs font-bold uppercase tracking-wider hover:text-indigo-600 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-2 border-t border-slate-200 font-inter"
-                  >
-                    <Plus size={14} /> Add Line Item
-                  </button>
+                  {calculatedItems.length > 0 && (
+                    <button
+                      onClick={addItem}
+                      className="w-full py-3 text-slate-400 text-xs font-bold uppercase tracking-wider hover:text-indigo-600 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-2 border-t border-slate-200 font-inter"
+                      title="Add new item (Press N)"
+                    >
+                      <Plus size={14} /> Add Line Item
+                    </button>
+                  )}
 
                   {/* Summary Rows Section */}
                   <div className="border-t-4 border-double border-slate-300">
                     {/* Subtotal Row */}
                     <div className="flex h-12 text-sm bg-slate-50/50">
-                      <div className="w-12 border-r border-slate-100"></div>
-                      <div className="w-72 p-3 border-r border-slate-100 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
+                      <div className="w-12 border-r border-slate-100/60"></div>
+                      <div className="w-72 p-3 border-r border-slate-100/60 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
                         Subtotal
                       </div>
-                      <div className="w-28 border-r border-slate-100 flex items-center justify-end px-4 font-space-mono text-xs font-bold text-slate-600">
-                        {subtotal.toFixed(2)}
+                      <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-4 font-space-mono text-xs font-bold text-slate-600">
+                        ${subtotal.toFixed(2)}
                       </div>
-                      <div className="w-20 border-r border-slate-100"></div>
+                      <div className="w-20 border-r border-slate-100/60"></div>
 
                       {people.map(p => {
                         const stats = personFinalShares[p.id]
                         return (
-                          <div key={p.id} className="w-28 border-r border-slate-100 flex items-center justify-center font-space-mono text-xs text-slate-600">
-                            {(stats?.subtotal || 0).toFixed(2)}
+                          <div key={p.id} className="w-28 border-r border-slate-100/60 flex items-center justify-center font-space-mono text-xs text-slate-600">
+                            ${(stats?.subtotal || 0).toFixed(2)}
                           </div>
                         )
                       })}
 
-                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-12 border-r border-slate-100/60"></div>
                       <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
-                        {subtotal.toFixed(2)}
+                        ${subtotal.toFixed(2)}
                       </div>
                     </div>
 
                     {/* Tax Row */}
                     <div className="flex h-12 text-sm bg-slate-50/50">
-                      <div className="w-12 border-r border-slate-100"></div>
-                      <div className="w-72 p-3 border-r border-slate-100 flex items-center justify-between pro-sticky-left bg-slate-50/50 font-inter">
+                      <div className="w-12 border-r border-slate-100/60"></div>
+                      <div className="w-72 p-3 border-r border-slate-100/60 flex items-center justify-between pro-sticky-left bg-slate-50/50 font-inter">
                         <span className="font-bold text-slate-700 uppercase text-xs tracking-wider">Tax</span>
                         <button
                           onClick={() => {
@@ -1187,7 +1239,7 @@ function DesktopBillSplitter() {
                           </span>
                         </button>
                       </div>
-                      <div className="w-28 border-r border-slate-100 flex items-center justify-end px-2">
+                      <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
                         <input
                           type="number"
                           value={state.currentBill.tax}
@@ -1195,34 +1247,34 @@ function DesktopBillSplitter() {
                             dispatch({ type: 'SET_TAX', payload: e.target.value })
                             analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
                           }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
                           placeholder="0.00"
                         />
                       </div>
-                      <div className="w-20 border-r border-slate-100"></div>
+                      <div className="w-20 border-r border-slate-100/60"></div>
 
                       {people.map(p => {
                         const stats = personFinalShares[p.id]
                         return (
-                          <div key={p.id} className="w-28 border-r border-slate-100 flex items-center justify-center font-space-mono text-xs text-slate-600">
-                            {(stats?.tax || 0).toFixed(2)}
+                          <div key={p.id} className="w-28 border-r border-slate-100/60 flex items-center justify-center font-space-mono text-xs text-slate-600">
+                            ${(stats?.tax || 0).toFixed(2)}
                           </div>
                         )
                       })}
 
-                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-12 border-r border-slate-100/60"></div>
                       <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
-                        {taxAmount.toFixed(2)}
+                        ${taxAmount.toFixed(2)}
                       </div>
                     </div>
 
                     {/* Tip Row */}
                     <div className="flex h-12 text-sm bg-slate-50/50">
-                      <div className="w-12 border-r border-slate-100"></div>
-                      <div className="w-72 p-3 border-r border-slate-100 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
+                      <div className="w-12 border-r border-slate-100/60"></div>
+                      <div className="w-72 p-3 border-r border-slate-100/60 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
                         Tip
                       </div>
-                      <div className="w-28 border-r border-slate-100 flex items-center justify-end px-2">
+                      <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
                         <input
                           type="number"
                           value={state.currentBill.tip}
@@ -1230,34 +1282,34 @@ function DesktopBillSplitter() {
                             dispatch({ type: 'SET_TIP', payload: e.target.value })
                             analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
                           }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
                           placeholder="0.00"
                         />
                       </div>
-                      <div className="w-20 border-r border-slate-100"></div>
+                      <div className="w-20 border-r border-slate-100/60"></div>
 
                       {people.map(p => {
                         const stats = personFinalShares[p.id]
                         return (
-                          <div key={p.id} className="w-28 border-r border-slate-100 flex items-center justify-center font-space-mono text-xs text-slate-600">
-                            {(stats?.tip || 0).toFixed(2)}
+                          <div key={p.id} className="w-28 border-r border-slate-100/60 flex items-center justify-center font-space-mono text-xs text-slate-600">
+                            ${(stats?.tip || 0).toFixed(2)}
                           </div>
                         )
                       })}
 
-                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-12 border-r border-slate-100/60"></div>
                       <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
-                        {tipAmount.toFixed(2)}
+                        ${tipAmount.toFixed(2)}
                       </div>
                     </div>
 
                     {/* Discount Row */}
                     <div className="flex h-12 text-sm bg-slate-50/50">
-                      <div className="w-12 border-r border-slate-100"></div>
-                      <div className="w-72 p-3 border-r border-slate-100 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
+                      <div className="w-12 border-r border-slate-100/60"></div>
+                      <div className="w-72 p-3 border-r border-slate-100/60 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
                         Discount
                       </div>
-                      <div className="w-28 border-r border-slate-100 flex items-center justify-end px-2">
+                      <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
                         <input
                           type="number"
                           value={state.currentBill.discount}
@@ -1265,24 +1317,24 @@ function DesktopBillSplitter() {
                             dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
                             analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
                           }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors text-xs font-space-mono text-slate-700 text-right"
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
                           placeholder="0.00"
                         />
                       </div>
-                      <div className="w-20 border-r border-slate-100"></div>
+                      <div className="w-20 border-r border-slate-100/60"></div>
 
                       {people.map(p => {
                         const stats = personFinalShares[p.id]
                         return (
-                          <div key={p.id} className="w-28 border-r border-slate-100 flex items-center justify-center font-space-mono text-xs text-slate-600">
-                            {(stats?.discount || 0).toFixed(2)}
+                          <div key={p.id} className="w-28 border-r border-slate-100/60 flex items-center justify-center font-space-mono text-xs text-slate-600">
+                            ${(stats?.discount || 0).toFixed(2)}
                           </div>
                         )
                       })}
 
-                      <div className="w-12 border-r border-slate-100"></div>
+                      <div className="w-12 border-r border-slate-100/60"></div>
                       <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
-                        -{discountAmount.toFixed(2)}
+                        -${discountAmount.toFixed(2)}
                       </div>
                     </div>
 
@@ -1301,7 +1353,7 @@ function DesktopBillSplitter() {
                         return (
                           <div key={p.id} className="w-28 border-r border-slate-200 flex items-center justify-center">
                             <div className={`px-3 py-1.5 rounded-md ${colorObj.solid} ${colorObj.textSolid} font-space-mono text-xs font-bold shadow-sm`}>
-                              {(stats?.total || 0).toFixed(2)}
+                              ${(stats?.total || 0).toFixed(2)}
                             </div>
                           </div>
                         )
@@ -1309,7 +1361,7 @@ function DesktopBillSplitter() {
 
                       <div className="w-12 border-r border-slate-200"></div>
                       <div className="w-28 pro-sticky-right border-l border-slate-300 flex items-center justify-end px-4 bg-slate-100 font-space-mono text-sm font-bold text-slate-900">
-                        {grandTotal.toFixed(2)}
+                        ${grandTotal.toFixed(2)}
                       </div>
                     </div>
 
@@ -1322,12 +1374,12 @@ function DesktopBillSplitter() {
 
         {/* BREAKDOWN VIEW */}
         {activeView === 'breakdown' && (
-          <div className="h-full overflow-auto p-6 bg-slate-50 pro-scrollbar">
+          <div className="h-full overflow-auto p-6 bg-slate-50 pro-scrollbar animate-in fade-in duration-200">
             <div className="max-w-5xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-16">
                 {/* LEFT: Bill Summary Receipt */}
                 <div className="md:col-span-5 space-y-6">
-                  <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm relative overflow-hidden">
+                  <div className="bg-white rounded-xl border border-slate-200/60 p-6 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-900"></div>
 
                     <div className="mb-6">
@@ -1344,7 +1396,7 @@ function DesktopBillSplitter() {
                       ))}
                     </div>
 
-                    <div className="border-t border-dashed border-slate-200 pt-4 space-y-2 font-space-mono text-sm">
+                    <div className="border-t border-dashed border-slate-200/60 pt-4 space-y-2 font-space-mono text-sm">
                       <div className="flex justify-between text-slate-500">
                         <span>Subtotal</span>
                         <span>{formatCurrencySimple(subtotal)}</span>
@@ -1359,7 +1411,7 @@ function DesktopBillSplitter() {
                           <span>{formatCurrencySimple(tipAmount)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-100">
+                      <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-200/60">
                         <span>Grand Total</span>
                         <span>{formatCurrencySimple(grandTotal)}</span>
                       </div>
@@ -1375,8 +1427,8 @@ function DesktopBillSplitter() {
                     const initials = p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 
                     return (
-                      <div key={p.id} className="bg-white rounded-lg border border-slate-200 shadow-sm hover:border-indigo-300 transition-colors">
-                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                      <div key={p.id} className="bg-white rounded-lg border border-slate-200/60 shadow-sm hover:border-indigo-300 transition-colors">
+                        <div className="p-4 border-b border-slate-100/60 flex justify-between items-center bg-slate-50/50">
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white ${colorObj.solid}`}>
                               {initials}
@@ -1446,20 +1498,22 @@ function DesktopBillSplitter() {
 
       {/* --- Footer --- */}
       <footer className="pro-footer">
-        {/* Left Section: GitHub Link */}
-        <div className="flex items-center">
-          <a
-            href="https://github.com/Aarekaz/SplitSimple"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors font-inter"
-          >
-            <Code size={14} />
-            <span>View Code</span>
-          </a>
+        {/* Left Section: Stats */}
+        <div className="flex items-center gap-3 text-[10px] text-slate-500 font-inter">
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-slate-700">{items.length}</span>
+            <span>items</span>
+          </div>
+          <span className="text-slate-300">•</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-slate-700">{people.length}</span>
+            <span>people</span>
+          </div>
+          <span className="text-slate-300">•</span>
+          <SyncStatusIndicator inline />
         </div>
 
-        {/* Center Section: View Switcher */}
+        {/* Center Section: View Switcher + Copy */}
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 p-1 rounded-md">
             <button
@@ -1479,20 +1533,28 @@ function DesktopBillSplitter() {
           <button
             onClick={copyBreakdown}
             className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
+            title="Copy summary to clipboard (Press C)"
           >
-            <ClipboardCopy size={14} /> Copy Summary
+            <ClipboardCopy size={14} /> Copy
           </button>
         </div>
 
-        {/* Right Section: Creator Credit */}
-        <div className="flex items-center">
+        {/* Right Section: Keyboard Shortcuts + Creator */}
+        <div className="flex items-center gap-3">
+          <div className="text-[10px] text-slate-400 font-inter flex items-center gap-1.5">
+            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">N</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">P</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">C</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘Z</kbd>
+          </div>
+          <div className="h-3 w-px bg-slate-200"></div>
           <a
             href="https://anuragd.me"
             target="_blank"
             rel="noreferrer"
-            className="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1 font-inter"
+            className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors font-inter"
           >
-            Crafted by <span className="underline decoration-slate-300 underline-offset-2">Anurag Dhungana</span>
+            Anurag Dhungana
           </a>
         </div>
       </footer>
@@ -1500,11 +1562,11 @@ function DesktopBillSplitter() {
       {/* --- Context Menu --- */}
       {contextMenu && (
         <div
-          className="fixed z-50 bg-white rounded-lg shadow-xl border border-slate-200 w-48 py-1 overflow-hidden"
+          className="fixed z-50 bg-white rounded-lg shadow-xl border border-slate-200/60 w-48 py-1 overflow-hidden"
           style={{ top: contextMenu.y, left: contextMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-inter">
+          <div className="px-3 py-2 border-b border-slate-100/60 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-inter">
             Actions
           </div>
           {contextMenu.personId ? (
@@ -1569,7 +1631,7 @@ function DesktopBillSplitter() {
           onClick={() => setEditingPerson(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl border border-slate-200 p-6 w-full max-w-sm"
+            className="bg-white rounded-xl shadow-2xl border border-slate-200/60 p-6 w-full max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6">
@@ -1610,7 +1672,7 @@ function DesktopBillSplitter() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex gap-3">
+              <div className="pt-4 border-t border-slate-100/60 flex gap-3">
                 <button
                   onClick={() => removePerson(editingPerson.id)}
                   className="flex-1 py-2.5 rounded-lg border border-red-100 text-red-600 text-xs font-bold uppercase tracking-wide hover:bg-red-50 transition-colors font-inter"
