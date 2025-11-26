@@ -12,6 +12,7 @@ import { useBill } from "@/contexts/BillContext"
 import type { Item } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { useBillAnalytics } from "@/hooks/use-analytics"
+import { cn } from "@/lib/utils"
 
 export function MobileSpreadsheetView() {
   const { state, dispatch } = useBill()
@@ -77,9 +78,24 @@ export function MobileSpreadsheetView() {
         </div>
       </header>
 
-      {/* Content - Conditional Rendering */}
-      <div className="flex-1 overflow-hidden">
-        {viewMode === "cards" ? <MobileCardView /> : <MobileGridView />}
+      {/* Content - Conditional Rendering with Transitions */}
+      <div className="flex-1 overflow-hidden relative">
+        <div
+          className={cn(
+            "absolute inset-0 transition-all duration-300 ease-in-out",
+            viewMode === "cards" ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-full pointer-events-none"
+          )}
+        >
+          {viewMode === "cards" && <MobileCardView />}
+        </div>
+        <div
+          className={cn(
+            "absolute inset-0 transition-all duration-300 ease-in-out",
+            viewMode === "grid" ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full pointer-events-none"
+          )}
+        >
+          {viewMode === "grid" && <MobileGridView />}
+        </div>
       </div>
     </div>
   )

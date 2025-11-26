@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Plus, Minus, Check, Trash2 } from "lucide-react"
+import { Plus, Minus, Check, Trash2, Undo2, Redo2 } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
 import type { Item, Person } from "@/contexts/BillContext"
 import { getBillSummary } from "@/lib/calculations"
@@ -25,7 +25,7 @@ const COLORS = [
 ]
 
 export function MobileGridView() {
-  const { state, dispatch } = useBill()
+  const { state, dispatch, canUndo, canRedo } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
 
@@ -54,7 +54,7 @@ export function MobileGridView() {
     analytics.trackFeatureUsed("mobile_grid_add_item")
   }
 
-  // Toggle person assignment
+  // Toggle person assignment with haptic feedback
   const toggleAssignment = (itemId: string, personId: string) => {
     const item = items.find(i => i.id === itemId)
     if (!item) return
@@ -68,6 +68,11 @@ export function MobileGridView() {
       type: 'UPDATE_ITEM',
       payload: { ...item, splitWith: newSplitWith }
     })
+
+    // Haptic feedback on mobile
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10)
+    }
   }
 
   // Handle cell double-tap for editing
@@ -116,15 +121,47 @@ export function MobileGridView() {
 
   return (
     <div className="h-full flex flex-col bg-slate-50">
-      {/* Grid Container with horizontal scroll */}
-      <div className="flex-1 overflow-auto">
-        <div className="min-w-full inline-block">
-          <table className="w-full border-collapse">
-            {/* Header */}
-            <thead className="sticky top-0 z-20 bg-white border-b-2 border-slate-200">
+      {/* Empty State */}
+      {items.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center space-y-4 max-w-sm">
+            <div className="w-20 h-20 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
+              <Plus className="h-10 w-10 text-slate-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-2">No items yet</h3>
+              <p className="text-sm text-slate-600">
+                Add your first item to start splitting expenses in spreadsheet view
+              </p>
+            </div>
+            <Button onClick={handleAddItem} size="lg" className="w-full">
+              <Plus className="h-5 w-5 mr-2" />
+              Add First Item
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Scroll Hint */}
+          {people.length > 2 && (
+            <div className="bg-slate-100 border-b px-4 py-2 flex items-center justify-center gap-2 text-xs text-slate-600">
+              <span>Swipe left to see more people</span>
+              <span className="text-lg">→</span>
+            </div>
+          )}
+
+          {/* Grid Container with horizontal scroll */}
+          <div className="flex-1 overflow-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            <div className="min-w-full inline-block relative">
+              {/* Scroll gradient indicator */}
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
+
+              <table className="w-full border-collapse">
+                {/* Header */}
+                <thead className="sticky top-0 z-20 bg-white border-b-2 border-slate-200">
               <tr>
                 {/* Frozen Column Header */}
-                <th className="sticky left-0 z-30 bg-slate-100 border-r border-slate-200 px-3 py-2 text-left">
+                <th className="sticky left-0 z-30 bg-slate-100 border-r border-slate-200 px-3 py-2 text-left shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
                   <span className="text-xs font-bold uppercase text-slate-600">Item</span>
                 </th>
 
@@ -174,13 +211,12 @@ export function MobileGridView() {
                   <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50">
                     {/* Frozen: Item Name */}
                     <td
-                      className="sticky left-0 z-10 bg-white border-r border-slate-200 px-3 py-3 min-w-[120px] cursor-pointer hover:bg-slate-50"
+                      className="sticky left-0 z-10 bg-white border-r border-slate-200 px-3 py-4 min-w-[120px] cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition-colors shadow-[2px_0_4px_rgba(0,0,0,0.05)]"
                       onClick={() => setEditingItem(item)}
                     >
                       <div className="text-sm font-medium text-slate-900 line-clamp-2">
                         {item.name || <span className="text-slate-400 italic">Untitled</span>}
                       </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">Tap to edit</div>
                     </td>
 
                     {/* Quantity */}
@@ -190,7 +226,7 @@ export function MobileGridView() {
 
                     {/* Price */}
                     <td className="bg-white border-r border-slate-200 px-2 py-3 text-right">
-                      <span className="text-sm font-mono">{parseFloat(item.price || "0").toFixed(2)}</span>
+                      <span className="text-sm font-mono">${parseFloat(item.price || "0").toFixed(2)}</span>
                     </td>
 
                     {/* People Cells */}
@@ -204,29 +240,31 @@ export function MobileGridView() {
                         <td
                           key={person.id}
                           className={cn(
-                            "border-r border-slate-200 px-2 py-3 cursor-pointer transition-colors",
-                            isAssigned ? "bg-opacity-10" : "bg-white hover:bg-slate-50"
+                            "border-r border-slate-200 px-2 py-4 cursor-pointer transition-all min-h-[60px]",
+                            isAssigned
+                              ? "bg-opacity-10 active:scale-95"
+                              : "bg-white hover:bg-slate-50 active:bg-slate-100"
                           )}
                           style={{
                             backgroundColor: isAssigned ? `${person.color}20` : undefined
                           }}
                           onClick={() => toggleAssignment(item.id, person.id)}
                         >
-                          <div className="flex flex-col items-center gap-0.5">
+                          <div className="flex flex-col items-center gap-1">
                             {isAssigned ? (
                               <>
                                 <div
-                                  className="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold"
+                                  className="w-7 h-7 rounded-md flex items-center justify-center text-white text-sm font-bold shadow-sm"
                                   style={{ backgroundColor: person.color }}
                                 >
                                   ✓
                                 </div>
-                                <span className="text-[10px] font-mono font-medium">
+                                <span className="text-[11px] font-mono font-medium text-slate-700">
                                   {formatCurrency(perPersonAmount)}
                                 </span>
                               </>
                             ) : (
-                              <span className="text-slate-300 text-lg">-</span>
+                              <span className="text-slate-300 text-xl">-</span>
                             )}
                           </div>
                         </td>
@@ -339,6 +377,37 @@ export function MobileGridView() {
           </table>
         </div>
       </div>
+
+      {/* Bottom Action Bar */}
+      <div
+        className="sticky bottom-0 z-40 bg-white border-t px-4 pt-3 pb-3 shadow-[0_-2px_10px_rgba(0,0,0,0.1)]"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+      >
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!canUndo}
+            onClick={() => dispatch({ type: "UNDO" })}
+            className="flex-1"
+          >
+            <Undo2 className="h-4 w-4 mr-1" />
+            Undo
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!canRedo}
+            onClick={() => dispatch({ type: "REDO" })}
+            className="flex-1"
+          >
+            <Redo2 className="h-4 w-4 mr-1" />
+            Redo
+          </Button>
+        </div>
+      </div>
+        </>
+      )}
 
       {/* Item Edit Sheet */}
       <Sheet open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 
 interface SyncStatusIndicatorProps {
   compact?: boolean
+  inline?: boolean
   className?: string
 }
 
@@ -51,7 +52,7 @@ const syncStatusConfig: Record<SyncStatus, {
   },
 }
 
-export function SyncStatusIndicator({ compact = false, className }: SyncStatusIndicatorProps) {
+export function SyncStatusIndicator({ compact = false, inline = false, className }: SyncStatusIndicatorProps) {
   const { state, syncToCloud } = useBill()
   const config = syncStatusConfig[state.syncStatus]
   const Icon = config.icon
@@ -67,13 +68,30 @@ export function SyncStatusIndicator({ compact = false, className }: SyncStatusIn
     const now = Date.now()
     const diff = now - state.lastSyncTime
     const minutes = Math.floor(diff / 60000)
-    
+
     if (minutes < 1) return "Just now"
     if (minutes < 60) return `${minutes}m ago`
     const hours = Math.floor(minutes / 60)
     if (hours < 24) return `${hours}h ago`
     const days = Math.floor(hours / 24)
     return `${days}d ago`
+  }
+
+  // Inline mode for footer
+  if (inline) {
+    const timeText = formatLastSyncTime()
+    return (
+      <div className={cn("flex items-center gap-1.5", className)}>
+        <Icon
+          className={cn(
+            "h-3 w-3",
+            config.color,
+            config.animate && "animate-spin"
+          )}
+        />
+        <span>{state.syncStatus === "synced" && timeText ? timeText : config.label}</span>
+      </div>
+    )
   }
 
   if (compact) {
