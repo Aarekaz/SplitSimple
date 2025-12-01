@@ -285,11 +285,11 @@ export function LedgerItemsTable() {
             </p>
             <div className="flex items-center justify-center gap-4 mt-3">
               <div className="flex items-center gap-1">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">N</kbd>
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">⌘⇧N</kbd>
                 <span className="text-[11px] text-muted-foreground">New item</span>
               </div>
               <div className="flex items-center gap-1">
-                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">P</kbd>
+                <kbd className="px-2 py-1 bg-muted/50 text-muted-foreground rounded text-[10px] font-medium border border-border/50">⌘⇧P</kbd>
                 <span className="text-[11px] text-muted-foreground">Add person</span>
               </div>
             </div>

@@ -618,6 +618,7 @@ function DesktopBillSplitter() {
       return
     }
 
+    // Cmd+N: New bill
     if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
       e.preventDefault()
       if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
@@ -629,41 +630,38 @@ function DesktopBillSplitter() {
       return
     }
 
-    // Shortcuts that don't work in inputs
-    if (!isInInput) {
-      // N: Add new item
-      if (e.key === 'n' || e.key === 'N') {
-        e.preventDefault()
-        addItem()
-        analytics.trackFeatureUsed("keyboard_shortcut_add_item")
-        return
-      }
+    // Cmd+Shift+N: Add new item
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
+      e.preventDefault()
+      addItem()
+      analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+      return
+    }
 
-      // P: Add person
-      if (e.key === 'p' || e.key === 'P') {
-        e.preventDefault()
-        addPerson()
-        analytics.trackFeatureUsed("keyboard_shortcut_add_person")
-        return
-      }
+    // Cmd+Shift+P: Add person
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
+      e.preventDefault()
+      addPerson()
+      analytics.trackFeatureUsed("keyboard_shortcut_add_person")
+      return
+    }
 
-      // C: Copy summary
-      if (e.key === 'c' || e.key === 'C') {
-        e.preventDefault()
-        copyBreakdown()
-        analytics.trackFeatureUsed("keyboard_shortcut_copy")
-        return
-      }
+    // Cmd+Shift+C: Copy summary
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
+      e.preventDefault()
+      copyBreakdown()
+      analytics.trackFeatureUsed("keyboard_shortcut_copy")
+      return
+    }
 
-      // S: Share (trigger click on share button)
-      if (e.key === 's' || e.key === 'S') {
-        e.preventDefault()
-        // Find and click the share button
-        const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
-        if (shareButton) shareButton.click()
-        analytics.trackFeatureUsed("keyboard_shortcut_share")
-        return
-      }
+    // Cmd+S: Share
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 's') {
+      e.preventDefault()
+      // Find and click the share button
+      const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
+      if (shareButton) shareButton.click()
+      analytics.trackFeatureUsed("keyboard_shortcut_share")
+      return
     }
 
     // Grid navigation - Excel-like behavior
@@ -941,7 +939,7 @@ function DesktopBillSplitter() {
                   {people.length === 0 ? (
                     <div className="flex items-center gap-2 text-xs text-slate-400 font-inter">
                       <Users size={14} className="text-slate-300" />
-                      <span>Click <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600">+</kbd> above to add people or press <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600">P</kbd></span>
+                      <span>Click <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600">+</kbd> above to add people or press <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600">⌘⇧P</kbd></span>
                     </div>
                   ) : (
                     people.map(p => {
@@ -1009,7 +1007,7 @@ function DesktopBillSplitter() {
                       </div>
                       <h3 className="text-lg font-bold text-slate-900 mb-2 font-inter">No items yet</h3>
                       <p className="text-sm text-slate-500 mb-6 max-w-sm font-inter">
-                        Add your first item to start splitting the bill. Press <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">N</kbd> or click the button below.
+                        Add your first item to start splitting the bill. Press <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">⌘⇧N</kbd> or click the button below.
                       </p>
                       <button
                         onClick={addItem}
@@ -1189,7 +1187,7 @@ function DesktopBillSplitter() {
                     <button
                       onClick={addItem}
                       className="w-full py-3 text-slate-400 text-xs font-bold uppercase tracking-wider hover:text-indigo-600 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-2 border-t border-slate-200 font-inter"
-                      title="Add new item (Press N)"
+                      title="Add new item (Cmd+Shift+N)"
                     >
                       <Plus size={14} /> Add Line Item
                     </button>
@@ -1546,7 +1544,7 @@ function DesktopBillSplitter() {
           <button
             onClick={copyBreakdown}
             className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
-            title="Copy summary to clipboard (Press C)"
+            title="Copy summary to clipboard (Cmd+Shift+C)"
           >
             <ClipboardCopy size={14} /> Copy
           </button>
@@ -1555,9 +1553,10 @@ function DesktopBillSplitter() {
         {/* Right Section: Keyboard Shortcuts + Creator */}
         <div className="flex items-center gap-3">
           <div className="text-[10px] text-slate-400 font-inter flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">N</kbd>
-            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">P</kbd>
-            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">C</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧N</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧P</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧C</kbd>
+            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘S</kbd>
             <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘Z</kbd>
           </div>
           <div className="h-3 w-px bg-slate-200"></div>
