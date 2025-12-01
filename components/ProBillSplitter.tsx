@@ -108,12 +108,18 @@ const GridCell = React.memo(({
   onCellClick: (row: number, col: string) => void
   editInputRef: React.RefObject<HTMLInputElement | null>
 }) => {
+  // Use text type with numeric inputMode for number fields (removes spinner arrows)
+  const isNumericField = field === 'price' || field === 'qty'
+  const inputType = 'text'
+  const inputMode = isNumericField ? 'decimal' : undefined
+
   if (isEditing) {
     return (
       <div className="absolute inset-0 z-30">
         <input
           ref={editInputRef}
-          type={type}
+          type={inputType}
+          inputMode={inputMode}
           value={value}
           onChange={e => onCellEdit(itemId, field, e.target.value)}
           onClick={(e) => e.stopPropagation()}
@@ -1252,7 +1258,8 @@ function DesktopBillSplitter() {
                       </div>
                       <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={state.currentBill.tax}
                           onChange={(e) => {
                             dispatch({ type: 'SET_TAX', payload: e.target.value })
@@ -1287,7 +1294,8 @@ function DesktopBillSplitter() {
                       </div>
                       <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={state.currentBill.tip}
                           onChange={(e) => {
                             dispatch({ type: 'SET_TIP', payload: e.target.value })
@@ -1322,7 +1330,8 @@ function DesktopBillSplitter() {
                       </div>
                       <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={state.currentBill.discount}
                           onChange={(e) => {
                             dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
