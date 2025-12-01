@@ -565,9 +565,23 @@ function DesktopBillSplitter() {
 
   // --- Global Keyboard Shortcuts ---
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
-    // Check if we're in an input field
+    // Check if we're in an input field - comprehensive check
     const target = e.target as HTMLElement
-    const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true'
+    const activeElement = document.activeElement as HTMLElement
+
+    // Check if user is currently typing in any input-like element
+    const isInInput =
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'SELECT' ||
+      target.contentEditable === 'true' ||
+      target.isContentEditable ||
+      activeElement?.tagName === 'INPUT' ||
+      activeElement?.tagName === 'TEXTAREA' ||
+      activeElement?.tagName === 'SELECT' ||
+      activeElement?.contentEditable === 'true' ||
+      activeElement?.isContentEditable ||
+      target.closest('input, textarea, select, [contenteditable="true"]') !== null
 
     // Escape key - close modals, menus, and exit edit mode
     if (e.key === 'Escape') {
