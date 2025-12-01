@@ -48,6 +48,13 @@ export const PersonChip = memo(function PersonChip({
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }
+
   const baseClasses = "flex items-center gap-1.5 cursor-pointer transition-all border"
   const selectedClasses = "bg-primary text-primary-foreground hover:bg-primary/90"
   const unselectedClasses = "bg-muted hover:bg-muted/80 text-muted-foreground border-dashed"
@@ -55,6 +62,11 @@ export const PersonChip = memo(function PersonChip({
   return (
     <div
       onClick={handleClick}
+      onKeyDown={onToggle ? handleKeyDown : undefined}
+      tabIndex={onToggle ? 0 : undefined}
+      role={onToggle ? "button" : undefined}
+      aria-pressed={onToggle ? isSelected : undefined}
+      aria-label={onToggle ? `${isSelected ? 'Unselect' : 'Select'} ${person.name}` : undefined}
       className={cn(
         baseClasses,
         sizeClasses[size],

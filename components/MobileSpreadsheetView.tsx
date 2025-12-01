@@ -26,16 +26,20 @@ export function MobileSpreadsheetView() {
 
   // Load saved preference
   useEffect(() => {
-    const savedView = localStorage.getItem("mobile-view-mode")
-    if (savedView === "grid" || savedView === "cards") {
-      setViewMode(savedView)
+    if (typeof window !== 'undefined') {
+      const savedView = localStorage.getItem("mobile-view-mode")
+      if (savedView === "grid" || savedView === "cards") {
+        setViewMode(savedView)
+      }
     }
   }, [])
 
   // Save preference when changed
   useEffect(() => {
-    localStorage.setItem("mobile-view-mode", viewMode)
-    analytics.trackFeatureUsed(`mobile_view_${viewMode}`)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("mobile-view-mode", viewMode)
+      analytics.trackFeatureUsed(`mobile_view_${viewMode}`)
+    }
   }, [viewMode, analytics])
 
   // Receipt scanner handler

@@ -417,7 +417,6 @@ function DesktopBillSplitter() {
 
       // Check if this request is still current
       if (loadBillRequestRef.current !== requestId) {
-        console.log('Bill load cancelled - newer request started')
         return
       }
 
