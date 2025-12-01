@@ -24,16 +24,29 @@ describe('env-validation', () => {
     console.log = originalConsoleLog
     console.error = originalConsoleError
     console.warn = originalConsoleWarn
-    
+
     // Reset environment variables
     delete process.env.REDIS_URL
     delete process.env.NEXT_PUBLIC_POSTHOG_KEY
     delete process.env.NEXT_PUBLIC_POSTHOG_HOST
+    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    delete process.env.GEMINI_API_KEY
+    delete process.env.GOOGLE_API_KEY
+    delete process.env.OPENAI_API_KEY
+    delete process.env.ANTHROPIC_API_KEY
+    delete process.env.OCR_PROVIDER
     Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', writable: true })
   })
 
   describe('validateEnvironment', () => {
     it('passes validation with all required variables', () => {
+      // Clear any OCR API keys that might be set in CI environment
+      delete process.env.GOOGLE_GENERATIVE_AI_API_KEY
+      delete process.env.GEMINI_API_KEY
+      delete process.env.GOOGLE_API_KEY
+      delete process.env.OPENAI_API_KEY
+      delete process.env.ANTHROPIC_API_KEY
+
       process.env.REDIS_URL = 'redis://localhost:6379'
       process.env.NEXT_PUBLIC_POSTHOG_KEY = 'test-key'
       process.env.NEXT_PUBLIC_POSTHOG_HOST = 'https://app.posthog.com'
