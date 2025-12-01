@@ -581,7 +581,7 @@ function DesktopBillSplitter() {
       activeElement?.tagName === 'SELECT' ||
       activeElement?.contentEditable === 'true' ||
       activeElement?.isContentEditable ||
-      target.closest('input, textarea, select, [contenteditable="true"]') !== null
+      (target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]') !== null)
 
     // Escape key - close modals, menus, and exit edit mode
     if (e.key === 'Escape') {
