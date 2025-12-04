@@ -127,4 +127,22 @@ pnpm test:coverage
 pnpm test calculations
 ```
 
+## 📚 Documentation
+
+### Complete Guides
+*   **[README-testing.md](./README-testing.md)** - Comprehensive testing documentation
+*   **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Development workflow and contribution guidelines
+*   **[API_REFERENCE.md](./API_REFERENCE.md)** - Complete API documentation with examples
+*   **[KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md)** - Quick reference for all shortcuts
+
+### Technical Documentation
+*   **[INFRASTRUCTURE.md](./INFRASTRUCTURE.md)** - Deployment and architecture guide
+*   **[ANALYTICS.md](./ANALYTICS.md)** - PostHog analytics implementation
+*   **[RECEIPT_SCANNING_SETUP.md](./RECEIPT_SCANNING_SETUP.md)** - OCR configuration guide
+
+### Project Management
+*   **[changelog.md](./changelog.md)** - Project change history
+*   **[todo.md](./todo.md)** - Active tasks and future improvements
+*   **[docs/V1PRD.MD](./docs/V1PRD.MD)** - Product requirements document
+
 Built with **Next.js**, **TypeScript**, **Tailwind CSS**, and **Redis** for a fast, reliable experience.
