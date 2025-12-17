@@ -287,7 +287,7 @@ All admin endpoints require authentication via session token.
 
 **Authentication Method:** Cookie-based sessions
 
-**Required Cookie:** `admin_session_token`
+**Required Cookie:** `admin_session`
 
 ### Admin Login
 
