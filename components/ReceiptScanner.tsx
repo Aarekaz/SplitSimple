@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useRef } from "react"
+import Image from "next/image"
 import {
   Camera,
   Upload,
@@ -337,9 +338,9 @@ function ReviewView({
 
       <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
         {/* Image Pane (Hidden on Mobile unless toggled, but we use split layout for simplicity on desktop) */}
-        {image && (
-          <div className="flex-1 bg-slate-900 relative overflow-hidden md:block hidden">
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-slate-800/90 p-1.5 rounded-lg backdrop-blur-sm border border-slate-700">
+	        {image && (
+	          <div className="flex-1 bg-slate-900 relative overflow-hidden md:block hidden">
+	            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-slate-800/90 p-1.5 rounded-lg backdrop-blur-sm border border-slate-700">
               <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-slate-700" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}>
                 <Minus size={14} />
               </Button>
@@ -351,24 +352,29 @@ function ReviewView({
               <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-slate-700" onClick={() => setRotate((rotation + 90) % 360)}>
                 <RotateCw size={14} />
               </Button>
-            </div>
-            
-            <div className="w-full h-full flex items-center justify-center overflow-auto p-8">
-              <img
-                src={image}
-                alt="Receipt"
-                className="transition-transform duration-200 ease-out max-w-none"
-                style={{
-                  transform: `scale(${zoom}) rotate(${rotation}deg)`,
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
-                }}
-                onError={(e) => {
-                  console.error('Image failed to load:', e)
-                }}
-              />
-            </div>
-          </div>
-        )}
+	            </div>
+	            
+	            <div className="w-full h-full flex items-center justify-center overflow-auto p-8">
+	              <div
+	                className="transition-transform duration-200 ease-out max-w-none"
+	                style={{
+	                  transform: `scale(${zoom}) rotate(${rotation}deg)`,
+	                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+	                }}
+	              >
+	                <Image
+	                  src={image}
+	                  alt="Receipt"
+	                  width={1200}
+	                  height={1600}
+	                  sizes="100vw"
+	                  unoptimized
+	                  className="max-w-none h-auto w-auto"
+	                />
+	              </div>
+	            </div>
+	          </div>
+	        )}
 
         {/* Items List Pane */}
         <div className="flex-1 md:w-1/2 flex flex-col h-full bg-white border-l border-slate-200 shadow-xl z-10">
@@ -438,4 +444,3 @@ function ReviewView({
     </div>
   )
 }
-

@@ -27,6 +27,12 @@ const config: Config = {
     '<rootDir>/app/api/',
     '<rootDir>/.conductor/',
   ],
+
+  // Prevent haste-map collisions from nested package.json files
+  modulePathIgnorePatterns: [
+    '<rootDir>/.next/',
+    '<rootDir>/.conductor/',
+  ],
   
   // Module name mapping for path aliases
   moduleNameMapper: {
