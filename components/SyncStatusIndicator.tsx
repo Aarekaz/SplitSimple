@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 interface SyncStatusIndicatorProps {
   compact?: boolean
   inline?: boolean
+  variant?: "default" | "header"
   className?: string
 }
 
@@ -52,7 +53,7 @@ const syncStatusConfig: Record<SyncStatus, {
   },
 }
 
-export function SyncStatusIndicator({ compact = false, inline = false, className }: SyncStatusIndicatorProps) {
+export function SyncStatusIndicator({ compact = false, inline = false, variant = "default", className }: SyncStatusIndicatorProps) {
   const { state, syncToCloud } = useBill()
   const config = syncStatusConfig[state.syncStatus]
   const Icon = config.icon
@@ -90,6 +91,37 @@ export function SyncStatusIndicator({ compact = false, inline = false, className
           )}
         />
         <span>{state.syncStatus === "synced" && timeText ? timeText : config.label}</span>
+      </div>
+    )
+  }
+
+  if (variant === "header") {
+    const timeText = formatLastSyncTime()
+    const showTime = state.lastSyncTime && state.syncStatus === "synced" && timeText
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-2 px-3 py-1.5 text-xs font-semibold transition-colors",
+          config.color,
+          state.syncStatus === "error" && "cursor-pointer hover:bg-red-50/60",
+          state.syncStatus !== "error" && "hover:bg-slate-100/60",
+          className
+        )}
+        onClick={state.syncStatus === "error" ? handleRetrySync : undefined}
+        title={config.description}
+      >
+        <Icon
+          className={cn(
+            "h-3.5 w-3.5",
+            config.animate && "animate-spin"
+          )}
+        />
+        <span className="whitespace-nowrap">{config.label}</span>
+        {showTime && (
+          <span className="text-slate-400 font-medium whitespace-nowrap">
+            · {timeText}
+          </span>
+        )}
       </div>
     )
   }

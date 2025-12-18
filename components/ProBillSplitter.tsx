@@ -112,6 +112,10 @@ const GridCell = React.memo(({
   const isNumericField = field === 'price' || field === 'qty'
   const inputType = 'text'
   const inputMode = isNumericField ? 'decimal' : undefined
+  const placeholder =
+    field === 'name' ? 'Type item...' :
+    field === 'price' ? '0.00' :
+    field === 'qty' ? '1' : ''
 
   if (isEditing) {
     return (
@@ -138,8 +142,8 @@ const GridCell = React.memo(({
         ${className}
       `}
     >
-      <span className="truncate w-full">
-        {field === 'price' && value ? `$${value}` : value}
+      <span className={`truncate w-full ${value ? '' : 'text-slate-300 font-normal'}`}>
+        {value ? (field === 'price' ? `$${value}` : value) : placeholder}
       </span>
     </div>
   )
@@ -167,7 +171,6 @@ function DesktopBillSplitter() {
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemId: string; personId?: string } | null>(null)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
-  const [lastClickTime, setLastClickTime] = useState<{ row: number; col: string; time: number } | null>(null)
   const [newLoadDropdownOpen, setNewLoadDropdownOpen] = useState(false)
 
   const editInputRef = useRef<HTMLInputElement>(null)
@@ -186,12 +189,12 @@ function DesktopBillSplitter() {
   const summary = getBillSummary(state.currentBill)
 
   const calculatedItems = useMemo(() => items.map(item => {
-    const price = parseFloat(item.price || '0')
+    const priceNumber = parseFloat(item.price || '0')
     const qty = item.quantity || 1
-    const totalItemPrice = price * qty
+    const totalItemPrice = priceNumber * qty
     const splitCount = item.splitWith.length
     const pricePerPerson = splitCount > 0 ? totalItemPrice / splitCount : 0
-    return { ...item, totalItemPrice, pricePerPerson, price, qty }
+    return { ...item, totalItemPrice, pricePerPerson, priceNumber, qty }
   }), [items])
 
   const { subtotal, taxAmount, tipAmount, discountAmount, grandTotal } = useMemo(() => {
@@ -298,7 +301,7 @@ function DesktopBillSplitter() {
   const addItem = useCallback(() => {
     const newItem: Omit<Item, 'id'> = {
       name: '',
-      price: '0',
+      price: '',
       quantity: 1,
       splitWith: people.map(p => p.id),
       method: 'even'
@@ -500,17 +503,12 @@ function DesktopBillSplitter() {
     } else if (field === 'price') {
       updateItem(itemId, { price: value })
     } else if (field === 'qty') {
-      updateItem(itemId, { quantity: parseInt(value) || 1 })
+      const parsed = parseInt(value, 10)
+      updateItem(itemId, { quantity: value === '' ? 0 : (isNaN(parsed) ? 0 : parsed) })
     }
   }, [updateItem])
 
   const handleCellClick = useCallback((row: number, col: string) => {
-    const now = Date.now()
-    const isDoubleClick = lastClickTime &&
-      lastClickTime.row === row &&
-      lastClickTime.col === col &&
-      now - lastClickTime.time < 300
-
     // Special case: person assignment cells always single-click toggle
     if (people.some(p => p.id === col)) {
       const item = items[row]
@@ -518,19 +516,9 @@ function DesktopBillSplitter() {
       return
     }
 
-    // Touch devices: single tap enters edit mode
-    // Desktop: double-click enters edit mode
-    if (isTouchDevice() || isDoubleClick) {
-      setSelectedCell({ row, col })
-      setEditing(true)
-      setLastClickTime(null)
-    } else {
-      // Single-click: select only
-      setSelectedCell({ row, col })
-      setEditing(false)
-      setLastClickTime({ row, col, time: now })
-    }
-  }, [lastClickTime, people, items, toggleAssignment])
+    setSelectedCell({ row, col })
+    setEditing(true)
+  }, [people, items, toggleAssignment])
 
   // --- Context Menu ---
   const handleContextMenu = useCallback((e: React.MouseEvent, itemId: string, personId?: string) => {
@@ -568,13 +556,12 @@ function DesktopBillSplitter() {
     return () => window.removeEventListener('click', handleClick)
   }, [])
 
-  // --- Global Keyboard Shortcuts ---
+  // --- Global Keyboard Shortcuts & Grid Navigation ---
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
     // Check if we're in an input field - comprehensive check
     const target = e.target as HTMLElement
     const activeElement = document.activeElement as HTMLElement
 
-    // Check if user is currently typing in any input-like element
     const isInInput =
       target.tagName === 'INPUT' ||
       target.tagName === 'TEXTAREA' ||
@@ -587,6 +574,56 @@ function DesktopBillSplitter() {
       activeElement?.contentEditable === 'true' ||
       activeElement?.isContentEditable ||
       (target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]') !== null)
+
+    const editableCols = ['name', 'price', 'qty']
+    const isEditableCell = editableCols.includes(selectedCell.col)
+
+    const colOrder = ['name', 'price', 'qty', ...people.map(p => p.id)]
+    const currentColIdx = colOrder.indexOf(selectedCell.col)
+    const currentRowIdx = selectedCell.row
+
+    const commitAndMove = (direction: 'down' | 'up' | 'right' | 'left') => {
+      let nextRow = currentRowIdx
+      let nextColIdx = currentColIdx
+
+      if (direction === 'down') {
+        if (currentRowIdx < items.length - 1) nextRow += 1
+      } else if (direction === 'up') {
+        if (currentRowIdx > 0) nextRow -= 1
+      } else if (direction === 'right') {
+        if (currentColIdx < colOrder.length - 1) {
+          nextColIdx += 1
+        } else if (currentRowIdx < items.length - 1) {
+          nextRow += 1
+          nextColIdx = 0
+        }
+      } else if (direction === 'left') {
+        if (currentColIdx > 0) {
+          nextColIdx -= 1
+        } else if (currentRowIdx > 0) {
+          nextRow -= 1
+          nextColIdx = colOrder.length - 1
+        }
+      }
+
+      setSelectedCell({ row: nextRow, col: colOrder[nextColIdx] })
+      setEditing(false)
+    }
+
+    const startTypingEdit = (initialValue: string) => {
+      if (!isEditableCell) return
+      const item = items[currentRowIdx]
+      if (!item) return
+      if (selectedCell.col === 'name') updateItem(item.id, { name: initialValue })
+      if (selectedCell.col === 'price') updateItem(item.id, { price: initialValue })
+      if (selectedCell.col === 'qty') {
+        const parsed = parseInt(initialValue, 10)
+        updateItem(item.id, { quantity: initialValue === '' ? 0 : (isNaN(parsed) ? 0 : parsed) })
+      }
+      setEditing(true)
+    }
+
+    const isPrintableKey = e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey
 
     // Escape key - close modals, menus, and exit edit mode
     if (e.key === 'Escape') {
@@ -607,140 +644,138 @@ function DesktopBillSplitter() {
       }
     }
 
-    // Global shortcuts that work even in inputs
-    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
-      e.preventDefault()
-      dispatch({ type: 'UNDO' })
-      toast({ title: "Undo", duration: TIMING.TOAST_SHORT })
-      analytics.trackUndoRedoUsed("undo", state.historyIndex)
-      return
-    }
-
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
-      e.preventDefault()
-      dispatch({ type: 'REDO' })
-      toast({ title: "Redo", duration: TIMING.TOAST_SHORT })
-      analytics.trackUndoRedoUsed("redo", state.historyIndex)
-      return
-    }
-
-    // Cmd+N: New bill
-    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
-      e.preventDefault()
-      if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
-        dispatch({ type: 'NEW_BILL' })
-        toast({ title: "New bill created" })
-        analytics.trackBillCreated()
-        analytics.trackFeatureUsed("keyboard_shortcut_new_bill")
+    // If currently editing a cell input, let typing happen but keep spreadsheet commits
+    if (editing && isInInput) {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          commitAndMove('up')
+        } else {
+          // At last row, add a new one and move
+          if (currentRowIdx >= items.length - 1) {
+            addItem()
+            setSelectedCell({ row: items.length, col: selectedCell.col })
+          } else {
+            commitAndMove('down')
+          }
+        }
+        return
       }
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          commitAndMove('left')
+        } else {
+          commitAndMove('right')
+        }
+        return
+      }
+      // Allow arrows/backspace/etc to behave normally inside the input
       return
     }
 
-    // Cmd+Shift+N: Add new item
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
-      e.preventDefault()
-      addItem()
-      analytics.trackFeatureUsed("keyboard_shortcut_add_item")
-      return
-    }
+    // Global shortcuts (only when not typing in other inputs)
+    if (!isInInput) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        dispatch({ type: 'UNDO' })
+        toast({ title: "Undo", duration: TIMING.TOAST_SHORT })
+        analytics.trackUndoRedoUsed("undo", state.historyIndex)
+        return
+      }
 
-    // Cmd+Shift+P: Add person
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
-      e.preventDefault()
-      addPerson()
-      analytics.trackFeatureUsed("keyboard_shortcut_add_person")
-      return
-    }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+        e.preventDefault()
+        dispatch({ type: 'REDO' })
+        toast({ title: "Redo", duration: TIMING.TOAST_SHORT })
+        analytics.trackUndoRedoUsed("redo", state.historyIndex)
+        return
+      }
 
-    // Cmd+Shift+C: Copy summary
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
-      e.preventDefault()
-      copyBreakdown()
-      analytics.trackFeatureUsed("keyboard_shortcut_copy")
-      return
-    }
+      // Cmd+N: New bill
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault()
+        if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
+          dispatch({ type: 'NEW_BILL' })
+          toast({ title: "New bill created" })
+          analytics.trackBillCreated()
+          analytics.trackFeatureUsed("keyboard_shortcut_new_bill")
+        }
+        return
+      }
 
-    // Cmd+S: Share
-    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 's') {
-      e.preventDefault()
-      // Find and click the share button
-      const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
-      if (shareButton) shareButton.click()
-      analytics.trackFeatureUsed("keyboard_shortcut_share")
-      return
+      // Cmd+Shift+N: Add new item
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
+        e.preventDefault()
+        addItem()
+        analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+        return
+      }
+
+      // Cmd+Shift+P: Add person
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
+        e.preventDefault()
+        addPerson()
+        analytics.trackFeatureUsed("keyboard_shortcut_add_person")
+        return
+      }
+
+      // Cmd+Shift+C: Copy summary
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
+        e.preventDefault()
+        copyBreakdown()
+        analytics.trackFeatureUsed("keyboard_shortcut_copy")
+        return
+      }
+
+      // Cmd+S: Share
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 's') {
+        e.preventDefault()
+        const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
+        if (shareButton) shareButton.click()
+        analytics.trackFeatureUsed("keyboard_shortcut_share")
+        return
+      }
     }
 
     // Grid navigation - Excel-like behavior
     if (activeView !== 'ledger') return
 
-    // Define column order for navigation
-    const colOrder = ['name', 'price', 'qty', ...people.map(p => p.id)]
-    const currentColIdx = colOrder.indexOf(selectedCell.col)
-    const currentRowIdx = selectedCell.row
+    // Type-to-edit from selection
+    if (!editing && isEditableCell && (isPrintableKey || e.key === 'Backspace' || e.key === 'Delete')) {
+      e.preventDefault()
+      const seed = (e.key === 'Backspace' || e.key === 'Delete') ? '' : e.key
+      startTypingEdit(seed)
+      return
+    }
 
-    // Tab key - move to next cell (right), Shift+Tab - move to previous cell (left)
     if (e.key === 'Tab') {
       e.preventDefault()
-      setEditing(false)
-
       if (e.shiftKey) {
-        // Shift+Tab: Move left
-        if (currentColIdx > 0) {
-          setSelectedCell({ row: currentRowIdx, col: colOrder[currentColIdx - 1] })
-        } else if (currentRowIdx > 0) {
-          // Wrap to end of previous row
-          setSelectedCell({ row: currentRowIdx - 1, col: colOrder[colOrder.length - 1] })
-        }
+        commitAndMove('left')
       } else {
-        // Tab: Move right
-        if (currentColIdx < colOrder.length - 1) {
-          setSelectedCell({ row: currentRowIdx, col: colOrder[currentColIdx + 1] })
-        } else if (currentRowIdx < items.length - 1) {
-          // Wrap to beginning of next row
-          setSelectedCell({ row: currentRowIdx + 1, col: colOrder[0] })
-        }
+        commitAndMove('right')
       }
       return
     }
 
-    // Enter key - move down to next row (same column), Shift+Enter - move up
     if (e.key === 'Enter') {
       e.preventDefault()
-      setEditing(false)
-
       if (e.shiftKey) {
-        // Shift+Enter: Move up
-        if (currentRowIdx > 0) {
-          setSelectedCell(prev => ({ ...prev, row: prev.row - 1 }))
-        }
+        commitAndMove('up')
       } else {
-        // Enter: Move down
-        if (currentRowIdx < items.length - 1) {
-          setSelectedCell(prev => ({ ...prev, row: prev.row + 1 }))
-        } else {
-          // At last row, add new item and move to it
+        if (currentRowIdx >= items.length - 1) {
           addItem()
-          // New item will be at items.length
-          setSelectedCell(prev => ({ ...prev, row: items.length }))
+          setSelectedCell({ row: items.length, col: selectedCell.col })
+        } else {
+          commitAndMove('down')
         }
       }
       return
     }
 
-    // Arrow keys - navigate grid OR move cursor in edit mode
     if (e.key.startsWith('Arrow')) {
-      const target = e.target as HTMLElement
-      const isInTextInput = target.tagName === 'INPUT' && target.getAttribute('type') === 'text'
-
-      // If editing text, let arrow keys move cursor (don't intercept)
-      if (editing && isInTextInput) {
-        return
-      }
-
-      // Not editing or not in text input: navigate grid
       e.preventDefault()
-      setEditing(false)
-
       let newColIdx = currentColIdx
       let newRowIdx = currentRowIdx
 
@@ -750,28 +785,16 @@ function DesktopBillSplitter() {
       if (e.key === 'ArrowUp' && currentRowIdx > 0) newRowIdx--
 
       setSelectedCell({ row: newRowIdx, col: colOrder[newColIdx] })
+      setEditing(false)
       return
     }
 
-    // Space or Enter when not editing - toggle assignment or start editing
-    if (!editing) {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        if (people.some(p => p.id === selectedCell.col)) {
-          const item = items[selectedCell.row]
-          if (item) toggleAssignment(item.id, selectedCell.col)
-        } else {
-          setEditing(true)
-        }
-      } else if (e.key === ' ') {
-        e.preventDefault()
-        if (people.some(p => p.id === selectedCell.col)) {
-          const item = items[selectedCell.row]
-          if (item) toggleAssignment(item.id, selectedCell.col)
-        }
-      }
-      // Note: Auto-typing disabled - user must double-click or press Enter to edit
-      // This provides more intentional, Excel-like behavior
+    // Toggle assignment with space when on person cells
+    if (e.key === ' ' && people.some(p => p.id === selectedCell.col)) {
+      e.preventDefault()
+      const item = items[selectedCell.row]
+      if (item) toggleAssignment(item.id, selectedCell.col)
+      return
     }
   }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, contextMenu, updateItem])
 
@@ -782,7 +805,12 @@ function DesktopBillSplitter() {
 
   useEffect(() => {
     if (editing && editInputRef.current) {
-      editInputRef.current.focus()
+      const input = editInputRef.current
+      input.focus()
+      // Select all so first keystroke replaces existing placeholder values
+      requestAnimationFrame(() => {
+        input.select()
+      })
     }
   }, [editing])
 
@@ -790,47 +818,50 @@ function DesktopBillSplitter() {
     <div className="pro-app-shell selection:bg-indigo-100 selection:text-indigo-900">
       {/* --- Header --- */}
       <header className="pro-header">
-        <div className="flex items-center gap-3">
-          <SplitSimpleIcon />
-          <div>
-            <input
-              value={title}
-              onChange={(e) => {
-                dispatch({ type: 'SET_BILL_TITLE', payload: e.target.value })
-                analytics.trackTitleChanged(e.target.value)
-              }}
-              className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-48 hover:text-indigo-600 transition-colors truncate font-inter"
-              placeholder="Project Name"
-            />
-            <div className="text-[10px] font-medium text-slate-400 tracking-wide mt-0.5">SPLIT SIMPLE</div>
-          </div>
+        <div className="w-full flex items-center justify-between gap-6">
+          {/* Left cluster: Brand + Title + New/Load */}
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <SplitSimpleIcon />
+              <div className="min-w-0">
+                <input
+                  value={title}
+                  onChange={(e) => {
+                    dispatch({ type: 'SET_BILL_TITLE', payload: e.target.value })
+                    analytics.trackTitleChanged(e.target.value)
+                  }}
+                  className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-56 hover:text-indigo-600 transition-colors truncate font-inter"
+                  placeholder="Project Name"
+                />
+                <div className="text-[10px] font-medium text-slate-400 tracking-wide mt-0.5">SPLIT SIMPLE</div>
+              </div>
+            </div>
 
-          {/* New and Load buttons */}
-          <div className="flex items-center gap-1 ml-1">
-            <button
-              onClick={() => {
-                if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
-                  dispatch({ type: 'NEW_BILL' })
-                  toast({ title: "New bill created" })
-                  analytics.trackBillCreated()
-                  analytics.trackFeatureUsed("new_bill")
-                }
-              }}
-              className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200/60 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter"
-              title="New Bill (Cmd+N)"
-            >
-              <FileQuestion size={14} />
-              <span>New</span>
-            </button>
+            <div className="flex items-center bg-slate-100 border border-slate-200/60 rounded-md overflow-hidden shadow-sm">
+              <button
+                onClick={() => {
+                  if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
+                    dispatch({ type: 'NEW_BILL' })
+                    toast({ title: "New bill created" })
+                    analytics.trackBillCreated()
+                    analytics.trackFeatureUsed("new_bill")
+                  }
+                }}
+                className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter border-r border-slate-200/60"
+                title="New Bill (Cmd+N)"
+              >
+                <FileQuestion size={14} />
+                <span>New</span>
+              </button>
 
-            <DropdownMenu open={newLoadDropdownOpen} onOpenChange={setNewLoadDropdownOpen}>
-              <DropdownMenuTrigger asChild>
-                <button className="h-8 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200/60 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center gap-2 font-inter">
-                  <Search size={14} />
-                  <span>Load</span>
-                  <ChevronDown size={12} />
-                </button>
-              </DropdownMenuTrigger>
+              <DropdownMenu open={newLoadDropdownOpen} onOpenChange={setNewLoadDropdownOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter">
+                    <Search size={14} />
+                    <span>Load</span>
+                    <ChevronDown size={12} />
+                  </button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <div className="px-2 py-2 space-y-2" onClick={(e) => e.stopPropagation()}>
                   <label className="text-xs text-slate-500 font-medium">Enter Bill ID:</label>
@@ -885,47 +916,60 @@ function DesktopBillSplitter() {
                   </div>
                 </div>
               </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                dispatch({ type: 'UNDO' })
-                toast({ title: "Undone", duration: TIMING.TOAST_SHORT })
-                analytics.trackUndoRedoUsed("undo", state.historyIndex)
-              }}
-              disabled={!canUndo}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Undo (Cmd+Z)"
-            >
-              <RotateCcw size={16} />
-            </button>
-            <button
-              onClick={() => {
-                dispatch({ type: 'REDO' })
-                toast({ title: "Redone", duration: TIMING.TOAST_SHORT })
-                analytics.trackUndoRedoUsed("redo", state.historyIndex)
-              }}
-              disabled={!canRedo}
-              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Redo (Cmd+Shift+Z)"
-            >
-              <RotateCw size={16} />
-            </button>
+              </DropdownMenu>
+            </div>
           </div>
 
-          {/* Sync Status */}
-          <SyncStatusIndicator />
+          {/* Right cluster: Undo/Redo + Sync/Scan/Share */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 bg-slate-100 border border-slate-200/60 rounded-md px-1.5 py-1 shadow-sm">
+              <button
+                onClick={() => {
+                  dispatch({ type: 'UNDO' })
+                  toast({ title: "Undone", duration: TIMING.TOAST_SHORT })
+                  analytics.trackUndoRedoUsed("undo", state.historyIndex)
+                }}
+                disabled={!canUndo}
+                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Undo (Cmd+Z)"
+              >
+                <RotateCcw size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  dispatch({ type: 'REDO' })
+                  toast({ title: "Redone", duration: TIMING.TOAST_SHORT })
+                  analytics.trackUndoRedoUsed("redo", state.historyIndex)
+                }}
+                disabled={!canRedo}
+                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Redo (Cmd+Shift+Z)"
+              >
+                <RotateCw size={16} />
+              </button>
+            </div>
 
-          {/* Scan Receipt Button */}
-          <ReceiptScanner onImport={handleScanImport} />
-
-          {/* Share Button */}
-          <ShareBill variant="outline" size="sm" showText={true} />
+            <div className="flex items-center bg-slate-50 border border-slate-200/60 rounded-full overflow-hidden shadow-sm">
+              <SyncStatusIndicator variant="header" />
+              <div className="h-6 w-px bg-slate-200/80" />
+              <ReceiptScanner
+                onImport={handleScanImport}
+                trigger={(
+                  <button
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100/60 transition-colors"
+                    title="Scan receipt"
+                  >
+                    <Camera size={14} />
+                    <span className="whitespace-nowrap">Scan Receipt</span>
+                  </button>
+                )}
+              />
+              <div className="h-6 w-px bg-slate-200/80" />
+              <div className="px-1">
+                <ShareBill variant="ghost" size="sm" showText={true} />
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -936,6 +980,30 @@ function DesktopBillSplitter() {
           <div className="h-full w-full animate-in fade-in duration-200">
             <div className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar" tabIndex={-1}>
               <div className="min-w-max mx-auto bg-white rounded-lg border border-slate-200/80 shadow-sm">
+                {/* Sticky toolbar */}
+                <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur border-b border-slate-200/80">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={addItem}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow-sm flex items-center gap-2 transition-colors"
+                      title="Add new line item (Cmd+Shift+N)"
+                    >
+                      <Plus size={14} /> Add Line Item
+                    </button>
+                    <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-slate-400 tracking-widest">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-500">
+                        <Equal size={11} className="text-indigo-600" /> Split
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-500">
+                        <Users size={11} className="text-indigo-600" /> People
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-inter">
+                    <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Tab/Enter to commit</span>
+                    <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Esc to exit</span>
+                  </div>
+                </div>
                 {/* Live Roster */}
                 <div className="flex items-center gap-6 px-4 py-3 bg-slate-50/50 border-b border-slate-200/60 overflow-x-auto">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 font-inter">
@@ -1170,12 +1238,21 @@ function DesktopBillSplitter() {
                         )
                       })}
 
-                      {/* Empty Column */}
-                      <div className="w-12 border-r border-slate-100/60 flex items-center justify-center">
+                      {/* Inline actions */}
+                      <div className="w-16 border-r border-slate-100/60 flex items-center justify-center gap-2 bg-white">
+                        <button
+                          onClick={() => duplicateItem(item)}
+                          className="text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                          tabIndex={-1}
+                          title="Duplicate row"
+                        >
+                          <ClipboardCopy size={12} />
+                        </button>
                         <button
                           onClick={() => deleteItem(item.id)}
                           className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
                           tabIndex={-1}
+                          title="Delete row"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -1265,7 +1342,7 @@ function DesktopBillSplitter() {
                             dispatch({ type: 'SET_TAX', payload: e.target.value })
                             analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
                           }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 shadow-inner focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
                           placeholder="0.00"
                         />
                       </div>
@@ -1301,7 +1378,7 @@ function DesktopBillSplitter() {
                             dispatch({ type: 'SET_TIP', payload: e.target.value })
                             analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
                           }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 shadow-inner focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
                           placeholder="0.00"
                         />
                       </div>
@@ -1337,7 +1414,7 @@ function DesktopBillSplitter() {
                             dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
                             analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
                           }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
+                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 shadow-inner focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
                           placeholder="0.00"
                         />
                       </div>
@@ -1518,65 +1595,60 @@ function DesktopBillSplitter() {
 
       {/* --- Footer --- */}
       <footer className="pro-footer">
-        {/* Left Section: Stats */}
-        <div className="flex items-center gap-3 text-[10px] text-slate-500 font-inter">
-          <div className="flex items-center gap-1.5">
+        <div className="w-full flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5 text-[10px] text-slate-500 font-inter">
             <span className="font-semibold text-slate-700">{items.length}</span>
             <span>items</span>
-          </div>
-          <span className="text-slate-300">•</span>
-          <div className="flex items-center gap-1.5">
+            <span className="text-slate-300">•</span>
             <span className="font-semibold text-slate-700">{people.length}</span>
             <span>people</span>
+            <span className="text-slate-300">•</span>
+            <SyncStatusIndicator inline />
           </div>
-          <span className="text-slate-300">•</span>
-          <SyncStatusIndicator inline />
-        </div>
 
-        {/* Center Section: View Switcher + Copy */}
-        <div className="flex items-center gap-2">
-          <div className="flex bg-slate-100 p-1 rounded-md">
+          <div className="flex items-center gap-2">
+            <div className="flex bg-slate-100 p-1 rounded-md">
+              <button
+                onClick={() => setActiveView('ledger')}
+                className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 font-inter ${activeView === 'ledger' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <GridIcon size={14} /> Ledger
+              </button>
+              <button
+                onClick={() => setActiveView('breakdown')}
+                className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 font-inter ${activeView === 'breakdown' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                <FileText size={14} /> Breakdown
+              </button>
+            </div>
+
             <button
-              onClick={() => setActiveView('ledger')}
-              className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 font-inter ${activeView === 'ledger' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              onClick={copyBreakdown}
+              className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
+              title="Copy summary to clipboard (Cmd+Shift+C)"
             >
-              <GridIcon size={14} /> Ledger
-            </button>
-            <button
-              onClick={() => setActiveView('breakdown')}
-              className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 font-inter ${activeView === 'breakdown' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <FileText size={14} /> Breakdown
+              <ClipboardCopy size={14} /> Copy
             </button>
           </div>
 
-          <button
-            onClick={copyBreakdown}
-            className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
-            title="Copy summary to clipboard (Cmd+Shift+C)"
-          >
-            <ClipboardCopy size={14} /> Copy
-          </button>
-        </div>
-
-        {/* Right Section: Keyboard Shortcuts + Creator */}
-        <div className="flex items-center gap-3">
-          <div className="text-[10px] text-slate-400 font-inter flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧N</kbd>
-            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧P</kbd>
-            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧C</kbd>
-            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘S</kbd>
-            <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘Z</kbd>
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-inter">
+            <div className="flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧N</kbd>
+              <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧P</kbd>
+              <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧C</kbd>
+              <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘S</kbd>
+              <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘Z</kbd>
+            </div>
+            <span className="text-slate-300">•</span>
+            <a
+              href="https://anuragd.me"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors font-inter"
+            >
+              Anurag Dhungana
+            </a>
           </div>
-          <div className="h-3 w-px bg-slate-200"></div>
-          <a
-            href="https://anuragd.me"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors font-inter"
-          >
-            Anurag Dhungana
-          </a>
         </div>
       </footer>
 
