@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import {
   Plus,
   Search,
@@ -172,9 +172,11 @@ function DesktopBillSplitter() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemId: string; personId?: string } | null>(null)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
   const [newLoadDropdownOpen, setNewLoadDropdownOpen] = useState(false)
+  const [hideStarter, setHideStarter] = useState(false)
 
   const editInputRef = useRef<HTMLInputElement>(null)
   const loadBillRequestRef = useRef<string | null>(null) // Track current load request to prevent race conditions
+  const previousItemsLengthRef = useRef(0)
 
   const people = state.currentBill.people
   const items = state.currentBill.items
@@ -187,6 +189,9 @@ function DesktopBillSplitter() {
 
   // --- Derived Data ---
   const summary = getBillSummary(state.currentBill)
+  const hasMeaningfulItems = useMemo(() => {
+    return items.some(i => (i.name || '').trim() !== '' || (i.price || '').trim() !== '' || (i.quantity || 1) !== 1)
+  }, [items])
 
   const calculatedItems = useMemo(() => items.map(item => {
     const priceNumber = parseFloat(item.price || '0')
@@ -804,6 +809,30 @@ function DesktopBillSplitter() {
   }, [handleGlobalKeyDown])
 
   useEffect(() => {
+    const saved = window.localStorage.getItem('splitsimple_hide_starter')
+    if (saved === '1') setHideStarter(true)
+  }, [])
+
+  // Seed a first row when empty so the grid is immediately ready to type.
+  useLayoutEffect(() => {
+    if (activeView !== 'ledger') return
+    if (items.length !== 0) return
+    addItem()
+  }, [activeView, items.length, addItem])
+
+  // When the first row appears, focus and enter edit mode on the item name cell.
+  useEffect(() => {
+    const prevLen = previousItemsLengthRef.current
+    previousItemsLengthRef.current = items.length
+
+    if (activeView !== 'ledger') return
+    if (prevLen === 0 && items.length === 1) {
+      setSelectedCell({ row: 0, col: 'name' })
+      setEditing(true)
+    }
+  }, [activeView, items.length])
+
+  useEffect(() => {
     if (editing && editInputRef.current) {
       const input = editInputRef.current
       input.focus()
@@ -984,15 +1013,15 @@ function DesktopBillSplitter() {
             <div className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar" tabIndex={-1}>
               <div className="min-w-max mx-auto bg-white rounded-lg border border-slate-200/80 shadow-sm">
                 {/* Sticky toolbar */}
-                <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur border-b border-slate-200/80">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={addItem}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow-sm flex items-center gap-2 transition-colors"
-                      title="Add new line item (Cmd+Shift+N)"
-                    >
-                      <Plus size={14} /> Add Line Item
-                    </button>
+	                <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur border-b border-slate-200/80">
+	                  <div className="flex items-center gap-2">
+	                    <button
+	                      onClick={addItem}
+	                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow-sm flex items-center gap-2 transition-colors"
+	                      title="Add new line item (Cmd+Shift+N)"
+	                    >
+	                      <Plus size={14} /> Add Line Item
+	                    </button>
                     <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-slate-400 tracking-widest">
                       <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-500">
                         <Equal size={11} className="text-indigo-600" /> Split
@@ -1004,14 +1033,98 @@ function DesktopBillSplitter() {
                   </div>
                   <div className="flex items-center gap-2 text-[10px] text-slate-500 font-inter">
                     <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Tab/Enter to commit</span>
-                    <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Esc to exit</span>
-                  </div>
-                </div>
-                {/* Live Roster */}
-                <div className="flex items-center gap-6 px-4 py-3 bg-slate-50/50 border-b border-slate-200/60 overflow-x-auto">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 font-inter">
-                    Live Breakdown
-                  </div>
+	                    <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Esc to exit</span>
+	                  </div>
+	                </div>
+
+	                {/* Starter banner (shown until the bill has meaningful items) */}
+	                {!hideStarter && !hasMeaningfulItems && (
+	                  <div className="px-4 py-3 bg-slate-50/60 border-b border-slate-200/60">
+	                    <div className="flex items-start justify-between gap-4">
+	                      <div className="min-w-0">
+	                        <div className="text-sm font-bold text-slate-900 font-inter">Start splitting in 3 quick steps</div>
+	                        <div className="text-xs text-slate-500 mt-0.5 font-inter">
+	                          Click a cell and type, then press Tab/Enter to move like Sheets.
+	                        </div>
+
+	                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+	                          <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+	                            <div className="flex items-center gap-2 min-w-0">
+	                              <div className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs font-bold">1</div>
+	                              <div className="min-w-0">
+	                                <div className="text-xs font-bold text-slate-700 font-inter truncate">Add people</div>
+	                                <div className="text-[10px] text-slate-400 font-inter">⌘⇧P</div>
+	                              </div>
+	                            </div>
+	                            <button
+	                              onClick={addPerson}
+	                              className="h-7 px-2 rounded bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors whitespace-nowrap"
+	                            >
+	                              + Person
+	                            </button>
+	                          </div>
+
+	                          <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+	                            <div className="flex items-center gap-2 min-w-0">
+	                              <div className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs font-bold">2</div>
+	                              <div className="min-w-0">
+	                                <div className="text-xs font-bold text-slate-700 font-inter truncate">Add items</div>
+	                                <div className="text-[10px] text-slate-400 font-inter">⌘⇧N</div>
+	                              </div>
+	                            </div>
+	                            <button
+	                              onClick={() => {
+	                                if (items.length === 0) {
+	                                  addItem()
+	                                  return
+	                                }
+	                                setSelectedCell({ row: 0, col: 'name' })
+	                                setEditing(true)
+	                              }}
+	                              className="h-7 px-2 rounded bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition-colors whitespace-nowrap"
+	                            >
+	                              + Item
+	                            </button>
+	                          </div>
+
+	                          <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
+	                            <div className="flex items-center gap-2 min-w-0">
+	                              <div className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs font-bold">3</div>
+	                              <div className="min-w-0">
+	                                <div className="text-xs font-bold text-slate-700 font-inter truncate">Scan receipt</div>
+	                                <div className="text-[10px] text-slate-400 font-inter">Optional</div>
+	                              </div>
+	                            </div>
+	                            <ReceiptScanner
+	                              onImport={handleScanImport}
+	                              trigger={(
+	                                <button className="h-7 px-2 rounded bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors whitespace-nowrap flex items-center gap-2">
+	                                  <Camera size={14} />
+	                                  Scan
+	                                </button>
+	                              )}
+	                            />
+	                          </div>
+	                        </div>
+	                      </div>
+	                      <button
+	                        onClick={() => {
+	                          setHideStarter(true)
+	                          window.localStorage.setItem('splitsimple_hide_starter', '1')
+	                        }}
+	                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+	                        title="Dismiss"
+	                      >
+	                        <X size={16} />
+	                      </button>
+	                    </div>
+	                  </div>
+	                )}
+	                {/* Live Roster */}
+	                <div className="flex items-center gap-6 px-4 py-3 bg-slate-50/50 border-b border-slate-200/60 overflow-x-auto">
+	                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 font-inter">
+	                    Live Breakdown
+	                  </div>
                   <div className="h-4 w-px bg-slate-200 shrink-0"></div>
                   {people.length === 0 ? (
                     <div className="flex items-center gap-2 text-xs text-slate-400 font-inter">
