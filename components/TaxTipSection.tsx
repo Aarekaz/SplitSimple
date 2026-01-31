@@ -163,7 +163,7 @@ export function TaxTipSection({ className }: TaxTipSectionProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => handleTipPercentage(percentage)}
-                className="h-7 px-2.5 text-xs border-border hover:bg-primary hover:text-white transition-all"
+                className="h-7 px-2.5 text-xs border-border hover:bg-primary hover:text-white transition-[background-color,color,border-color,box-shadow]"
               >
                 {percentage}%
               </Button>

@@ -148,7 +148,7 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
         )}
       </DialogTrigger>
       <DialogContent className={cn(
-        "max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden transition-all duration-300",
+        "max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden transition-[max-width,height] duration-300",
         state === 'reviewing' ? "sm:max-w-5xl" : "sm:max-w-xl h-auto"
       )}>
         {state === 'idle' && (
@@ -221,7 +221,7 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
           <button
             type="button"
             className={cn(
-              "border-2 border-dashed rounded-xl h-64 w-full flex flex-col items-center justify-center text-center p-6 transition-all cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-400",
+              "border-2 border-dashed rounded-xl h-64 w-full flex flex-col items-center justify-center text-center p-6 transition-colors cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-400",
               dragActive ? "border-indigo-500 bg-indigo-50/30" : "border-slate-200"
             )}
             onDragEnter={handleDrag}
@@ -410,7 +410,7 @@ function ReviewView({
           
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {items.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-3 group animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+              <div key={idx} className="flex items-start gap-3 group animate-in fade-in slide-in-from-bottom-2 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ animationDelay: `${idx * 50}ms` }}>
                 <div className="w-16 pt-1">
                   <label htmlFor={`item-qty-${idx}`} className="block text-[10px] font-bold text-slate-400 mb-1">QTY</label>
                   <input 

@@ -145,7 +145,7 @@ export function TotalsPanel({
                         e.stopPropagation()
                         handleRemovePerson(person.id)
                       }}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,color] duration-150"
                       aria-label={`Remove ${person.name}`}
                     >
                       <X className="h-3.5 w-3.5" />

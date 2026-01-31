@@ -47,7 +47,7 @@ export function MobileActionButton({
               <Button
                 size="lg"
                 variant="secondary"
-                className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200"
+                className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
                 onClick={() => handleAction(onViewReceipt)}
               >
                 <Receipt className="h-5 w-5 mr-3" />
@@ -58,7 +58,7 @@ export function MobileActionButton({
             <Button
               size="lg"
               variant="secondary"
-              className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 delay-75"
+              className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 delay-75 ease-[cubic-bezier(0.22,1,0.36,1)]"
               onClick={() => handleAction(onAddItem)}
             >
               <ShoppingCart className="h-5 w-5 mr-3" />
@@ -68,7 +68,7 @@ export function MobileActionButton({
             <Button
               size="lg"
               variant="secondary"
-              className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 delay-100"
+              className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 delay-100 ease-[cubic-bezier(0.22,1,0.36,1)]"
               onClick={() => handleAction(onAddPerson)}
             >
               <Users className="h-5 w-5 mr-3" />
@@ -82,7 +82,7 @@ export function MobileActionButton({
           size="lg"
           className={cn(
             "h-16 w-16 rounded-full shadow-lg",
-            "transition-all duration-300",
+            "transition-transform duration-300",
             isExpanded && "rotate-45 scale-110"
           )}
           onClick={() => setIsExpanded(!isExpanded)}

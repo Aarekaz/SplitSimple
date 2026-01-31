@@ -563,7 +563,7 @@ export default function AdminPage() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-purple-500 h-2 rounded-full transition-all duration-700" 
+                          className="bg-purple-500 h-2 rounded-full transition-[width] duration-700" 
                           style={{ width: `${Math.round(stats.completionRate)}%` }}
                         />
                       </div>
@@ -576,7 +576,7 @@ export default function AdminPage() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-700" 
+                          className="bg-blue-500 h-2 rounded-full transition-[width] duration-700" 
                           style={{ width: `${Math.round(stats.shareRate)}%` }}
                         />
                       </div>
@@ -701,7 +701,7 @@ export default function AdminPage() {
                   
                   <div className="flex items-center gap-2 mt-3">
                     <div className="flex-1 bg-green-200 rounded-full h-2">
-                      <div className="bg-green-500 h-2 rounded-full transition-all duration-500" style={{
+                      <div className="bg-green-500 h-2 rounded-full transition-[width] duration-500" style={{
                         width: `${Math.min(100, (stats.activeBills / stats.totalBills) * 100)}%`
                       }} />
                     </div>

@@ -407,7 +407,7 @@ export function MobileCardView() {
                         <div className="px-4 py-3 bg-slate-50/50">
                           <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-slate-200">
                             <div
-                              className="h-full transition-all rounded-full"
+                              className="h-full transition-[width,opacity] rounded-full"
                               style={{
                                 width: `${personData.ratio}%`,
                                 backgroundColor: person.color
@@ -779,7 +779,7 @@ export function MobileCardView() {
                           colorIdx: idx
                         })}
                         className={cn(
-                          "w-full aspect-square rounded-lg transition-all",
+                          "w-full aspect-square rounded-lg transition-[transform,box-shadow]",
                           editingPerson.color === colorOption.hex
                             ? "ring-2 ring-offset-2 ring-primary scale-110"
                             : "hover:scale-105"

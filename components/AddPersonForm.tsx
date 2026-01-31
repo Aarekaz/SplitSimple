@@ -111,7 +111,7 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
           value={newPersonName}
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
-          className={`h-10 text-sm flex-1 rounded-xl border-border/50 focus:border-primary transition-all duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+          className={`h-10 text-sm flex-1 rounded-xl border-border/50 focus:border-primary transition-[border-color,background-color,box-shadow,color] duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
           name="person-name"
           autoComplete="off"
           aria-invalid={validationError ? 'true' : 'false'}
@@ -122,7 +122,7 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
             size="sm" 
             onClick={handleAddPerson} 
             disabled={!newPersonName.trim()} 
-            className={`h-10 px-4 rounded-xl btn-float transition-all duration-300 font-medium ${showSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white'}`}
+            className={`h-10 px-4 rounded-xl btn-float transition-[background-color,box-shadow,transform,color] duration-300 font-medium ${showSuccess ? 'bg-success hover:bg-success/90 success-pulse' : 'bg-gradient-to-br from-primary to-primary/90 hover:from-primary-600 hover:to-primary/80 text-white'}`}
           >
             {showSuccess ? '✓' : 'Add'}
           </Button>

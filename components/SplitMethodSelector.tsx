@@ -90,7 +90,7 @@ export function SplitMethodSelector({
               type="button"
               onClick={() => handleMethodChange(option.value)}
               className={cn(
-                "flex items-center justify-center gap-1.5 py-2 px-3 rounded-md transition-all text-xs font-medium",
+                "flex items-center justify-center gap-1.5 py-2 px-3 rounded-md transition-[background-color,color,box-shadow] text-xs font-medium",
                 "hover:bg-background hover:shadow-sm",
                 "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
                 isActive

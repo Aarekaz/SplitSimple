@@ -240,7 +240,7 @@ export function MobileGridView() {
                         <td
                           key={person.id}
                           className={cn(
-                            "border-r border-slate-200 px-2 py-4 cursor-pointer transition-all min-h-[60px]",
+                            "border-r border-slate-200 px-2 py-4 cursor-pointer transition-[background-color,border-color,transform] duration-150 min-h-[60px]",
                             isAssigned
                               ? "bg-opacity-10 active:scale-95"
                               : "bg-white hover:bg-slate-50 active:bg-slate-100"

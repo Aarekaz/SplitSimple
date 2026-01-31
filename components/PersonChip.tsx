@@ -55,7 +55,7 @@ export const PersonChip = memo(function PersonChip({
     }
   }
 
-  const baseClasses = "flex items-center gap-1.5 cursor-pointer transition-all border"
+  const baseClasses = "flex items-center gap-1.5 cursor-pointer transition-[background-color,border-color,color,box-shadow,transform] border"
   const selectedClasses = "bg-primary text-primary-foreground hover:bg-primary/90"
   const unselectedClasses = "bg-muted hover:bg-muted/80 text-muted-foreground border-dashed"
 

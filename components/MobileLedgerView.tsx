@@ -393,7 +393,7 @@ export function MobileLedgerView() {
         <Button
           variant="ghost"
           onClick={() => handleAddItem(true)}
-          className="w-full justify-start text-muted-foreground hover:text-foreground h-10 rounded-xl hover:bg-muted/50 transition-all"
+          className="w-full justify-start text-muted-foreground hover:text-foreground h-10 rounded-xl hover:bg-muted/50 transition-[background-color,color]"
         >
           <Plus className="h-4 w-4 mr-2" />
           Add another item

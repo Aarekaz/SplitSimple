@@ -26,7 +26,7 @@ function QuickStartCard({ icon, title, description, action, variant = "default" 
   return (
     <Card 
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-lg active:scale-95",
+        "cursor-pointer transition-[transform,box-shadow,background-color,border-color] duration-200 hover:shadow-lg active:scale-95",
         variant === "primary" && "border-primary bg-primary/5 hover:bg-primary/10"
       )}
       onClick={action}

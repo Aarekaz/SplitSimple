@@ -361,7 +361,7 @@
   }
 
   .proportion-bar-fill {
-    @apply h-full transition-all duration-300;
+    @apply h-full transition-[width] duration-250;
     background: currentColor;
   }
 
@@ -456,7 +456,7 @@
 
   /* ===== Interactive Elements ===== */
   .receipt-button {
-    @apply inline-flex items-center gap-2 px-3 py-2 border-2 border-border bg-card text-foreground hover:bg-muted/50 font-medium transition-all;
+    @apply inline-flex items-center gap-2 px-3 py-2 border-2 border-border bg-card text-foreground hover:bg-muted/50 font-medium transition-[transform,box-shadow,background-color,border-color,color];
     box-shadow: var(--receipt-shadow);
   }
 
@@ -471,7 +471,7 @@
   }
 
   .receipt-input {
-    @apply border-2 border-border bg-card px-3 py-2 font-mono tabular-nums transition-all;
+    @apply border-2 border-border bg-card px-3 py-2 font-mono tabular-nums transition-[border-color,box-shadow,background-color];
     font-family: var(--font-numbers);
   }
 
@@ -502,7 +502,7 @@
 
   /* ===== Clickable Element Enhancements ===== */
   .clickable-badge {
-    @apply transition-all duration-150 ease-out cursor-pointer;
+    @apply transition-[transform,box-shadow] duration-150 ease-out cursor-pointer;
   }
 
   .clickable-badge:hover {
@@ -557,7 +557,7 @@
   }
 
   .number-flash {
-    animation: number-flash 0.4s ease-out;
+    animation: number-flash 0.2s ease-out;
   }
 
   /* Success ripple effect */
@@ -571,7 +571,7 @@
   }
 
   .success-ripple {
-    animation: success-ripple 0.6s ease-out;
+    animation: success-ripple 0.25s ease-out;
   }
 
   /* Delete slide-out */
@@ -603,7 +603,7 @@
   }
 
   .add-slide-in {
-    animation: add-slide-in 0.3s var(--ease-spring);
+    animation: add-slide-in 0.25s var(--ease-spring);
   }
 
   /* Pulse animation for new inputs */
@@ -617,7 +617,7 @@
   }
 
   .input-focus-hint {
-    animation: pulse-border 2s ease-in-out 3;
+    animation: pulse-border 0.3s ease-in-out 3;
   }
 
   /* Stagger slide-in animations */
@@ -633,11 +633,11 @@
   }
 
   .animate-slide-in-1 {
-    animation: slide-in-up 0.4s ease-out 0.15s both;
+    animation: slide-in-up 0.25s ease-out 0.15s both;
   }
 
   .animate-slide-in-2 {
-    animation: slide-in-up 0.4s ease-out 0.3s both;
+    animation: slide-in-up 0.25s ease-out 0.3s both;
   }
 
   /* Person cell assignment animations */
@@ -717,7 +717,7 @@
   }
 
   .ledger-row {
-    @apply border-b border-border transition-all duration-200;
+    @apply border-b border-border transition-[transform,box-shadow,background-color,border-color] duration-200;
     border-left: 3px solid transparent;
     transform-origin: center;
   }
@@ -804,7 +804,7 @@
 
   /* Clickable person cell states */
   .person-cell-assigned {
-    @apply transition-all duration-150;
+    @apply transition-[filter] duration-150;
   }
 
   .person-cell-assigned:hover {
@@ -812,7 +812,7 @@
   }
 
   .person-cell-unassigned {
-    @apply bg-muted/40 transition-all duration-150;
+    @apply bg-muted/40 transition-colors duration-150;
   }
 
   .person-cell-unassigned:hover {
@@ -875,7 +875,7 @@
   }
 
   .dock-item {
-    @apply rounded-lg p-2 transition-all duration-200 border-2 border-transparent;
+    @apply rounded-lg p-2 transition-[transform,background-color,border-color] duration-200 border-2 border-transparent;
     background: transparent;
   }
 
@@ -893,7 +893,7 @@
 
   /* ===== Animation Classes ===== */
   .animate-receipt-print {
-    animation: receipt-print 0.4s ease-out;
+    animation: receipt-print 0.25s ease-out;
   }
 
   @keyframes receipt-print {
@@ -908,7 +908,7 @@
   }
 
   .success-pulse {
-    animation: success-pulse 0.6s var(--ease-smooth);
+    animation: success-pulse 0.25s var(--ease-smooth);
   }
 
   @keyframes success-pulse {
@@ -918,7 +918,7 @@
   }
 
   .error-shake {
-    animation: error-shake 0.5s ease-in-out;
+    animation: error-shake 0.25s ease-in-out;
   }
 
   @keyframes error-shake {
@@ -935,7 +935,7 @@
   }
 
   .long-press-active {
-    animation: long-press-pulse 0.5s ease-out;
+    animation: long-press-pulse 0.25s ease-out;
   }
 
   /* Touch-specific improvements */
@@ -1095,13 +1095,13 @@
   }
 
   .pro-tile-inactive {
-    @apply flex items-center justify-center transition-all duration-100;
+    @apply flex items-center justify-center transition-colors duration-100;
     color: #94A3B8; /* slate-400 */
     background: transparent;
   }
 
   .pro-tile-active {
-    @apply flex items-center justify-center rounded-md transition-all duration-100;
+    @apply flex items-center justify-center rounded-md transition-[transform,filter,background-color] duration-100;
     color: white;
   }
 
@@ -1148,9 +1148,22 @@
 
 @media (prefers-reduced-motion: reduce) {
   * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition-property: opacity, color, background-color, border-color, box-shadow !important;
+    transition-duration: 150ms !important;
+    transition-timing-function: var(--ease-out-cubic) !important;
     scroll-behavior: auto !important;
+  }
+
+  .ledger-row:hover,
+  .receipt-button:hover,
+  .clickable-badge:hover,
+  .dock-item:hover,
+  .btn-press:active,
+  .clickable-badge:active,
+  button:active,
+  a:active,
+  [role="button"]:active {
+    transform: none !important;
   }
 }

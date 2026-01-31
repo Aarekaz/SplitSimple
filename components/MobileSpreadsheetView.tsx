@@ -87,7 +87,7 @@ export function MobileSpreadsheetView() {
       <div className="flex-1 overflow-hidden relative">
         <div
           className={cn(
-            "absolute inset-0 transition-all duration-300 ease-in-out",
+            "absolute inset-0 transition-[opacity,transform] duration-300 ease-in-out",
             viewMode === "cards" ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-full pointer-events-none"
           )}
         >
@@ -95,7 +95,7 @@ export function MobileSpreadsheetView() {
         </div>
         <div
           className={cn(
-            "absolute inset-0 transition-all duration-300 ease-in-out",
+            "absolute inset-0 transition-[opacity,transform] duration-300 ease-in-out",
             viewMode === "grid" ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full pointer-events-none"
           )}
         >
