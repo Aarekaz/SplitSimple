@@ -158,6 +158,8 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
                 id="bill-id-input"
                 placeholder="1763442653885-vlpkbu4"
                 value={billId}
+                name="bill-id"
+                autoComplete="off"
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 className={cn(
@@ -165,7 +167,6 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
                   error && "border-destructive focus-visible:ring-destructive"
                 )}
                 disabled={isLoading}
-                autoFocus
               />
               {error && (
                 <p className="text-xs text-destructive">{error}</p>
@@ -183,7 +184,7 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
+                  Loading…
                 </>
               ) : (
                 <>
@@ -204,13 +205,15 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
       <div className="flex items-center gap-1.5">
         <Search className="h-3 w-3 text-muted-foreground" />
         <Input
-          placeholder="Enter bill ID..."
+          placeholder="Enter bill ID…"
           value={billId}
+          name="bill-id"
+          autoComplete="off"
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           aria-label="Bill ID"
           className={cn(
-            "h-7 w-56 text-xs font-mono bg-background/50 border-border/50 focus:border-primary/50 transition-all",
+            "h-7 w-56 text-xs font-mono bg-background/50 border-border/50 focus:border-primary/50 transition-colors",
             error && "border-destructive focus-visible:ring-destructive"
           )}
           disabled={isLoading}

@@ -208,7 +208,9 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
                 disabled={isStoring}
                 className="flex-1 font-mono text-sm"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
-                placeholder={isStoring ? "Generating link..." : ""}
+                placeholder={isStoring ? "Generating link…" : ""}
+                name="share-url"
+                autoComplete="off"
               />
               <div className="flex gap-2 justify-center sm:justify-start">
                 <Button

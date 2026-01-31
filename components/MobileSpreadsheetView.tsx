@@ -57,7 +57,7 @@ export function MobileSpreadsheetView() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div id="main-content" className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b">
         <div className="px-4 py-3 flex items-center gap-3">

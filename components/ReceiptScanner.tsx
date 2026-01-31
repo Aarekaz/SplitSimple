@@ -249,12 +249,15 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
         <TabsContent value="text" className="flex-1 p-6 pt-4 flex flex-col gap-4">
           <textarea 
             className="flex-1 w-full p-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-            placeholder="Paste receipt text here...
+            placeholder="Paste receipt text here…
 Example:
 Garlic Naan 4.50
 2x Butter Chicken 32.00"
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
+            aria-label="Receipt text"
+            name="receipt-text"
+            autoComplete="off"
           />
           <Button onClick={() => onPaste(pasteText)} disabled={!pasteText.trim()} className="w-full">
             Process Text
@@ -275,7 +278,7 @@ function ProcessingView() {
         </div>
       </div>
       <div className="space-y-2">
-        <h3 className="text-lg font-bold text-slate-900">Scanning Receipt...</h3>
+        <h3 className="text-lg font-bold text-slate-900">Scanning Receipt…</h3>
         <p className="text-sm text-slate-500 max-w-xs mx-auto">
           Our AI is analyzing the items and prices. This usually takes a few seconds.
         </p>
@@ -409,30 +412,39 @@ function ReviewView({
             {items.map((item, idx) => (
               <div key={idx} className="flex items-start gap-3 group animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
                 <div className="w-16 pt-1">
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1">QTY</label>
+                  <label htmlFor={`item-qty-${idx}`} className="block text-[10px] font-bold text-slate-400 mb-1">QTY</label>
                   <input 
+                    id={`item-qty-${idx}`}
                     type="number" 
                     value={item.quantity}
+                    name={`item-qty-${idx}`}
+                    autoComplete="off"
                     onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value) || 1)}
                     className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm font-mono text-center focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                 </div>
                 <div className="flex-1 pt-1">
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1">ITEM</label>
+                  <label htmlFor={`item-name-${idx}`} className="block text-[10px] font-bold text-slate-400 mb-1">ITEM</label>
                   <input 
+                    id={`item-name-${idx}`}
                     type="text" 
                     value={item.name}
+                    name={`item-name-${idx}`}
+                    autoComplete="off"
                     onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-sm font-medium focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                 </div>
                 <div className="w-24 pt-1">
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1">PRICE</label>
+                  <label htmlFor={`item-price-${idx}`} className="block text-[10px] font-bold text-slate-400 mb-1">PRICE</label>
                   <div className="relative">
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
                     <input 
+                      id={`item-price-${idx}`}
                       type="number" 
                       value={item.price}
+                      name={`item-price-${idx}`}
+                      autoComplete="off"
                       onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded pl-5 pr-2 py-1.5 text-sm font-mono text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                     />

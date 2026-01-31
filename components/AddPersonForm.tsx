@@ -107,12 +107,13 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
         <Input
           ref={ref}
           type="text"
-          placeholder="Enter name"
+          placeholder="Enter name…"
           value={newPersonName}
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
           className={`h-10 text-sm flex-1 rounded-xl border-border/50 focus:border-primary transition-all duration-200 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-          autoFocus
+          name="person-name"
+          autoComplete="off"
           aria-invalid={validationError ? 'true' : 'false'}
           aria-describedby={validationError ? 'person-name-error' : undefined}
         />

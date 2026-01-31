@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function OgImagePage() {
   return (
-    <div className="w-[1200px] h-[630px] bg-slate-50 text-slate-900 relative overflow-hidden">
+    <div id="main-content" className="w-[1200px] h-[630px] bg-slate-50 text-slate-900 relative overflow-hidden">
       <style>{`
         [data-nextjs-dialog-overlay],
         [data-nextjs-dialog],

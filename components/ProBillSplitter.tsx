@@ -133,7 +133,7 @@ const GridCell = React.memo(({
   const inputType = 'text'
   const inputMode = isNumericField ? 'decimal' : undefined
   const placeholder =
-    field === 'name' ? 'Type item...' :
+    field === 'name' ? 'Type item…' :
     field === 'price' ? '0.00' :
     field === 'qty' ? '1' : ''
 
@@ -145,6 +145,9 @@ const GridCell = React.memo(({
           type={inputType}
           inputMode={inputMode}
           value={value}
+          name={`${field}-${itemId}`}
+          autoComplete="off"
+          aria-label={`Edit ${field}`}
           onChange={e => onCellEdit(itemId, field, e.target.value)}
           onClick={(e) => e.stopPropagation()}
           className={cn(
@@ -945,6 +948,8 @@ function DesktopBillSplitter() {
                   className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-auto min-w-[7ch] max-w-[26ch] hover:text-indigo-600 transition-colors font-inter"
                   placeholder="Project Name"
                   aria-label="Bill title"
+                  name="bill-title"
+                  autoComplete="off"
                 />
                 <div className="text-[10px] font-medium text-slate-400 mt-0.5">SPLIT SIMPLE</div>
               </div>
@@ -1038,14 +1043,16 @@ function DesktopBillSplitter() {
                     </label>
                     <div className="relative">
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
-                      <input
-                        id="bill-id-input"
-                        type="text"
-                        value={billId}
-                        onChange={(e) => {
-                          setBillId(e.target.value)
-                          if (loadBillError) setLoadBillError(null)
-                        }}
+                        <input
+                          id="bill-id-input"
+                          type="text"
+                          value={billId}
+                          name="bill-id"
+                          autoComplete="off"
+                          onChange={(e) => {
+                            setBillId(e.target.value)
+                            if (loadBillError) setLoadBillError(null)
+                          }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && billId.trim()) {
                             handleLoadBill()
@@ -1056,11 +1063,10 @@ function DesktopBillSplitter() {
                           }
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        placeholder="ABC123..."
-                        disabled={isLoadingBill}
-                        className="w-full h-8 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
-                        autoFocus
-                      />
+                          placeholder="ABC123…"
+                          disabled={isLoadingBill}
+                          className="w-full h-8 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
+                        />
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -1083,7 +1089,7 @@ function DesktopBillSplitter() {
                         disabled={isLoadingBill || !billId.trim()}
                         className="flex-1 h-7 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                       >
-                        {isLoadingBill ? 'Loading...' : 'Load'}
+                        {isLoadingBill ? 'Loading…' : 'Load'}
                       </button>
                     </div>
                     {loadBillError && (
@@ -1136,7 +1142,7 @@ function DesktopBillSplitter() {
       </header>
 
       {/* --- Main Workspace --- */}
-      <main className="pro-main">
+      <main id="main-content" className="pro-main">
         {/* LEDGER VIEW */}
         {activeView === 'ledger' && (
           <div className="h-full w-full">
@@ -1621,6 +1627,8 @@ function DesktopBillSplitter() {
                             type="text"
                             inputMode="decimal"
                             value={state.currentBill.tax}
+                            name="bill-tax"
+                            autoComplete="off"
                             onChange={(e) => {
                               dispatch({ type: 'SET_TAX', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
@@ -1636,6 +1644,8 @@ function DesktopBillSplitter() {
                             type="text"
                             inputMode="decimal"
                             value={state.currentBill.tip}
+                            name="bill-tip"
+                            autoComplete="off"
                             onChange={(e) => {
                               dispatch({ type: 'SET_TIP', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
@@ -1651,6 +1661,8 @@ function DesktopBillSplitter() {
                             type="text"
                             inputMode="decimal"
                             value={state.currentBill.discount}
+                            name="bill-discount"
+                            autoComplete="off"
                             onChange={(e) => {
                               dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
