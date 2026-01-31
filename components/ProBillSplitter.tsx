@@ -59,6 +59,12 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 export type SplitMethod = "even" | "shares" | "percent" | "exact"
 
@@ -151,10 +157,21 @@ const GridCell = React.memo(({
   }
 
   return (
-    <div
+    <button
+      type="button"
+      role="gridcell"
+      tabIndex={isSelected ? 0 : -1}
+      aria-selected={isSelected}
+      aria-label={`Row ${row + 1} ${field}`}
       onClick={() => onCellClick(row, col)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onCellClick(row, col)
+        }
+      }}
       className={cn(
-        "w-full h-full px-4 py-3 flex items-center cursor-text relative",
+        "w-full h-full px-4 py-3 flex items-center cursor-text relative text-left",
         isSelected && "ring-inset ring-2 ring-indigo-500 z-10",
         className
       )}
@@ -162,7 +179,7 @@ const GridCell = React.memo(({
       <span className={cn("truncate w-full", !value && "text-slate-300 font-normal")}>
         {value ? (field === 'price' ? `$${value}` : value) : placeholder}
       </span>
-    </div>
+    </button>
   )
 })
 
@@ -860,6 +877,7 @@ function DesktopBillSplitter() {
                   }}
                   className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-auto min-w-[7ch] max-w-[26ch] hover:text-indigo-600 transition-colors font-inter"
                   placeholder="Project Name"
+                  aria-label="Bill title"
                 />
                 <div className="text-[10px] font-medium text-slate-400 mt-0.5">SPLIT SIMPLE</div>
               </div>
@@ -948,10 +966,13 @@ function DesktopBillSplitter() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
                   <div className="px-2 py-2 space-y-2" onClick={(e) => e.stopPropagation()}>
-                    <label className="text-xs text-slate-500 font-medium">Enter Bill ID:</label>
+                    <label htmlFor="bill-id-input" className="text-xs text-slate-500 font-medium">
+                      Enter Bill ID:
+                    </label>
                     <div className="relative">
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
                       <input
+                        id="bill-id-input"
                         type="text"
                         value={billId}
                         onChange={(e) => {
@@ -1090,7 +1111,12 @@ function DesktopBillSplitter() {
                       </div>
 
                       <div className="overflow-x-auto">
-                        <div className="min-w-max">
+                        <div
+                          className="min-w-max"
+                          role="grid"
+                          aria-rowcount={calculatedItems.length}
+                          aria-colcount={4 + people.length + 1}
+                        >
                           {/* Sticky Header */}
                           <div className="pro-grid-header flex text-[10px] font-bold text-slate-500 uppercase">
                             <div className="w-12 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">#</div>
@@ -1102,8 +1128,8 @@ function DesktopBillSplitter() {
                               const colorObj = COLORS[p.colorIdx || 0]
                               const initials = p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
                               return (
-                                <button
-                                  key={p.id}
+                                  <button
+                                    key={p.id}
                                   className={cn(
                                     "w-28 p-2 border-r border-slate-100/60 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors",
                                     hoveredColumn === p.id && "bg-slate-50"
@@ -1111,9 +1137,9 @@ function DesktopBillSplitter() {
                                   onMouseEnter={() => setHoveredColumn(p.id)}
                                   onMouseLeave={() => setHoveredColumn(null)}
                                   onClick={() => setEditingPerson(p)}
-                                  aria-label={`Edit ${p.name}`}
-                                  type="button"
-                                >
+                                    aria-label={`Edit ${p.name}`}
+                                    type="button"
+                                  >
                                   <div className={cn(
                                     "w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white mb-1",
                                     colorObj.solid
@@ -1127,13 +1153,13 @@ function DesktopBillSplitter() {
                               )
                             })}
 
-                            <button
-                              onClick={addPerson}
-                              aria-label="Add person"
-                              className="w-12 flex items-center justify-center hover:bg-slate-50 text-slate-400 hover:text-indigo-600 transition-colors"
-                            >
-                              <Plus size={16} />
-                            </button>
+                                  <button
+                                    onClick={addPerson}
+                                    aria-label="Add person"
+                                    className="w-12 flex items-center justify-center hover:bg-slate-50 text-slate-400 hover:text-indigo-600 transition-colors"
+                                  >
+                                    <Plus size={16} />
+                                  </button>
                             <div className="w-28 p-3 text-right flex items-center justify-end border-l border-slate-200 pro-sticky-right">
                               Total
                             </div>
@@ -1315,8 +1341,8 @@ function DesktopBillSplitter() {
                                   <button
                                     onClick={() => duplicateItem(item)}
                                     aria-label="Duplicate row"
-                                    className="text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                    tabIndex={-1}
+                                    className="text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1"
+                                    tabIndex={0}
                                     title="Duplicate row"
                                   >
                                     <ClipboardCopy size={12} />
@@ -1324,8 +1350,8 @@ function DesktopBillSplitter() {
                                   <button
                                     onClick={() => openDeleteDialog(item)}
                                     aria-label="Delete row"
-                                    className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                    tabIndex={-1}
+                                    className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1"
+                                    tabIndex={0}
                                     title="Delete row"
                                   >
                                     <Trash2 size={12} />
@@ -1522,8 +1548,9 @@ function DesktopBillSplitter() {
 
                       <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-inter">
                         <div className="space-y-1">
-                          <label className="text-slate-500">Tax</label>
+                          <label htmlFor="bill-tax" className="text-slate-500">Tax</label>
                           <input
+                            id="bill-tax"
                             type="text"
                             inputMode="decimal"
                             value={state.currentBill.tax}
@@ -1536,8 +1563,9 @@ function DesktopBillSplitter() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-slate-500">Tip</label>
+                          <label htmlFor="bill-tip" className="text-slate-500">Tip</label>
                           <input
+                            id="bill-tip"
                             type="text"
                             inputMode="decimal"
                             value={state.currentBill.tip}
@@ -1550,8 +1578,9 @@ function DesktopBillSplitter() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-slate-500">Discount</label>
+                          <label htmlFor="bill-discount" className="text-slate-500">Discount</label>
                           <input
+                            id="bill-discount"
                             type="text"
                             inputMode="decimal"
                             value={state.currentBill.discount}
@@ -1846,25 +1875,12 @@ function DesktopBillSplitter() {
       </footer>
 
       {/* --- Person Editor Modal --- */}
-      {editingPerson && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 backdrop-blur-sm p-4"
-          onClick={() => setEditingPerson(null)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-2xl border border-slate-200/60 p-6 w-full max-w-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-base font-bold text-slate-900 font-inter text-balance">Edit Member</h3>
-              <button
-                onClick={() => setEditingPerson(null)}
-                className="text-slate-400 hover:text-slate-600 bg-slate-50 p-1 rounded-full"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
+      <Dialog open={!!editingPerson} onOpenChange={(open) => !open && setEditingPerson(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Member</DialogTitle>
+          </DialogHeader>
+          {editingPerson && (
             <div className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2 font-inter">
@@ -1913,9 +1929,9 @@ function DesktopBillSplitter() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

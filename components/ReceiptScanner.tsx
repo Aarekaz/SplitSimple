@@ -218,9 +218,10 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
         </div>
 
         <TabsContent value="image" className="flex-1 p-6 pt-4">
-          <div 
+          <button
+            type="button"
             className={cn(
-              "border-2 border-dashed rounded-xl h-64 flex flex-col items-center justify-center text-center p-6 transition-all cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-400",
+              "border-2 border-dashed rounded-xl h-64 w-full flex flex-col items-center justify-center text-center p-6 transition-all cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-400",
               dragActive ? "border-indigo-500 bg-indigo-50/30" : "border-slate-200"
             )}
             onDragEnter={handleDrag}
@@ -228,6 +229,7 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
             onDragOver={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
+            aria-label="Upload receipt image"
           >
             <input 
               ref={fileInputRef}
@@ -241,7 +243,7 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
             </div>
             <h3 className="text-sm font-bold text-slate-900 mb-1">Click to upload or drag & drop</h3>
             <p className="text-xs text-slate-500">Supports JPG, PNG, HEIC (Max 5MB) • Preview unavailable for HEIC</p>
-          </div>
+          </button>
         </TabsContent>
 
         <TabsContent value="text" className="flex-1 p-6 pt-4 flex flex-col gap-4">
@@ -341,15 +343,33 @@ function ReviewView({
 	        {image && (
 	          <div className="flex-1 bg-slate-900 relative overflow-hidden md:block hidden">
 	            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-slate-800/90 p-1.5 rounded-lg backdrop-blur-sm border border-slate-700">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-slate-700" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white hover:bg-slate-700"
+                onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}
+                aria-label="Zoom out"
+              >
                 <Minus size={14} />
               </Button>
               <span className="text-xs font-mono text-white w-12 text-center">{Math.round(zoom * 100)}%</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-slate-700" onClick={() => setZoom(Math.min(3, zoom + 0.25))}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white hover:bg-slate-700"
+                onClick={() => setZoom(Math.min(3, zoom + 0.25))}
+                aria-label="Zoom in"
+              >
                 <Plus size={14} />
               </Button>
               <div className="w-px h-4 bg-slate-700 mx-1"></div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-slate-700" onClick={() => setRotate((rotation + 90) % 360)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white hover:bg-slate-700"
+                onClick={() => setRotate((rotation + 90) % 360)}
+                aria-label="Rotate image"
+              >
                 <RotateCw size={14} />
               </Button>
 	            </div>
@@ -424,6 +444,7 @@ function ReviewView({
                     size="icon" 
                     className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50"
                     onClick={() => handleDelete(idx)}
+                    aria-label="Delete item"
                   >
                     <Trash2 size={14} />
                   </Button>

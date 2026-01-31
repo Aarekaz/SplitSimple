@@ -218,6 +218,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
                   disabled={isStoring || !shareUrl}
                   className="flex-shrink-0"
                   title="Copy link"
+                  aria-label="Copy share link"
                 >
                   {copied ? (
                     <Check className="h-4 w-4 text-green-600" />
@@ -232,6 +233,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
                   disabled={isStoring || !shareUrl}
                   className="flex-shrink-0"
                   title="Open in new tab"
+                  aria-label="Open share link in new tab"
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>

@@ -67,6 +67,7 @@ export function MobileSpreadsheetView() {
               value={state.currentBill.title}
               onChange={(e) => dispatch({ type: "SET_BILL_TITLE", payload: e.target.value })}
               className="h-9 text-base font-semibold border-none px-0 focus-visible:ring-0 bg-transparent"
+              aria-label="Bill title"
             />
             <p className="text-[11px] text-muted-foreground uppercase tracking-widest">SplitSimple</p>
           </div>

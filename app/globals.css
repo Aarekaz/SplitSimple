@@ -520,7 +520,10 @@
   select:focus {
     @apply outline-none ring-2 ring-primary ring-offset-2;
     background-color: rgba(var(--primary), 0.02);
-    transition: all 0.2s var(--ease-out-cubic);
+    transition:
+      box-shadow 0.2s var(--ease-out-cubic),
+      border-color 0.2s var(--ease-out-cubic),
+      background-color 0.2s var(--ease-out-cubic);
   }
 
   input::placeholder {
@@ -1140,5 +1143,14 @@
   .pro-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: #CBD5E1 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

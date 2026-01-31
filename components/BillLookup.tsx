@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
 import { Search, Loader2 } from "lucide-react"
 import { getBillFromCloud } from "@/lib/sharing"
 import { useBill } from "@/contexts/BillContext"
@@ -150,7 +151,11 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
           </SheetHeader>
           <div className="px-6 pb-6 space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="bill-id-input" className="text-xs font-medium text-muted-foreground">
+                Bill ID
+              </Label>
               <Input
+                id="bill-id-input"
                 placeholder="1763442653885-vlpkbu4"
                 value={billId}
                 onChange={handleInputChange}
@@ -203,6 +208,7 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
           value={billId}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          aria-label="Bill ID"
           className={cn(
             "h-7 w-56 text-xs font-mono bg-background/50 border-border/50 focus:border-primary/50 transition-all",
             error && "border-destructive focus-visible:ring-destructive"

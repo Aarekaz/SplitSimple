@@ -440,6 +440,7 @@ export function MobileGridView() {
                         variant="outline"
                         onClick={() => handleUpdateItem({ quantity: Math.max(1, editingItem.quantity - 1) })}
                         className="h-11 w-11"
+                        aria-label="Decrease quantity"
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -455,6 +456,7 @@ export function MobileGridView() {
                         variant="outline"
                         onClick={() => handleUpdateItem({ quantity: editingItem.quantity + 1 })}
                         className="h-11 w-11"
+                        aria-label="Increase quantity"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>

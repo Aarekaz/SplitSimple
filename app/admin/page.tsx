@@ -772,6 +772,7 @@ export default function AdminPage() {
                   placeholder="Search bills by title, ID, or amount..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search bills"
                   className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
@@ -872,6 +873,7 @@ export default function AdminPage() {
                               setShowBillDialog(true)
                             }}
                             title="View details"
+                            aria-label="View bill details"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -880,6 +882,7 @@ export default function AdminPage() {
                             size="icon"
                             onClick={() => window.open(bill.shareUrl, '_blank')}
                             title="Open in new tab"
+                            aria-label="Open share link in new tab"
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
@@ -888,6 +891,7 @@ export default function AdminPage() {
                             size="icon"
                             onClick={() => copyToClipboard(bill.shareUrl)}
                             title="Copy share link"
+                            aria-label="Copy share link"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -896,6 +900,7 @@ export default function AdminPage() {
                             size="icon"
                             onClick={() => handleExtendBill(bill.id)}
                             title="Extend expiration"
+                            aria-label="Extend bill expiration"
                           >
                             <Clock className="h-4 w-4" />
                           </Button>
@@ -907,6 +912,7 @@ export default function AdminPage() {
                               setShowDeleteDialog(true)
                             }}
                             title="Delete bill"
+                            aria-label="Delete bill"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -996,6 +1002,7 @@ export default function AdminPage() {
                     variant="outline"
                     size="icon"
                     onClick={() => copyToClipboard(selectedBill.shareUrl)}
+                    aria-label="Copy share URL"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
