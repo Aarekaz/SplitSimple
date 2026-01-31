@@ -218,6 +218,28 @@ function DesktopBillSplitter() {
   const loadBillRequestRef = useRef<string | null>(null) // Track current load request to prevent race conditions
   const previousItemsLengthRef = useRef(0)
   const newBillSourceRef = useRef<'button' | 'shortcut'>('button')
+  const hotkeyStateRef = useRef({
+    activeView: 'ledger' as 'ledger' | 'breakdown',
+    editing: false,
+    selectedCell: { row: 0, col: 'name' },
+    items: [] as Item[],
+    people: [] as Person[],
+    editingPerson: null as Person | null,
+    historyIndex: 0,
+  })
+  const hotkeyActionsRef = useRef({
+    addItem: () => {},
+    addPerson: () => {},
+    copyBreakdown: () => {},
+    toggleAssignment: (_itemId: string, _personId: string) => {},
+    updateItem: (_id: string, _updates: Partial<Item>) => {},
+    dispatchUndo: () => {},
+    dispatchRedo: () => {},
+    toastUndo: () => {},
+    toastRedo: () => {},
+    closeEditingPerson: () => {},
+    stopEditing: () => {},
+  })
 
   const people = state.currentBill.people
   const items = state.currentBill.items
@@ -589,6 +611,9 @@ function DesktopBillSplitter() {
     const target = e.target as HTMLElement
     const activeElement = document.activeElement as HTMLElement
 
+    const hotkeyState = hotkeyStateRef.current
+    const hotkeyActions = hotkeyActionsRef.current
+
     const isInInput =
       target.tagName === 'INPUT' ||
       target.tagName === 'TEXTAREA' ||
@@ -603,11 +628,11 @@ function DesktopBillSplitter() {
       (target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]') !== null)
 
     const editableCols = ['name', 'price', 'qty']
-    const isEditableCell = editableCols.includes(selectedCell.col)
+    const isEditableCell = editableCols.includes(hotkeyState.selectedCell.col)
 
-    const colOrder = ['name', 'price', 'qty', ...people.map(p => p.id)]
-    const currentColIdx = colOrder.indexOf(selectedCell.col)
-    const currentRowIdx = selectedCell.row
+    const colOrder = ['name', 'price', 'qty', ...hotkeyState.people.map(p => p.id)]
+    const currentColIdx = colOrder.indexOf(hotkeyState.selectedCell.col)
+    const currentRowIdx = hotkeyState.selectedCell.row
 
     const commitAndMove = (direction: 'down' | 'up' | 'right' | 'left') => {
       let nextRow = currentRowIdx
@@ -634,18 +659,18 @@ function DesktopBillSplitter() {
       }
 
       setSelectedCell({ row: nextRow, col: colOrder[nextColIdx] })
-      setEditing(false)
+      hotkeyActions.stopEditing()
     }
 
     const startTypingEdit = (initialValue: string) => {
       if (!isEditableCell) return
-      const item = items[currentRowIdx]
+      const item = hotkeyState.items[currentRowIdx]
       if (!item) return
-      if (selectedCell.col === 'name') updateItem(item.id, { name: initialValue })
-      if (selectedCell.col === 'price') updateItem(item.id, { price: initialValue })
-      if (selectedCell.col === 'qty') {
+      if (hotkeyState.selectedCell.col === 'name') hotkeyActions.updateItem(item.id, { name: initialValue })
+      if (hotkeyState.selectedCell.col === 'price') hotkeyActions.updateItem(item.id, { price: initialValue })
+      if (hotkeyState.selectedCell.col === 'qty') {
         const parsed = parseInt(initialValue, 10)
-        updateItem(item.id, { quantity: initialValue === '' ? 0 : (isNaN(parsed) ? 0 : parsed) })
+        hotkeyActions.updateItem(item.id, { quantity: initialValue === '' ? 0 : (isNaN(parsed) ? 0 : parsed) })
       }
       setEditing(true)
     }
@@ -654,29 +679,29 @@ function DesktopBillSplitter() {
 
     // Escape key - close modals, menus, and exit edit mode
     if (e.key === 'Escape') {
-      if (editingPerson) {
-        setEditingPerson(null)
+      if (hotkeyState.editingPerson) {
+        hotkeyActions.closeEditingPerson()
         e.preventDefault()
         return
       }
-      if (editing) {
-        setEditing(false)
+      if (hotkeyState.editing) {
+        hotkeyActions.stopEditing()
         e.preventDefault()
         return
       }
     }
 
     // If currently editing a cell input, let typing happen but keep spreadsheet commits
-    if (editing && isInInput) {
+    if (hotkeyState.editing && isInInput) {
       if (e.key === 'Enter') {
         e.preventDefault()
         if (e.shiftKey) {
           commitAndMove('up')
         } else {
           // At last row, add a new one and move
-          if (currentRowIdx >= items.length - 1) {
-            addItem()
-            setSelectedCell({ row: items.length, col: selectedCell.col })
+          if (currentRowIdx >= hotkeyState.items.length - 1) {
+            hotkeyActions.addItem()
+            setSelectedCell({ row: hotkeyState.items.length, col: hotkeyState.selectedCell.col })
           } else {
             commitAndMove('down')
           }
@@ -700,17 +725,15 @@ function DesktopBillSplitter() {
     if (!isInInput) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault()
-        dispatch({ type: 'UNDO' })
-        toast({ title: "Undo", duration: TIMING.TOAST_SHORT })
-        analytics.trackUndoRedoUsed("undo", state.historyIndex)
+        hotkeyActions.dispatchUndo()
+        hotkeyActions.toastUndo()
         return
       }
 
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
         e.preventDefault()
-        dispatch({ type: 'REDO' })
-        toast({ title: "Redo", duration: TIMING.TOAST_SHORT })
-        analytics.trackUndoRedoUsed("redo", state.historyIndex)
+        hotkeyActions.dispatchRedo()
+        hotkeyActions.toastRedo()
         return
       }
 
@@ -725,7 +748,7 @@ function DesktopBillSplitter() {
       // Cmd+Shift+N: Add new item
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
         e.preventDefault()
-        addItem()
+        hotkeyActions.addItem()
         analytics.trackFeatureUsed("keyboard_shortcut_add_item")
         return
       }
@@ -733,7 +756,7 @@ function DesktopBillSplitter() {
       // Cmd+Shift+P: Add person
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
         e.preventDefault()
-        addPerson()
+        hotkeyActions.addPerson()
         analytics.trackFeatureUsed("keyboard_shortcut_add_person")
         return
       }
@@ -741,7 +764,7 @@ function DesktopBillSplitter() {
       // Cmd+Shift+C: Copy summary
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
         e.preventDefault()
-        copyBreakdown()
+        hotkeyActions.copyBreakdown()
         analytics.trackFeatureUsed("keyboard_shortcut_copy")
         return
       }
@@ -757,7 +780,7 @@ function DesktopBillSplitter() {
     }
 
     // Grid navigation - Excel-like behavior
-    if (activeView !== 'ledger') return
+    if (hotkeyState.activeView !== 'ledger') return
 
     // Type-to-edit from selection
     if (!editing && isEditableCell && (isPrintableKey || e.key === 'Backspace' || e.key === 'Delete')) {
@@ -782,9 +805,9 @@ function DesktopBillSplitter() {
       if (e.shiftKey) {
         commitAndMove('up')
       } else {
-        if (currentRowIdx >= items.length - 1) {
-          addItem()
-          setSelectedCell({ row: items.length, col: selectedCell.col })
+        if (currentRowIdx >= hotkeyState.items.length - 1) {
+          hotkeyActions.addItem()
+          setSelectedCell({ row: hotkeyState.items.length, col: hotkeyState.selectedCell.col })
         } else {
           commitAndMove('down')
         }
@@ -799,27 +822,71 @@ function DesktopBillSplitter() {
 
       if (e.key === 'ArrowRight' && currentColIdx < colOrder.length - 1) newColIdx++
       if (e.key === 'ArrowLeft' && currentColIdx > 0) newColIdx--
-      if (e.key === 'ArrowDown' && currentRowIdx < items.length - 1) newRowIdx++
+      if (e.key === 'ArrowDown' && currentRowIdx < hotkeyState.items.length - 1) newRowIdx++
       if (e.key === 'ArrowUp' && currentRowIdx > 0) newRowIdx--
 
       setSelectedCell({ row: newRowIdx, col: colOrder[newColIdx] })
-      setEditing(false)
+      hotkeyActions.stopEditing()
       return
     }
 
     // Toggle assignment with space when on person cells
-    if (e.key === ' ' && people.some(p => p.id === selectedCell.col)) {
+    if (e.key === ' ' && hotkeyState.people.some(p => p.id === hotkeyState.selectedCell.col)) {
       e.preventDefault()
-      const item = items[selectedCell.row]
-      if (item) toggleAssignment(item.id, selectedCell.col)
+      const item = hotkeyState.items[hotkeyState.selectedCell.row]
+      if (item) hotkeyActions.toggleAssignment(item.id, hotkeyState.selectedCell.col)
       return
     }
-  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, updateItem])
+  }, [])
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [handleGlobalKeyDown])
+
+  useEffect(() => {
+    hotkeyStateRef.current = {
+      activeView,
+      editing,
+      selectedCell,
+      items,
+      people,
+      editingPerson,
+      historyIndex: state.historyIndex,
+    }
+  }, [activeView, editing, selectedCell, items, people, editingPerson, state.historyIndex])
+
+  useEffect(() => {
+    hotkeyActionsRef.current = {
+      addItem,
+      addPerson,
+      copyBreakdown,
+      toggleAssignment,
+      updateItem,
+      dispatchUndo: () => {
+        dispatch({ type: 'UNDO' })
+        analytics.trackUndoRedoUsed("undo", state.historyIndex)
+      },
+      dispatchRedo: () => {
+        dispatch({ type: 'REDO' })
+        analytics.trackUndoRedoUsed("redo", state.historyIndex)
+      },
+      toastUndo: () => toast({ title: "Undo", duration: TIMING.TOAST_SHORT }),
+      toastRedo: () => toast({ title: "Redo", duration: TIMING.TOAST_SHORT }),
+      closeEditingPerson: () => setEditingPerson(null),
+      stopEditing: () => setEditing(false),
+    }
+  }, [
+    addItem,
+    addPerson,
+    copyBreakdown,
+    toggleAssignment,
+    updateItem,
+    dispatch,
+    toast,
+    analytics,
+    state.historyIndex,
+  ])
 
   useEffect(() => {
     const saved = window.localStorage.getItem('splitsimple_hide_starter')
@@ -1407,7 +1474,7 @@ function DesktopBillSplitter() {
                     </div>
                   </section>
 
-                  <aside className="col-span-12 xl:col-span-4 space-y-6">
+                  <aside className="col-span-12 xl:col-span-4 space-y-6 w-full max-w-xl xl:max-w-md mx-auto xl:justify-self-end xl:mx-0">
                     {!hideStarter && !hasMeaningfulItems && (
                       <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
