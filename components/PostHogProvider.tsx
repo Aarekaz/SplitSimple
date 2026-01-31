@@ -8,7 +8,8 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
-    let idleId: number | null = null
+    let idleCallbackId: number | null = null
+    let idleTimeoutId: ReturnType<typeof setTimeout> | null = null
 
     const init = async () => {
       const { default: posthog } = await import("posthog-js")
@@ -62,11 +63,13 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
     if (process.env.NODE_ENV === "production") {
       if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        idleId = window.requestIdleCallback(() => {
+        idleCallbackId = (window as Window & {
+          requestIdleCallback?: (cb: () => void) => number
+        }).requestIdleCallback?.(() => {
           init()
-        })
+        }) ?? null
       } else {
-        idleId = window.setTimeout(() => {
+        idleTimeoutId = setTimeout(() => {
           init()
         }, 0)
       }
@@ -76,12 +79,11 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true
-      if (idleId !== null) {
-        if (typeof window !== "undefined" && "cancelIdleCallback" in window) {
-          window.cancelIdleCallback(idleId)
-        } else {
-          window.clearTimeout(idleId)
-        }
+      if (idleCallbackId !== null && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        ;(window as Window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback?.(idleCallbackId)
+      }
+      if (idleTimeoutId !== null) {
+        clearTimeout(idleTimeoutId)
       }
     }
   }, [])
