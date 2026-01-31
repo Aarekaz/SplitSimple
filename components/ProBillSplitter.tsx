@@ -19,7 +19,8 @@ import {
   Percent,
   Calculator,
   ChevronDown,
-  Camera
+  Camera,
+  Pencil
 } from 'lucide-react'
 import { useBill } from '@/contexts/BillContext'
 import type { Item, Person } from '@/contexts/BillContext'
@@ -207,6 +208,7 @@ function DesktopBillSplitter() {
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: string }>({ row: 0, col: 'name' })
   const [editing, setEditing] = useState(false)
   const [editingPerson, setEditingPerson] = useState<Person | null>(null)
+  const [expandedPeople, setExpandedPeople] = useState<Set<string>>(new Set())
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
   const [newLoadDropdownOpen, setNewLoadDropdownOpen] = useState(false)
@@ -321,6 +323,10 @@ function DesktopBillSplitter() {
     return shares
   }, [calculatedItems, people, subtotal, taxAmount, tipAmount, discountAmount])
 
+  useEffect(() => {
+    setExpandedPeople(new Set())
+  }, [people.length])
+
   // --- Actions ---
   const toggleAssignment = useCallback((itemId: string, personId: string) => {
     const item = items.find(i => i.id === itemId)
@@ -349,6 +355,18 @@ function DesktopBillSplitter() {
       payload: { ...item, splitWith: newSplitWith }
     })
   }, [items, people, dispatch])
+
+  const togglePersonExpansion = useCallback((personId: string) => {
+    setExpandedPeople(prev => {
+      const next = new Set(prev)
+      if (next.has(personId)) {
+        next.delete(personId)
+      } else {
+        next.add(personId)
+      }
+      return next
+    })
+  }, [])
 
   const clearRowAssignments = useCallback((itemId: string) => {
     const item = items.find(i => i.id === itemId)
@@ -1565,25 +1583,116 @@ function DesktopBillSplitter() {
                             const stats = personFinalShares[p.id]
                             const colorObj = COLORS[p.colorIdx || 0]
                             const percent = stats ? (stats.total / (grandTotal || 1)) * 100 : 0
+                            const isExpanded = expandedPeople.has(p.id)
                             return (
-                              <button
+                              <div
                                 key={p.id}
-                                onClick={() => setEditingPerson(p)}
-                                className="w-full flex items-center justify-between rounded-lg border border-slate-200/70 px-3 py-2 hover:border-slate-300 text-left transition-colors"
+                                className="rounded-lg border border-slate-200/70 hover:border-slate-300 transition-colors"
                               >
-                                <div className="flex items-center gap-2">
-                                  <div className={cn("size-2.5 rounded-full", colorObj.solid)} />
-                                  <span className="text-sm font-medium text-slate-700 font-inter">{p.name}</span>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-xs font-semibold text-slate-900 font-space-mono tabular-nums">
-                                    {formatCurrencySimple(stats?.total || 0)}
+                                <div
+                                  onClick={() => togglePersonExpansion(p.id)}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                      event.preventDefault()
+                                      togglePersonExpansion(p.id)
+                                    }
+                                  }}
+                                  role="button"
+                                  tabIndex={0}
+                                  className="w-full flex items-center justify-between px-3 py-2 text-left cursor-pointer"
+                                  aria-expanded={isExpanded}
+                                  aria-label={`Toggle ${p.name} details`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div className={cn("size-2.5 rounded-full", colorObj.solid)} />
+                                    <span className="text-sm font-medium text-slate-700 font-inter">{p.name}</span>
                                   </div>
-                                  <div className="text-[10px] text-slate-400 font-space-mono tabular-nums">
-                                    {percent.toFixed(0)}%
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                      <div className="text-xs font-semibold text-slate-900 font-space-mono tabular-nums">
+                                        {formatCurrencySimple(stats?.total || 0)}
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 font-space-mono tabular-nums">
+                                        {percent.toFixed(0)}%
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                        setEditingPerson(p)
+                                      }}
+                                      className="size-7 rounded-md border border-slate-200/70 bg-white text-slate-500 hover:text-slate-700 hover:border-slate-300 flex items-center justify-center"
+                                      aria-label={`Edit ${p.name}`}
+                                      title={`Edit ${p.name}`}
+                                    >
+                                      <Pencil size={12} />
+                                    </button>
+                                    <ChevronDown
+                                      className={cn(
+                                        "h-4 w-4 text-slate-400 transition-transform duration-200",
+                                        isExpanded && "rotate-180"
+                                      )}
+                                    />
                                   </div>
                                 </div>
-                              </button>
+                                <div
+                                  className={cn(
+                                    "grid overflow-hidden transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                                    isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                                  )}
+                                >
+                                  <div
+                                    className={cn(
+                                      "overflow-hidden px-3 pb-3 pt-0 border-t border-slate-100/70 bg-slate-50/40 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                                      isExpanded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"
+                                    )}
+                                  >
+                                    <div className="pt-3 space-y-2">
+                                      <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 font-space-mono tabular-nums">
+                                        <div className="flex items-center justify-between">
+                                          <span>Subtotal</span>
+                                          <span className="text-slate-700">{formatCurrencySimple(stats?.subtotal || 0)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                          <span>Tax</span>
+                                          <span className="text-slate-700">{formatCurrencySimple(stats?.tax || 0)}</span>
+                                        </div>
+                                        {stats?.tip ? (
+                                          <div className="flex items-center justify-between">
+                                            <span>Tip</span>
+                                            <span className="text-slate-700">{formatCurrencySimple(stats.tip)}</span>
+                                          </div>
+                                        ) : null}
+                                        {stats?.discount ? (
+                                          <div className="flex items-center justify-between">
+                                            <span>Discount</span>
+                                            <span className="text-slate-700">-{formatCurrencySimple(stats.discount)}</span>
+                                          </div>
+                                        ) : null}
+                                      </div>
+
+                                      <div className="pt-2 border-t border-slate-100/70 space-y-1">
+                                        {stats?.items.length ? (
+                                          stats.items.map(item => (
+                                            <div key={item.id} className="flex justify-between text-xs text-slate-600">
+                                              <span className="truncate pr-2">
+                                                {item.qty > 1
+                                                  ? `${item.name || 'Item'} ×${item.qty}`
+                                                  : (item.name || 'Item')}
+                                              </span>
+                                              <span className="font-space-mono tabular-nums">
+                                                {formatCurrencySimple(item.pricePerPerson)}
+                                              </span>
+                                            </div>
+                                          ))
+                                        ) : (
+                                          <div className="text-xs text-slate-400">No items assigned.</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             )
                           })
                         )}
