@@ -2,48 +2,34 @@ import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
 
-export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+type Subscriber = () => void
 
-  React.useEffect(() => {
-    const checkMobile = () => {
-      // Check if we're in a browser environment
-      if (typeof window === 'undefined') {
-        setIsMobile(false)
-        return
-      }
-      
-      const width = window.innerWidth
-      setIsMobile(width < MOBILE_BREAKPOINT)
-    }
+const getSnapshot = () => {
+  if (typeof window === "undefined") return false
+  return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches
+}
 
-    // Initial check
-    checkMobile()
+const subscribe = (callback: Subscriber) => {
+  if (typeof window === "undefined") return () => {}
+  const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+  const onChange = () => callback()
 
-    // Set up media query listener
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    
-    const onChange = () => {
-      checkMobile()
-    }
-    
-    // Use modern event listener if available, fallback to addListener
-    if (mql.addEventListener) {
-      mql.addEventListener("change", onChange)
+  if (mql.addEventListener) {
+    mql.addEventListener("change", onChange)
+  } else {
+    mql.addListener(onChange)
+  }
+
+  return () => {
+    if (mql.removeEventListener) {
+      mql.removeEventListener("change", onChange)
     } else {
-      // Fallback for older browsers
-      mql.addListener(onChange)
+      mql.removeListener(onChange)
     }
-    
-    return () => {
-      if (mql.removeEventListener) {
-        mql.removeEventListener("change", onChange)
-      } else {
-        // Fallback for older browsers
-        mql.removeListener(onChange)
-      }
-    }
-  }, [])
+  }
+}
 
-  return !!isMobile
+export function useIsMobile() {
+  const isMobile = React.useSyncExternalStore(subscribe, getSnapshot, () => false)
+  return isMobile
 }
