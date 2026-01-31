@@ -1143,7 +1143,7 @@ function DesktopBillSplitter() {
             <div className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar" tabIndex={-1}>
               <div className="mx-auto w-full max-w-7xl">
                 <div className="grid grid-cols-12 gap-6">
-                  <section className="col-span-12 xl:col-span-8">
+                  <section className="col-span-12 xl:col-span-9">
                     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                       <div className="px-5 py-4 border-b border-slate-200/80">
                         <h2 className="text-base font-semibold text-slate-900 text-balance font-inter">Items & split</h2>
@@ -1474,7 +1474,7 @@ function DesktopBillSplitter() {
                     </div>
                   </section>
 
-                  <aside className="col-span-12 xl:col-span-4 space-y-6 w-full max-w-xl xl:max-w-md mx-auto xl:justify-self-end xl:mx-0">
+                  <aside className="col-span-12 xl:col-span-3 space-y-6 w-full max-w-lg xl:max-w-sm mx-auto xl:justify-self-end xl:mx-0">
                     {!hideStarter && !hasMeaningfulItems && (
                       <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
