@@ -19,13 +19,11 @@ import {
   Percent,
   Calculator,
   ChevronDown,
-  Code,
   Camera
 } from 'lucide-react'
 import { useBill } from '@/contexts/BillContext'
 import type { Item, Person } from '@/contexts/BillContext'
-import { formatCurrency } from '@/lib/utils'
-import { getBillSummary, calculateItemSplits } from '@/lib/calculations'
+import { cn } from '@/lib/utils'
 import { generateSummaryText, copyToClipboard } from '@/lib/export'
 import { useToast } from '@/hooks/use-toast'
 import { ShareBill } from '@/components/ShareBill'
@@ -42,9 +40,25 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 
 export type SplitMethod = "even" | "shares" | "percent" | "exact"
 
@@ -127,7 +141,10 @@ const GridCell = React.memo(({
           value={value}
           onChange={e => onCellEdit(itemId, field, e.target.value)}
           onClick={(e) => e.stopPropagation()}
-          className={`w-full h-full px-4 py-3 text-sm border-2 border-indigo-500 focus:outline-none ${className}`}
+          className={cn(
+            "w-full h-full px-4 py-3 text-sm border-2 border-indigo-500 focus:outline-none",
+            className
+          )}
         />
       </div>
     )
@@ -136,13 +153,13 @@ const GridCell = React.memo(({
   return (
     <div
       onClick={() => onCellClick(row, col)}
-      className={`
-        w-full h-full px-4 py-3 flex items-center cursor-text relative
-        ${isSelected ? 'ring-inset ring-2 ring-indigo-500 z-10' : ''}
-        ${className}
-      `}
+      className={cn(
+        "w-full h-full px-4 py-3 flex items-center cursor-text relative",
+        isSelected && "ring-inset ring-2 ring-indigo-500 z-10",
+        className
+      )}
     >
-      <span className={`truncate w-full ${value ? '' : 'text-slate-300 font-normal'}`}>
+      <span className={cn("truncate w-full", !value && "text-slate-300 font-normal")}>
         {value ? (field === 'price' ? `$${value}` : value) : placeholder}
       </span>
     </div>
@@ -165,18 +182,25 @@ function DesktopBillSplitter() {
   const analytics = useBillAnalytics()
   const [activeView, setActiveView] = useState<'ledger' | 'breakdown'>('ledger')
   const [billId, setBillId] = useState('')
+  const [loadBillError, setLoadBillError] = useState<string | null>(null)
+  const [copyError, setCopyError] = useState<string | null>(null)
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: string }>({ row: 0, col: 'name' })
   const [editing, setEditing] = useState(false)
   const [editingPerson, setEditingPerson] = useState<Person | null>(null)
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null)
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemId: string; personId?: string } | null>(null)
   const [isLoadingBill, setIsLoadingBill] = useState(false)
   const [newLoadDropdownOpen, setNewLoadDropdownOpen] = useState(false)
   const [hideStarter, setHideStarter] = useState(false)
+  const [isNewBillDialogOpen, setIsNewBillDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [pendingDeleteItem, setPendingDeleteItem] = useState<Item | null>(null)
+  const [isRemovePersonDialogOpen, setIsRemovePersonDialogOpen] = useState(false)
+  const [pendingRemovePerson, setPendingRemovePerson] = useState<Person | null>(null)
 
   const editInputRef = useRef<HTMLInputElement>(null)
   const loadBillRequestRef = useRef<string | null>(null) // Track current load request to prevent race conditions
   const previousItemsLengthRef = useRef(0)
+  const newBillSourceRef = useRef<'button' | 'shortcut'>('button')
 
   const people = state.currentBill.people
   const items = state.currentBill.items
@@ -188,7 +212,6 @@ function DesktopBillSplitter() {
   }
 
   // --- Derived Data ---
-  const summary = getBillSummary(state.currentBill)
   const hasMeaningfulItems = useMemo(() => {
     return items.some(i => (i.name || '').trim() !== '' || (i.price || '').trim() !== '' || (i.quantity || 1) !== 1)
   }, [items])
@@ -324,6 +347,29 @@ function DesktopBillSplitter() {
     }
   }, [items, dispatch, analytics, toast])
 
+  const confirmNewBill = useCallback(() => {
+    dispatch({ type: 'NEW_BILL' })
+    toast({ title: "New bill created" })
+    analytics.trackBillCreated()
+    analytics.trackFeatureUsed(
+      newBillSourceRef.current === "shortcut" ? "keyboard_shortcut_new_bill" : "new_bill"
+    )
+    newBillSourceRef.current = "button"
+    setIsNewBillDialogOpen(false)
+  }, [dispatch, toast, analytics])
+
+  const openDeleteDialog = useCallback((item: Item) => {
+    setPendingDeleteItem(item)
+    setIsDeleteDialogOpen(true)
+  }, [])
+
+  const confirmDeleteItem = useCallback(() => {
+    if (!pendingDeleteItem) return
+    deleteItem(pendingDeleteItem.id)
+    setPendingDeleteItem(null)
+    setIsDeleteDialogOpen(false)
+  }, [pendingDeleteItem, deleteItem])
+
   const duplicateItem = useCallback((item: Item) => {
     const duplicated: Omit<Item, 'id'> = {
       name: `${item.name} (copy)`,
@@ -387,6 +433,18 @@ function DesktopBillSplitter() {
     setEditingPerson(null)
   }, [people, items, dispatch, analytics, toast])
 
+  const openRemovePersonDialog = useCallback((person: Person) => {
+    setPendingRemovePerson(person)
+    setIsRemovePersonDialogOpen(true)
+  }, [])
+
+  const confirmRemovePerson = useCallback(() => {
+    if (!pendingRemovePerson) return
+    removePerson(pendingRemovePerson.id)
+    setPendingRemovePerson(null)
+    setIsRemovePersonDialogOpen(false)
+  }, [pendingRemovePerson, removePerson])
+
   // --- Split Method Management ---
   const getSplitMethodIcon = (method: SplitMethod) => {
     const option = splitMethodOptions.find(o => o.value === method)
@@ -411,11 +469,7 @@ function DesktopBillSplitter() {
   const handleLoadBill = useCallback(async () => {
     const trimmedId = billId.trim()
     if (!trimmedId) {
-      toast({
-        title: "Enter Bill ID",
-        description: "Please enter a bill ID to load",
-        variant: "destructive"
-      })
+      setLoadBillError("Enter a bill ID to load.")
       return
     }
 
@@ -424,6 +478,7 @@ function DesktopBillSplitter() {
     loadBillRequestRef.current = requestId
 
     setIsLoadingBill(true)
+    setLoadBillError(null)
     analytics.trackFeatureUsed("load_bill_by_id", { bill_id: trimmedId })
 
     try {
@@ -435,11 +490,7 @@ function DesktopBillSplitter() {
       }
 
       if (result.error || !result.bill) {
-        toast({
-          title: "Bill not found",
-          description: result.error || "Could not find bill with that ID",
-          variant: "destructive"
-        })
+        setLoadBillError(result.error || "Could not find bill with that ID.")
         analytics.trackError("load_bill_failed", result.error || "Bill not found")
         return
       }
@@ -452,14 +503,11 @@ function DesktopBillSplitter() {
       })
       analytics.trackSharedBillLoaded("cloud")
       setBillId('') // Clear input after successful load
+      setLoadBillError(null)
     } catch (error) {
       // Only show error if this request is still current
       if (loadBillRequestRef.current === requestId) {
-        toast({
-          title: "Load failed",
-          description: error instanceof Error ? error.message : "Unknown error",
-          variant: "destructive"
-        })
+        setLoadBillError(error instanceof Error ? error.message : "Load failed. Try again.")
         analytics.trackError("load_bill_failed", error instanceof Error ? error.message : "Unknown error")
       }
     } finally {
@@ -473,11 +521,7 @@ function DesktopBillSplitter() {
   // --- Copy Breakdown ---
   const copyBreakdown = useCallback(async () => {
     if (people.length === 0) {
-      toast({
-        title: "No data to copy",
-        description: "Add people and items to generate a summary",
-        variant: "destructive"
-      })
+      setCopyError("Add people and items to copy a summary.")
       analytics.trackError("copy_summary_failed", "No data to copy")
       return
     }
@@ -485,6 +529,7 @@ function DesktopBillSplitter() {
     const text = generateSummaryText(state.currentBill)
     const success = await copyToClipboard(text)
     if (success) {
+      setCopyError(null)
       toast({
         title: "Copied!",
         description: "Bill summary copied to clipboard"
@@ -492,11 +537,7 @@ function DesktopBillSplitter() {
       analytics.trackBillSummaryCopied()
       analytics.trackFeatureUsed("copy_summary")
     } else {
-      toast({
-        title: "Copy failed",
-        description: "Unable to copy to clipboard. Please try again.",
-        variant: "destructive"
-      })
+      setCopyError("Unable to copy. Please try again.")
       analytics.trackError("copy_summary_failed", "Clipboard API failed")
     }
   }, [people, state.currentBill, toast, analytics])
@@ -524,42 +565,6 @@ function DesktopBillSplitter() {
     setSelectedCell({ row, col })
     setEditing(true)
   }, [people, items, toggleAssignment])
-
-  // --- Context Menu ---
-  const handleContextMenu = useCallback((e: React.MouseEvent, itemId: string, personId?: string) => {
-    e.preventDefault()
-
-    // Context menu dimensions
-    const menuWidth = 192 // 48 * 4 = w-48
-    const menuHeight = 200 // approximate height
-
-    // Calculate position with boundary detection
-    let x = e.clientX
-    let y = e.clientY
-
-    // Keep menu within viewport bounds
-    if (x + menuWidth > window.innerWidth) {
-      x = window.innerWidth - menuWidth - 10
-    }
-    if (y + menuHeight > window.innerHeight) {
-      y = window.innerHeight - menuHeight - 10
-    }
-
-    setContextMenu({
-      x,
-      y,
-      itemId,
-      personId
-    })
-  }, [])
-
-  useEffect(() => {
-    const handleClick = () => {
-      setContextMenu(null)
-    }
-    window.addEventListener('click', handleClick)
-    return () => window.removeEventListener('click', handleClick)
-  }, [])
 
   // --- Global Keyboard Shortcuts & Grid Navigation ---
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
@@ -637,11 +642,6 @@ function DesktopBillSplitter() {
         e.preventDefault()
         return
       }
-      if (contextMenu) {
-        setContextMenu(null)
-        e.preventDefault()
-        return
-      }
       if (editing) {
         setEditing(false)
         e.preventDefault()
@@ -700,12 +700,8 @@ function DesktopBillSplitter() {
       // Cmd+N: New bill
       if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
         e.preventDefault()
-        if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
-          dispatch({ type: 'NEW_BILL' })
-          toast({ title: "New bill created" })
-          analytics.trackBillCreated()
-          analytics.trackFeatureUsed("keyboard_shortcut_new_bill")
-        }
+        newBillSourceRef.current = "shortcut"
+        setIsNewBillDialogOpen(true)
         return
       }
 
@@ -801,7 +797,7 @@ function DesktopBillSplitter() {
       if (item) toggleAssignment(item.id, selectedCell.col)
       return
     }
-  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, contextMenu, updateItem])
+  }, [activeView, editing, selectedCell, items, people, addItem, toggleAssignment, addPerson, copyBreakdown, dispatch, toast, analytics, state.historyIndex, editingPerson, updateItem])
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
@@ -849,7 +845,7 @@ function DesktopBillSplitter() {
       <header className="pro-header">
         <div className="w-full flex items-center justify-between gap-6">
           {/* Left cluster: Brand + Title + Undo/Redo */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               <SplitSimpleIcon />
               <div className="min-w-0">
@@ -865,7 +861,7 @@ function DesktopBillSplitter() {
                   className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-auto min-w-[7ch] max-w-[26ch] hover:text-indigo-600 transition-colors font-inter"
                   placeholder="Project Name"
                 />
-                <div className="text-[10px] font-medium text-slate-400 tracking-wide mt-0.5">SPLIT SIMPLE</div>
+                <div className="text-[10px] font-medium text-slate-400 mt-0.5">SPLIT SIMPLE</div>
               </div>
             </div>
 
@@ -877,6 +873,7 @@ function DesktopBillSplitter() {
                   analytics.trackUndoRedoUsed("undo", state.historyIndex)
                 }}
                 disabled={!canUndo}
+                aria-label="Undo"
                 className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Undo (Cmd+Z)"
               >
@@ -889,6 +886,7 @@ function DesktopBillSplitter() {
                   analytics.trackUndoRedoUsed("redo", state.historyIndex)
                 }}
                 disabled={!canRedo}
+                aria-label="Redo"
                 className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Redo (Cmd+Shift+Z)"
               >
@@ -897,17 +895,35 @@ function DesktopBillSplitter() {
             </div>
           </div>
 
+          {/* Center: View switcher */}
+          <div className="hidden md:flex items-center gap-2 bg-slate-100 p-1 rounded-md">
+            <button
+              onClick={() => setActiveView('ledger')}
+              className={cn(
+                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                activeView === 'ledger' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <GridIcon size={14} /> Ledger
+            </button>
+            <button
+              onClick={() => setActiveView('breakdown')}
+              className={cn(
+                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                activeView === 'breakdown' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <FileText size={14} /> Breakdown
+            </button>
+          </div>
+
           {/* Right cluster: New/Load + Sync/Scan/Share */}
           <div className="flex items-center gap-3">
             <div className="flex items-center bg-slate-100 border border-slate-200/60 rounded-md overflow-hidden shadow-sm">
               <button
                 onClick={() => {
-                  if (confirm('Start a new bill? Current bill will be lost if not shared.')) {
-                    dispatch({ type: 'NEW_BILL' })
-                    toast({ title: "New bill created" })
-                    analytics.trackBillCreated()
-                    analytics.trackFeatureUsed("new_bill")
-                  }
+                  newBillSourceRef.current = "button"
+                  setIsNewBillDialogOpen(true)
                 }}
                 className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter border-r border-slate-200/60"
                 title="New Bill (Cmd+N)"
@@ -916,7 +932,13 @@ function DesktopBillSplitter() {
                 <span>New</span>
               </button>
 
-              <DropdownMenu open={newLoadDropdownOpen} onOpenChange={setNewLoadDropdownOpen}>
+              <DropdownMenu
+                open={newLoadDropdownOpen}
+                onOpenChange={(open) => {
+                  setNewLoadDropdownOpen(open)
+                  if (!open) setLoadBillError(null)
+                }}
+              >
                 <DropdownMenuTrigger asChild>
                   <button className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter">
                     <Search size={14} />
@@ -932,7 +954,10 @@ function DesktopBillSplitter() {
                       <input
                         type="text"
                         value={billId}
-                        onChange={(e) => setBillId(e.target.value)}
+                        onChange={(e) => {
+                          setBillId(e.target.value)
+                          if (loadBillError) setLoadBillError(null)
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && billId.trim()) {
                             handleLoadBill()
@@ -955,6 +980,7 @@ function DesktopBillSplitter() {
                           e.stopPropagation()
                           setNewLoadDropdownOpen(false)
                           setBillId('')
+                          setLoadBillError(null)
                         }}
                         className="flex-1 h-7 px-2 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600 transition-colors"
                       >
@@ -969,13 +995,14 @@ function DesktopBillSplitter() {
                         disabled={isLoadingBill || !billId.trim()}
                         className="flex-1 h-7 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                       >
-                        {isLoadingBill ? (
-                          <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent" />
-                        ) : (
-                          'Load'
-                        )}
+                        {isLoadingBill ? 'Loading...' : 'Load'}
                       </button>
                     </div>
+                    {loadBillError && (
+                      <p className="text-[11px] text-red-600" role="alert">
+                        {loadBillError}
+                      </p>
+                    )}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -997,6 +1024,21 @@ function DesktopBillSplitter() {
                 )}
               />
               <div className="h-6 w-px bg-slate-200/80" />
+              <div className="flex flex-col items-start">
+                <button
+                  onClick={copyBreakdown}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
+                  title="Copy summary to clipboard (Cmd+Shift+C)"
+                >
+                  <ClipboardCopy size={14} /> Copy Summary
+                </button>
+                {copyError && (
+                  <span className="mt-1 text-[10px] text-red-600" role="alert">
+                    {copyError}
+                  </span>
+                )}
+              </div>
+              <div className="h-6 w-px bg-slate-200/80" />
               <div className="px-1">
                 <ShareBill variant="ghost" size="sm" showText={true} />
               </div>
@@ -1009,422 +1051,452 @@ function DesktopBillSplitter() {
       <main className="pro-main">
         {/* LEDGER VIEW */}
         {activeView === 'ledger' && (
-          <div className="h-full w-full animate-in fade-in duration-200">
+          <div className="h-full w-full">
             <div className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar" tabIndex={-1}>
-              <div className="min-w-max mx-auto bg-white rounded-lg border border-slate-200/80 shadow-sm">
-                {/* Sticky toolbar */}
-	                <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur border-b border-slate-200/80">
-	                  <div className="flex items-center gap-2">
-	                    <button
-	                      onClick={addItem}
-	                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow-sm flex items-center gap-2 transition-colors"
-	                      title="Add new line item (Cmd+Shift+N)"
-	                    >
-	                      <Plus size={14} /> Add Line Item
-	                    </button>
-                    <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-slate-400 tracking-widest">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-500">
-                        <Equal size={11} className="text-indigo-600" /> Split
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-500">
-                        <Users size={11} className="text-indigo-600" /> People
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-inter">
-                    <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Tab/Enter to commit</span>
-	                    <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Esc to exit</span>
-	                  </div>
-	                </div>
-
-	                {/* Starter banner (shown until the bill has meaningful items) */}
-	                {!hideStarter && !hasMeaningfulItems && (
-	                  <div className="px-4 py-3 bg-slate-50/60 border-b border-slate-200/60">
-	                    <div className="flex items-start justify-between gap-4">
-	                      <div className="min-w-0">
-	                        <div className="text-sm font-bold text-slate-900 font-inter">Start splitting in 3 quick steps</div>
-	                        <div className="text-xs text-slate-500 mt-0.5 font-inter">
-	                          Click a cell and type, then press Tab/Enter to move like Sheets.
-	                        </div>
-
-	                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-	                          <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
-	                            <div className="flex items-center gap-2 min-w-0">
-	                              <div className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs font-bold">1</div>
-	                              <div className="min-w-0">
-	                                <div className="text-xs font-bold text-slate-700 font-inter truncate">Add people</div>
-	                                <div className="text-[10px] text-slate-400 font-inter">⌘⇧P</div>
-	                              </div>
-	                            </div>
-	                            <button
-	                              onClick={addPerson}
-	                              className="h-7 px-2 rounded bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors whitespace-nowrap"
-	                            >
-	                              + Person
-	                            </button>
-	                          </div>
-
-	                          <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
-	                            <div className="flex items-center gap-2 min-w-0">
-	                              <div className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs font-bold">2</div>
-	                              <div className="min-w-0">
-	                                <div className="text-xs font-bold text-slate-700 font-inter truncate">Add items</div>
-	                                <div className="text-[10px] text-slate-400 font-inter">⌘⇧N</div>
-	                              </div>
-	                            </div>
-	                            <button
-	                              onClick={() => {
-	                                if (items.length === 0) {
-	                                  addItem()
-	                                  return
-	                                }
-	                                setSelectedCell({ row: 0, col: 'name' })
-	                                setEditing(true)
-	                              }}
-	                              className="h-7 px-2 rounded bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition-colors whitespace-nowrap"
-	                            >
-	                              + Item
-	                            </button>
-	                          </div>
-
-	                          <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
-	                            <div className="flex items-center gap-2 min-w-0">
-	                              <div className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs font-bold">3</div>
-	                              <div className="min-w-0">
-	                                <div className="text-xs font-bold text-slate-700 font-inter truncate">Scan receipt</div>
-	                                <div className="text-[10px] text-slate-400 font-inter">Optional</div>
-	                              </div>
-	                            </div>
-	                            <ReceiptScanner
-	                              onImport={handleScanImport}
-	                              trigger={(
-	                                <button className="h-7 px-2 rounded bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors whitespace-nowrap flex items-center gap-2">
-	                                  <Camera size={14} />
-	                                  Scan
-	                                </button>
-	                              )}
-	                            />
-	                          </div>
-	                        </div>
-	                      </div>
-	                      <button
-	                        onClick={() => {
-	                          setHideStarter(true)
-	                          window.localStorage.setItem('splitsimple_hide_starter', '1')
-	                        }}
-	                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
-	                        title="Dismiss"
-	                      >
-	                        <X size={16} />
-	                      </button>
-	                    </div>
-	                  </div>
-	                )}
-	                {/* Live Roster */}
-	                <div className="flex items-center gap-6 px-4 py-3 bg-slate-50/50 border-b border-slate-200/60 overflow-x-auto">
-	                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 font-inter">
-	                    Live Breakdown
-	                  </div>
-                  <div className="h-4 w-px bg-slate-200 shrink-0"></div>
-                  {people.length === 0 ? (
-                    <div className="flex items-center gap-2 text-xs text-slate-400 font-inter">
-                      <Users size={14} className="text-slate-300" />
-                      <span>Click <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600">+</kbd> above to add people or press <kbd className="px-1.5 py-0.5 bg-slate-200 rounded text-[10px] font-bold text-slate-600">⌘⇧P</kbd></span>
-                    </div>
-                  ) : (
-                    people.map(p => {
-                      const stats = personFinalShares[p.id]
-                      const colorObj = COLORS[p.colorIdx || 0]
-                      const percent = stats ? (stats.total / (grandTotal || 1)) * 100 : 0
-                      return (
-                        <div key={p.id} className="flex items-center gap-2 shrink-0">
-                          <div className={`w-2 h-2 rounded-full ${colorObj.solid}`}></div>
-                          <span className="text-xs font-medium text-slate-600 font-inter">{p.name.split(' ')[0]}</span>
-                          <span className="text-xs font-bold font-space-mono text-slate-900">
-                            {formatCurrencySimple(stats?.total || 0)}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-space-mono">
-                            ({percent.toFixed(0)}%)
-                          </span>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-
-                {/* Sticky Header */}
-                <div className="pro-grid-header flex text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <div className="w-12 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">#</div>
-                  <div className="w-72 p-3 border-r border-slate-100/60 flex items-center pro-sticky-left">Item Description</div>
-                  <div className="w-28 p-3 text-right border-r border-slate-100/60 flex items-center justify-end">Price</div>
-                  <div className="w-20 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">Qty</div>
-
-                  {people.map(p => {
-                    const colorObj = COLORS[p.colorIdx || 0]
-                    const initials = p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                    return (
-                      <div
-                        key={p.id}
-                        className={`w-28 p-2 border-r border-slate-100/60 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors ${hoveredColumn === p.id ? 'bg-slate-50' : ''}`}
-                        onMouseEnter={() => setHoveredColumn(p.id)}
-                        onMouseLeave={() => setHoveredColumn(null)}
-                        onClick={() => setEditingPerson(p)}
-                      >
-                        <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white mb-1 ${colorObj.solid}`}>
-                          {initials}
-                        </div>
-                        <span className="text-[9px] truncate max-w-full font-bold text-slate-700 font-inter">
-                          {p.name.split(' ')[0]}
-                        </span>
-                      </div>
-                    )
-                  })}
-
-                  <div className="w-12 flex items-center justify-center cursor-pointer hover:bg-slate-50 text-slate-400 hover:text-indigo-600 transition-colors" onClick={addPerson}>
-                    <Plus size={16} />
-                  </div>
-                  <div className="w-28 p-3 text-right flex items-center justify-end border-l border-slate-200 pro-sticky-right">
-                    Total
-                  </div>
-                </div>
-
-                {/* Body */}
-                <div className="divide-y divide-slate-100">
-                  {calculatedItems.length === 0 && (
-                    <div className="py-16 px-6 flex flex-col items-center justify-center text-center">
-                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                        <Plus className="h-8 w-8 text-slate-400" />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900 mb-2 font-inter">No items yet</h3>
-                      <p className="text-sm text-slate-500 mb-6 max-w-sm font-inter">
-                        Add your first item to start splitting the bill. Press <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">⌘⇧N</kbd> or click the button below.
-                      </p>
-                      <button
-                        onClick={addItem}
-                        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add First Item
-                      </button>
-                    </div>
-                  )}
-
-                  {calculatedItems.map((item, rIdx) => (
-                    <div
-                      key={item.id}
-                      className="flex group hover:bg-slate-50/50 transition-colors h-12 text-sm"
-                      onContextMenu={(e) => handleContextMenu(e, item.id)}
-                    >
-                      {/* Index / "Equal" Button */}
-                      <div className="w-12 border-r border-slate-100/60 flex items-center justify-center text-[10px] text-slate-300 font-space-mono select-none bg-slate-50/30 group-hover:bg-white transition-colors">
-                        <span className="group-hover:hidden">{String(rIdx + 1).padStart(2, '0')}</span>
-                        <button
-                          onClick={() => toggleAllAssignments(item.id)}
-                          className="hidden group-hover:flex w-full h-full items-center justify-center text-indigo-500 hover:bg-indigo-50 transition-colors"
-                          title="Split Equally"
-                        >
-                          <Equal size={14} strokeWidth={3} />
-                        </button>
+              <div className="mx-auto w-full max-w-7xl">
+                <div className="grid grid-cols-12 gap-6">
+                  <section className="col-span-12 xl:col-span-8">
+                    <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+                      <div className="px-5 py-4 border-b border-slate-200/80">
+                        <h2 className="text-base font-semibold text-slate-900 text-balance font-inter">Items & split</h2>
+                        <p className="text-xs text-slate-500 text-pretty font-inter">
+                          Add items, set prices, and assign people to split each line.
+                        </p>
                       </div>
 
-                      {/* Name + Split Method Selector */}
-                      <div className="w-72 border-r border-slate-100/60 pro-sticky-left group-hover:bg-slate-50 transition-colors relative p-0 flex items-center">
-                        <div className="flex-1">
-                          <GridCell
-                            row={rIdx}
-                            col="name"
-                            value={item.name}
-                            className="text-slate-700 font-medium bg-transparent font-inter"
-                            isSelected={selectedCell.row === rIdx && selectedCell.col === 'name'}
-                            isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'name'}
-                            itemId={item.id}
-                            field="name"
-                            onCellEdit={handleCellEdit}
-                            onCellClick={handleCellClick}
-                            editInputRef={editInputRef}
-                          />
-                        </div>
-                        <div className="relative pr-2">
-                          <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors flex items-center gap-1"
-                                title="Change split method"
-                              >
-                                {React.createElement(getSplitMethodIcon(item.method), { size: 12 })}
-                                <ChevronDown size={10} />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-40">
-                              {splitMethodOptions.map(option => (
-                                <DropdownMenuItem
-                                  key={option.value}
-                                  onSelect={(e) => {
-                                    e.preventDefault()
-                                    changeSplitMethod(item.id, option.value)
-                                  }}
-                                  className={`text-xs flex items-center gap-2 font-inter ${item.method === option.value ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600'}`}
-                                >
-                                  {React.createElement(option.icon, { size: 12 })}
-                                  {option.label}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-
-                      {/* Price */}
-                      <div className="w-28 border-r border-slate-100/60 relative p-0">
-                        <GridCell
-                          row={rIdx}
-                          col="price"
-                          value={item.price}
-                          type="number"
-                          className="text-right font-space-mono text-slate-600 bg-slate-50/30"
-                          isSelected={selectedCell.row === rIdx && selectedCell.col === 'price'}
-                          isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'price'}
-                          itemId={item.id}
-                          field="price"
-                          onCellEdit={handleCellEdit}
-                          onCellClick={handleCellClick}
-                          editInputRef={editInputRef}
-                        />
-                      </div>
-
-                      {/* Qty */}
-                      <div className="w-20 border-r border-slate-100/60 relative p-0">
-                        <GridCell
-                          row={rIdx}
-                          col="qty"
-                          value={item.qty}
-                          type="number"
-                          className="text-center font-space-mono text-slate-500 bg-slate-50/30"
-                          isSelected={selectedCell.row === rIdx && selectedCell.col === 'qty'}
-                          isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'qty'}
-                          itemId={item.id}
-                          field="qty"
-                          onCellEdit={handleCellEdit}
-                          onCellClick={handleCellClick}
-                          editInputRef={editInputRef}
-                        />
-                      </div>
-
-                      {/* Person Cells (The "Cards") */}
-                      {people.map(p => {
-                        const isAssigned = item.splitWith.includes(p.id)
-                        const isSelected = selectedCell.row === rIdx && selectedCell.col === p.id
-                        const color = COLORS[p.colorIdx || 0]
-
-                        return (
-                          <div
-                            key={p.id}
-                            onContextMenu={(e) => {
-                              e.stopPropagation()
-                              handleContextMenu(e, item.id, p.id)
-                            }}
-                            onClick={() => {
-                              setSelectedCell({ row: rIdx, col: p.id })
-                              toggleAssignment(item.id, p.id)
-                            }}
-                            onMouseEnter={() => setHoveredColumn(p.id)}
-                            onMouseLeave={() => setHoveredColumn(null)}
-                            className={`
-                              w-28 border-r border-slate-100/60 relative cursor-pointer flex items-center justify-center transition-all duration-100 select-none
-                              ${isSelected ? `ring-inset ring-2 ring-indigo-600 z-10` : ''}
-                              ${hoveredColumn === p.id && !isAssigned ? 'bg-slate-50' : ''}
-                              active:bg-slate-100
-                            `}
+                      {/* Sticky toolbar */}
+                      <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-2 bg-white/95 backdrop-blur border-b border-slate-200/80">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={addItem}
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow-sm flex items-center gap-2 transition-colors"
+                            title="Add new line item (Cmd+Shift+N)"
                           >
-                            {isAssigned ? (
-                              <div
-                                className={`w-20 py-1.5 rounded-md shadow-sm text-center transform transition-transform active:scale-95 ${color.solid} ${color.textSolid}`}
-                              >
-                                <span className="font-space-mono text-xs font-bold">
-                                  ${(item.pricePerPerson || 0).toFixed(2)}
-                                </span>
+                            <Plus size={14} /> Add Line Item
+                          </button>
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-500">
+                              <Equal size={11} className="text-indigo-600" /> Split
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-50 border border-slate-200 text-slate-500">
+                              <Users size={11} className="text-indigo-600" /> People
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-inter">
+                          <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Tab/Enter to commit</span>
+                          <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Esc to exit</span>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <div className="min-w-max">
+                          {/* Sticky Header */}
+                          <div className="pro-grid-header flex text-[10px] font-bold text-slate-500 uppercase">
+                            <div className="w-12 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">#</div>
+                            <div className="w-72 p-3 border-r border-slate-100/60 flex items-center pro-sticky-left">Item Description</div>
+                            <div className="w-28 p-3 text-right border-r border-slate-100/60 flex items-center justify-end">Price</div>
+                            <div className="w-20 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">Qty</div>
+
+                            {people.map(p => {
+                              const colorObj = COLORS[p.colorIdx || 0]
+                              const initials = p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                              return (
+                                <button
+                                  key={p.id}
+                                  className={cn(
+                                    "w-28 p-2 border-r border-slate-100/60 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors",
+                                    hoveredColumn === p.id && "bg-slate-50"
+                                  )}
+                                  onMouseEnter={() => setHoveredColumn(p.id)}
+                                  onMouseLeave={() => setHoveredColumn(null)}
+                                  onClick={() => setEditingPerson(p)}
+                                  aria-label={`Edit ${p.name}`}
+                                  type="button"
+                                >
+                                  <div className={cn(
+                                    "w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white mb-1",
+                                    colorObj.solid
+                                  )}>
+                                    {initials}
+                                  </div>
+                                  <span className="text-[9px] truncate max-w-full font-bold text-slate-700 font-inter">
+                                    {p.name.split(' ')[0]}
+                                  </span>
+                                </button>
+                              )
+                            })}
+
+                            <button
+                              onClick={addPerson}
+                              aria-label="Add person"
+                              className="w-12 flex items-center justify-center hover:bg-slate-50 text-slate-400 hover:text-indigo-600 transition-colors"
+                            >
+                              <Plus size={16} />
+                            </button>
+                            <div className="w-28 p-3 text-right flex items-center justify-end border-l border-slate-200 pro-sticky-right">
+                              Total
+                            </div>
+                          </div>
+
+                          {/* Body */}
+                          <div className="divide-y divide-slate-100">
+                            {calculatedItems.length === 0 && (
+                              <div className="py-16 px-6 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                  <Plus className="h-8 w-8 text-slate-400" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2 font-inter text-balance">No items yet</h3>
+                                <p className="text-sm text-slate-500 mb-6 max-w-sm font-inter text-pretty">
+                                  Add your first item to start splitting the bill. Press <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">⌘⇧N</kbd> or click the button below.
+                                </p>
+                                <button
+                                  onClick={addItem}
+                                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                  Add First Item
+                                </button>
                               </div>
-                            ) : (
-                              <span className="text-slate-400 font-space-mono text-sm font-bold opacity-50 select-none">
-                                -
-                              </span>
+                            )}
+
+                            {calculatedItems.map((item, rIdx) => (
+                              <ContextMenu key={item.id}>
+                                <ContextMenuTrigger asChild>
+                                  <div className="flex group hover:bg-slate-50/50 transition-colors h-12 text-sm">
+                                {/* Index / "Equal" Button */}
+                                <div className="w-12 border-r border-slate-100/60 flex items-center justify-center text-[10px] text-slate-300 font-space-mono select-none bg-slate-50/30 group-hover:bg-white transition-colors tabular-nums">
+                                  <span className="group-hover:hidden">{String(rIdx + 1).padStart(2, '0')}</span>
+                                  <button
+                                    onClick={() => toggleAllAssignments(item.id)}
+                                    aria-label="Split equally"
+                                    className="hidden group-hover:flex w-full h-full items-center justify-center text-indigo-500 hover:bg-indigo-50 transition-colors"
+                                    title="Split Equally"
+                                  >
+                                    <Equal size={14} strokeWidth={3} />
+                                  </button>
+                                </div>
+
+                                {/* Name + Split Method Selector */}
+                                <div className="w-72 border-r border-slate-100/60 pro-sticky-left group-hover:bg-slate-50 transition-colors relative p-0 flex items-center">
+                                  <div className="flex-1">
+                                    <GridCell
+                                      row={rIdx}
+                                      col="name"
+                                      value={item.name}
+                                      className="text-slate-700 font-medium bg-transparent font-inter"
+                                      isSelected={selectedCell.row === rIdx && selectedCell.col === 'name'}
+                                      isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'name'}
+                                      itemId={item.id}
+                                      field="name"
+                                      onCellEdit={handleCellEdit}
+                                      onCellClick={handleCellClick}
+                                      editInputRef={editInputRef}
+                                    />
+                                  </div>
+                                  <div className="relative pr-2">
+                                    <DropdownMenu modal={false}>
+                                      <DropdownMenuTrigger asChild>
+                                        <button
+                                          onClick={(e) => e.stopPropagation()}
+                                          aria-label="Change split method"
+                                          className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors flex items-center gap-1"
+                                          title="Change split method"
+                                        >
+                                          {React.createElement(getSplitMethodIcon(item.method), { size: 12 })}
+                                          <ChevronDown size={10} />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="start" className="w-40">
+                                        {splitMethodOptions.map(option => (
+                                      <DropdownMenuItem
+                                        key={option.value}
+                                        onSelect={(e) => {
+                                          e.preventDefault()
+                                          changeSplitMethod(item.id, option.value)
+                                        }}
+                                        className={cn(
+                                          "text-xs flex items-center gap-2 font-inter",
+                                          item.method === option.value ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600"
+                                        )}
+                                      >
+                                            {React.createElement(option.icon, { size: 12 })}
+                                            {option.label}
+                                          </DropdownMenuItem>
+                                        ))}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </div>
+
+                                {/* Price */}
+                                <div className="w-28 border-r border-slate-100/60 relative p-0">
+                                  <GridCell
+                                    row={rIdx}
+                                    col="price"
+                                    value={item.price}
+                                    type="number"
+                                    className="text-right font-space-mono text-slate-600 bg-slate-50/30 tabular-nums"
+                                    isSelected={selectedCell.row === rIdx && selectedCell.col === 'price'}
+                                    isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'price'}
+                                    itemId={item.id}
+                                    field="price"
+                                    onCellEdit={handleCellEdit}
+                                    onCellClick={handleCellClick}
+                                    editInputRef={editInputRef}
+                                  />
+                                </div>
+
+                                {/* Qty */}
+                                <div className="w-20 border-r border-slate-100/60 relative p-0">
+                                  <GridCell
+                                    row={rIdx}
+                                    col="qty"
+                                    value={item.qty}
+                                    type="number"
+                                    className="text-center font-space-mono text-slate-500 bg-slate-50/30 tabular-nums"
+                                    isSelected={selectedCell.row === rIdx && selectedCell.col === 'qty'}
+                                    isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'qty'}
+                                    itemId={item.id}
+                                    field="qty"
+                                    onCellEdit={handleCellEdit}
+                                    onCellClick={handleCellClick}
+                                    editInputRef={editInputRef}
+                                  />
+                                </div>
+
+                                {/* Person Cells (The "Cards") */}
+                                {people.map(p => {
+                                  const isAssigned = item.splitWith.includes(p.id)
+                                  const isSelected = selectedCell.row === rIdx && selectedCell.col === p.id
+                                  const color = COLORS[p.colorIdx || 0]
+
+                                  return (
+                                    <button
+                                      key={p.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedCell({ row: rIdx, col: p.id })
+                                        toggleAssignment(item.id, p.id)
+                                      }}
+                                      onMouseEnter={() => setHoveredColumn(p.id)}
+                                      onMouseLeave={() => setHoveredColumn(null)}
+                                      aria-pressed={isAssigned}
+                                      aria-label={`Toggle ${p.name} for ${item.name || 'this item'}`}
+                                      className={cn(
+                                        "w-28 border-r border-slate-100/60 relative cursor-pointer flex items-center justify-center transition-colors duration-100 select-none active:bg-slate-100",
+                                        isSelected && "ring-inset ring-2 ring-indigo-600 z-10",
+                                        hoveredColumn === p.id && !isAssigned && "bg-slate-50"
+                                      )}
+                                    >
+                                      {isAssigned ? (
+                                        <div
+                                          className={cn(
+                                            "w-20 py-1.5 rounded-md shadow-sm text-center transform transition-transform active:scale-95",
+                                            color.solid,
+                                            color.textSolid
+                                          )}
+                                        >
+                                          <span className="font-space-mono text-xs font-bold tabular-nums">
+                                            ${(item.pricePerPerson || 0).toFixed(2)}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-slate-400 font-space-mono text-sm font-bold opacity-50 select-none">
+                                          -
+                                        </span>
+                                      )}
+                                    </button>
+                                  )
+                                })}
+
+                                {/* Inline actions */}
+                                <div className="w-16 border-r border-slate-100/60 flex items-center justify-center gap-2 bg-white">
+                                  <button
+                                    onClick={() => duplicateItem(item)}
+                                    aria-label="Duplicate row"
+                                    className="text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                    tabIndex={-1}
+                                    title="Duplicate row"
+                                  >
+                                    <ClipboardCopy size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => openDeleteDialog(item)}
+                                    aria-label="Delete row"
+                                    className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                    tabIndex={-1}
+                                    title="Delete row"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+
+                                {/* Row Total */}
+                                <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 group-hover:bg-slate-50 font-space-mono text-xs font-bold text-slate-800 tabular-nums">
+                                  ${(item.totalItemPrice || 0).toFixed(2)}
+                                </div>
+                                  </div>
+                                </ContextMenuTrigger>
+                                <ContextMenuContent>
+                                  <ContextMenuItem
+                                    onSelect={() => duplicateItem(item)}
+                                  >
+                                    <ClipboardCopy size={14} /> Duplicate item
+                                  </ContextMenuItem>
+                                  <ContextMenuItem
+                                    onSelect={() => toggleAllAssignments(item.id)}
+                                  >
+                                    <Equal size={14} /> Split with everyone
+                                  </ContextMenuItem>
+                                  <ContextMenuItem
+                                    onSelect={() => clearRowAssignments(item.id)}
+                                  >
+                                    <Eraser size={14} /> Clear row
+                                  </ContextMenuItem>
+                                  <ContextMenuSeparator />
+                                  <ContextMenuItem
+                                    variant="destructive"
+                                    onSelect={() => openDeleteDialog(item)}
+                                  >
+                                    <Trash2 size={14} /> Delete item
+                                  </ContextMenuItem>
+                                </ContextMenuContent>
+                              </ContextMenu>
+                            ))}
+
+                            {/* Add Row Button */}
+                            {calculatedItems.length > 0 && (
+                              <button
+                                onClick={addItem}
+                                className="w-full py-2 px-4 text-slate-400 text-xs font-semibold hover:text-indigo-600 hover:bg-slate-50/80 transition-colors flex items-center justify-start gap-2 border-t border-slate-200 font-inter"
+                                title="Add new item (Cmd+Shift+N)"
+                              >
+                                <Plus size={14} /> Add another item
+                              </button>
                             )}
                           </div>
-                        )
-                      })}
-
-                      {/* Inline actions */}
-                      <div className="w-16 border-r border-slate-100/60 flex items-center justify-center gap-2 bg-white">
-                        <button
-                          onClick={() => duplicateItem(item)}
-                          className="text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                          tabIndex={-1}
-                          title="Duplicate row"
-                        >
-                          <ClipboardCopy size={12} />
-                        </button>
-                        <button
-                          onClick={() => deleteItem(item.id)}
-                          className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                          tabIndex={-1}
-                          title="Delete row"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-
-                      {/* Row Total */}
-                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 group-hover:bg-slate-50 font-space-mono text-xs font-bold text-slate-800">
-                        ${(item.totalItemPrice || 0).toFixed(2)}
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  </section>
 
-	                  {/* Add Row Button */}
-	                  {calculatedItems.length > 0 && (
-	                    <button
-	                      onClick={addItem}
-	                      className="w-full py-2 px-4 text-slate-400 text-xs font-semibold hover:text-indigo-600 hover:bg-slate-50/80 transition-all flex items-center justify-start gap-2 border-t border-slate-200 font-inter"
-	                      title="Add new item (Cmd+Shift+N)"
-	                    >
-	                      <Plus size={14} /> Add another item
-	                    </button>
-	                  )}
-
-                  {/* Summary Rows Section */}
-                  <div className="border-t-4 border-double border-slate-300">
-                    {/* Subtotal Row */}
-                    <div className="flex h-12 text-sm bg-slate-50/50">
-                      <div className="w-12 border-r border-slate-100/60"></div>
-                      <div className="w-72 p-3 border-r border-slate-100/60 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
-                        Subtotal
-                      </div>
-                      <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-4 font-space-mono text-xs font-bold text-slate-600">
-                        ${subtotal.toFixed(2)}
-                      </div>
-                      <div className="w-20 border-r border-slate-100/60"></div>
-
-                      {people.map(p => {
-                        const stats = personFinalShares[p.id]
-                        return (
-                          <div key={p.id} className="w-28 border-r border-slate-100/60 flex items-center justify-center font-space-mono text-xs text-slate-600">
-                            ${(stats?.subtotal || 0).toFixed(2)}
+                  <aside className="col-span-12 xl:col-span-4 space-y-6">
+                    {!hideStarter && !hasMeaningfulItems && (
+                      <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-sm font-semibold text-slate-900 text-balance font-inter">Start splitting in minutes</h3>
+                            <p className="text-xs text-slate-500 text-pretty font-inter">
+                              Add people first, then items. Use Tab/Enter to move like a spreadsheet.
+                            </p>
                           </div>
-                        )
-                      })}
+                          <button
+                            onClick={() => {
+                              setHideStarter(true)
+                              window.localStorage.setItem('splitsimple_hide_starter', '1')
+                            }}
+                            aria-label="Dismiss getting started"
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                            title="Dismiss"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                          <button
+                            onClick={addPerson}
+                            className="w-full h-9 px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors flex items-center justify-between"
+                          >
+                            <span>Add people</span>
+                            <span className="text-slate-400">⌘⇧P</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (items.length === 0) {
+                                addItem()
+                                return
+                              }
+                              setSelectedCell({ row: 0, col: 'name' })
+                              setEditing(true)
+                            }}
+                            className="w-full h-9 px-3 rounded-md bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white transition-colors flex items-center justify-between"
+                          >
+                            <span>Add items</span>
+                            <span className="text-indigo-100">⌘⇧N</span>
+                          </button>
+                          <ReceiptScanner
+                            onImport={handleScanImport}
+                            trigger={(
+                              <button className="w-full h-9 px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors flex items-center justify-between">
+                                <span className="flex items-center gap-2">
+                                  <Camera size={14} /> Scan receipt
+                                </span>
+                                <span className="text-slate-400">Optional</span>
+                              </button>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                      <div className="w-12 border-r border-slate-100/60"></div>
-                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
-                        ${subtotal.toFixed(2)}
+                    <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-900 text-balance font-inter">People</h3>
+                          <p className="text-xs text-slate-500 text-pretty font-inter">Track who is splitting the bill.</p>
+                        </div>
+                        <button
+                          onClick={addPerson}
+                          aria-label="Add person"
+                          className="size-8 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center"
+                          title="Add person"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+
+                      <div className="mt-4 space-y-2">
+                        {people.length === 0 ? (
+                          <div className="rounded-lg border border-dashed border-slate-200 p-4 text-xs text-slate-500 font-inter text-pretty">
+                            No people yet. Add someone to start splitting.
+                          </div>
+                        ) : (
+                          people.map(p => {
+                            const stats = personFinalShares[p.id]
+                            const colorObj = COLORS[p.colorIdx || 0]
+                            const percent = stats ? (stats.total / (grandTotal || 1)) * 100 : 0
+                            return (
+                              <button
+                                key={p.id}
+                                onClick={() => setEditingPerson(p)}
+                                className="w-full flex items-center justify-between rounded-lg border border-slate-200/70 px-3 py-2 hover:border-slate-300 text-left transition-colors"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className={cn("size-2.5 rounded-full", colorObj.solid)} />
+                                  <span className="text-sm font-medium text-slate-700 font-inter">{p.name}</span>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs font-semibold text-slate-900 font-space-mono tabular-nums">
+                                    {formatCurrencySimple(stats?.total || 0)}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 font-space-mono tabular-nums">
+                                    {percent.toFixed(0)}%
+                                  </div>
+                                </div>
+                              </button>
+                            )
+                          })
+                        )}
                       </div>
                     </div>
 
-                    {/* Tax Row */}
-                    <div className="flex h-12 text-sm bg-slate-50/50">
-                      <div className="w-12 border-r border-slate-100/60"></div>
-                      <div className="w-72 p-3 border-r border-slate-100/60 flex items-center justify-between pro-sticky-left bg-slate-50/50 font-inter">
-                        <span className="font-bold text-slate-700 uppercase text-xs tracking-wider">Tax</span>
+                    <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-900 text-balance font-inter">Bill totals</h3>
+                          <p className="text-xs text-slate-500 text-pretty font-inter">Adjust tax, tip, and discounts.</p>
+                        </div>
                         <button
                           onClick={() => {
                             const newAllocation = state.currentBill.taxTipAllocation === 'proportional' ? 'even' : 'proportional'
@@ -1436,149 +1508,89 @@ function DesktopBillSplitter() {
                             })
                             analytics.trackFeatureUsed("tax_tip_allocation_toggle", { allocation: newAllocation })
                           }}
-                          className="flex items-center gap-1 px-2 py-1 hover:bg-slate-100 rounded transition-colors"
+                          className="flex items-center gap-2 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-[10px] font-semibold text-slate-600"
                           title={`Current: ${state.currentBill.taxTipAllocation === 'proportional' ? 'Proportional' : 'Even'} allocation`}
                         >
                           {state.currentBill.taxTipAllocation === 'proportional' ? (
-                            <Scale size={11} className="text-indigo-600" />
+                            <Scale size={12} className="text-indigo-600" />
                           ) : (
-                            <Equal size={11} className="text-indigo-600" />
+                            <Equal size={12} className="text-indigo-600" />
                           )}
-                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                            {state.currentBill.taxTipAllocation === 'proportional' ? 'Prop' : 'Even'}
-                          </span>
+                          {state.currentBill.taxTipAllocation === 'proportional' ? 'Proportional' : 'Even'}
                         </button>
                       </div>
-                      <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={state.currentBill.tax}
-                          onChange={(e) => {
-                            dispatch({ type: 'SET_TAX', payload: e.target.value })
-                            analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
-                          }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 shadow-inner focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div className="w-20 border-r border-slate-100/60"></div>
 
-                      {people.map(p => {
-                        const stats = personFinalShares[p.id]
-                        return (
-                          <div key={p.id} className="w-28 border-r border-slate-100/60 flex items-center justify-center font-space-mono text-xs text-slate-600">
-                            ${(stats?.tax || 0).toFixed(2)}
+                      <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-inter">
+                        <div className="space-y-1">
+                          <label className="text-slate-500">Tax</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={state.currentBill.tax}
+                            onChange={(e) => {
+                              dispatch({ type: 'SET_TAX', payload: e.target.value })
+                              analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
+                            }}
+                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-space-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-slate-500">Tip</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={state.currentBill.tip}
+                            onChange={(e) => {
+                              dispatch({ type: 'SET_TIP', payload: e.target.value })
+                              analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
+                            }}
+                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-space-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-slate-500">Discount</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={state.currentBill.discount}
+                            onChange={(e) => {
+                              dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
+                              analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
+                            }}
+                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-space-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-slate-500">Subtotal</label>
+                          <div className="h-9 rounded-md border border-slate-200 bg-slate-50 px-2 flex items-center justify-end font-space-mono text-slate-700 tabular-nums">
+                            {formatCurrencySimple(subtotal)}
                           </div>
-                        )
-                      })}
+                        </div>
+                      </div>
 
-                      <div className="w-12 border-r border-slate-100/60"></div>
-                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
-                        ${taxAmount.toFixed(2)}
+                      <div className="mt-4 space-y-2 text-xs font-inter">
+                        <div className="flex items-center justify-between text-slate-500">
+                          <span>Tax</span>
+                          <span className="font-space-mono tabular-nums">{formatCurrencySimple(taxAmount)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-500">
+                          <span>Tip</span>
+                          <span className="font-space-mono tabular-nums">{formatCurrencySimple(tipAmount)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-500">
+                          <span>Discount</span>
+                          <span className="font-space-mono tabular-nums">-{formatCurrencySimple(discountAmount)}</span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-sm font-semibold text-slate-900">
+                          <span>Grand total</span>
+                          <span className="font-space-mono tabular-nums">{formatCurrencySimple(grandTotal)}</span>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Tip Row */}
-                    <div className="flex h-12 text-sm bg-slate-50/50">
-                      <div className="w-12 border-r border-slate-100/60"></div>
-                      <div className="w-72 p-3 border-r border-slate-100/60 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
-                        Tip
-                      </div>
-                      <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={state.currentBill.tip}
-                          onChange={(e) => {
-                            dispatch({ type: 'SET_TIP', payload: e.target.value })
-                            analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
-                          }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 shadow-inner focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div className="w-20 border-r border-slate-100/60"></div>
-
-                      {people.map(p => {
-                        const stats = personFinalShares[p.id]
-                        return (
-                          <div key={p.id} className="w-28 border-r border-slate-100/60 flex items-center justify-center font-space-mono text-xs text-slate-600">
-                            ${(stats?.tip || 0).toFixed(2)}
-                          </div>
-                        )
-                      })}
-
-                      <div className="w-12 border-r border-slate-100/60"></div>
-                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
-                        ${tipAmount.toFixed(2)}
-                      </div>
-                    </div>
-
-                    {/* Discount Row */}
-                    <div className="flex h-12 text-sm bg-slate-50/50">
-                      <div className="w-12 border-r border-slate-100/60"></div>
-                      <div className="w-72 p-3 border-r border-slate-100/60 flex items-center font-bold text-slate-700 uppercase text-xs tracking-wider pro-sticky-left bg-slate-50/50 font-inter">
-                        Discount
-                      </div>
-                      <div className="w-28 border-r border-slate-100/60 flex items-center justify-end px-2">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={state.currentBill.discount}
-                          onChange={(e) => {
-                            dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
-                            analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
-                          }}
-                          className="w-full bg-white rounded px-2 py-1.5 border border-slate-200 shadow-inner focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:bg-indigo-50/30 transition-all text-xs font-space-mono text-slate-700 text-right"
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div className="w-20 border-r border-slate-100/60"></div>
-
-                      {people.map(p => {
-                        const stats = personFinalShares[p.id]
-                        return (
-                          <div key={p.id} className="w-28 border-r border-slate-100/60 flex items-center justify-center font-space-mono text-xs text-slate-600">
-                            ${(stats?.discount || 0).toFixed(2)}
-                          </div>
-                        )
-                      })}
-
-                      <div className="w-12 border-r border-slate-100/60"></div>
-                      <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 bg-slate-50/50 font-space-mono text-xs font-bold text-slate-800">
-                        -${discountAmount.toFixed(2)}
-                      </div>
-                    </div>
-
-                    {/* Grand Total Row */}
-                    <div className="flex h-14 text-sm bg-slate-100 border-t-2 border-slate-300">
-                      <div className="w-12 border-r border-slate-200"></div>
-                      <div className="w-72 p-3 border-r border-slate-200 flex items-center font-bold text-slate-900 uppercase text-xs tracking-wider pro-sticky-left bg-slate-100 font-inter">
-                        Grand Total
-                      </div>
-                      <div className="w-28 border-r border-slate-200"></div>
-                      <div className="w-20 border-r border-slate-200"></div>
-
-                      {people.map(p => {
-                        const stats = personFinalShares[p.id]
-                        const colorObj = COLORS[p.colorIdx || 0]
-                        return (
-                          <div key={p.id} className="w-28 border-r border-slate-200 flex items-center justify-center">
-                            <div className={`px-3 py-1.5 rounded-md ${colorObj.solid} ${colorObj.textSolid} font-space-mono text-xs font-bold shadow-sm`}>
-                              ${(stats?.total || 0).toFixed(2)}
-                            </div>
-                          </div>
-                        )
-                      })}
-
-                      <div className="w-12 border-r border-slate-200"></div>
-                      <div className="w-28 pro-sticky-right border-l border-slate-300 flex items-center justify-end px-4 bg-slate-100 font-space-mono text-sm font-bold text-slate-900">
-                        ${grandTotal.toFixed(2)}
-                      </div>
-                    </div>
-
-                  </div>
+                  </aside>
                 </div>
               </div>
             </div>
@@ -1587,7 +1599,7 @@ function DesktopBillSplitter() {
 
         {/* BREAKDOWN VIEW */}
         {activeView === 'breakdown' && (
-          <div className="h-full overflow-auto p-6 bg-slate-50 pro-scrollbar animate-in fade-in duration-200">
+          <div className="h-full overflow-auto p-6 bg-slate-50 pro-scrollbar">
             <div className="max-w-5xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-16">
                 {/* LEFT: Bill Summary Receipt */}
@@ -1596,11 +1608,11 @@ function DesktopBillSplitter() {
                     <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-900"></div>
 
                     <div className="mb-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-1 font-inter">{title}</h2>
-                      <p className="text-xs text-slate-400 uppercase tracking-wider font-inter">Bill Summary</p>
+                      <h2 className="text-lg font-bold text-slate-900 mb-1 font-inter text-balance">{title}</h2>
+                      <p className="text-xs text-slate-400 uppercase font-inter">Bill Summary</p>
                     </div>
 
-                    <div className="space-y-2 mb-6 font-space-mono text-sm text-slate-600">
+                    <div className="space-y-2 mb-6 font-space-mono text-sm text-slate-600 tabular-nums">
                       {calculatedItems.map(item => (
                         <div key={item.id} className="flex justify-between">
                           <span className="truncate pr-4">{item.name}</span>
@@ -1609,7 +1621,7 @@ function DesktopBillSplitter() {
                       ))}
                     </div>
 
-                    <div className="border-t border-dashed border-slate-200/60 pt-4 space-y-2 font-space-mono text-sm">
+                    <div className="border-t border-dashed border-slate-200/60 pt-4 space-y-2 font-space-mono text-sm tabular-nums">
                       <div className="flex justify-between text-slate-500">
                         <span>Subtotal</span>
                         <span>{formatCurrencySimple(subtotal)}</span>
@@ -1643,12 +1655,15 @@ function DesktopBillSplitter() {
                       <div key={p.id} className="bg-white rounded-lg border border-slate-200/60 shadow-sm hover:border-indigo-300 transition-colors">
                         <div className="p-4 border-b border-slate-100/60 flex justify-between items-center bg-slate-50/50">
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white ${colorObj.solid}`}>
+                            <div className={cn(
+                              "w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white",
+                              colorObj.solid
+                            )}>
                               {initials}
                             </div>
-                            <div className="font-bold text-slate-900 font-inter">{p.name}</div>
+                            <div className="font-bold text-slate-900 font-inter text-balance">{p.name}</div>
                           </div>
-                          <div className="font-space-mono font-bold text-slate-900">
+                          <div className="font-space-mono font-bold text-slate-900 tabular-nums">
                             {formatCurrencySimple(stats?.total || 0)}
                           </div>
                         </div>
@@ -1657,7 +1672,7 @@ function DesktopBillSplitter() {
                           <div className="mb-5">
                             <div className="flex justify-between text-[10px] text-slate-400 uppercase font-bold mb-2 font-inter">
                               <span>Share</span>
-                              <span>{stats?.ratio.toFixed(1) || 0}%</span>
+                              <span className="tabular-nums">{stats?.ratio.toFixed(1) || 0}%</span>
                             </div>
                             <div className="flex gap-1.5 h-2">
                               {[...Array(10)].map((_, i) => {
@@ -1665,7 +1680,10 @@ function DesktopBillSplitter() {
                                 return (
                                   <div
                                     key={i}
-                                    className={`flex-1 rounded-full transition-colors ${filled ? colorObj.solid : 'bg-slate-100'}`}
+                                    className={cn(
+                                      "flex-1 rounded-full transition-colors",
+                                      filled ? colorObj.solid : "bg-slate-100"
+                                    )}
                                   ></div>
                                 )
                               })}
@@ -1678,14 +1696,14 @@ function DesktopBillSplitter() {
                                 <span className="flex items-center gap-2 font-inter">
                                   <div className="w-1 h-1 bg-slate-300 rounded-full"></div> {item.name}
                                 </span>
-                                <span className="font-space-mono text-xs">
+                                <span className="font-space-mono text-xs tabular-nums">
                                   {formatCurrencySimple(item.pricePerPerson)}
                                 </span>
                               </div>
                             ))}
                           </div>
 
-                          <div className="pt-3 border-t border-slate-50 flex gap-4 text-xs text-slate-400 font-space-mono">
+                          <div className="pt-3 border-t border-slate-50 flex gap-4 text-xs text-slate-400 font-space-mono tabular-nums">
                             <span className="flex gap-1">
                               Sub: <span className="text-slate-600">{formatCurrencySimple(stats?.subtotal || 0)}</span>
                             </span>
@@ -1709,42 +1727,101 @@ function DesktopBillSplitter() {
         )}
       </main>
 
+      <AlertDialog open={isNewBillDialogOpen} onOpenChange={setIsNewBillDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Start a new bill?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your current bill will be cleared unless you share it first.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmNewBill}>Start new bill</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open)
+          if (!open) setPendingDeleteItem(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action can’t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingDeleteItem(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteItem}>Delete item</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isRemovePersonDialogOpen}
+        onOpenChange={(open) => {
+          setIsRemovePersonDialogOpen(open)
+          if (!open) setPendingRemovePerson(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this person?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingRemovePerson?.name || "This person"} will be removed from the bill and their splits cleared.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingRemovePerson(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemovePerson}>Remove person</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* --- Footer --- */}
       <footer className="pro-footer">
         <div className="w-full flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5 text-[10px] text-slate-500 font-inter">
-            <span className="font-semibold text-slate-700">{items.length}</span>
+            <span className="font-semibold text-slate-700 tabular-nums">{items.length}</span>
             <span>items</span>
             <span className="text-slate-300">•</span>
-            <span className="font-semibold text-slate-700">{people.length}</span>
+            <span className="font-semibold text-slate-700 tabular-nums">{people.length}</span>
             <span>people</span>
             <span className="text-slate-300">•</span>
             <SyncStatusIndicator inline />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 md:hidden">
             <div className="flex bg-slate-100 p-1 rounded-md">
               <button
                 onClick={() => setActiveView('ledger')}
-                className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 font-inter ${activeView === 'ledger' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={cn(
+                  "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                  activeView === 'ledger' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                )}
               >
                 <GridIcon size={14} /> Ledger
               </button>
               <button
                 onClick={() => setActiveView('breakdown')}
-                className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-2 font-inter ${activeView === 'breakdown' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={cn(
+                  "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                  activeView === 'breakdown' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                )}
               >
                 <FileText size={14} /> Breakdown
               </button>
             </div>
-
-            <button
-              onClick={copyBreakdown}
-              className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md hover:bg-indigo-100 transition-colors font-inter"
-              title="Copy summary to clipboard (Cmd+Shift+C)"
-            >
-              <ClipboardCopy size={14} /> Copy
-            </button>
           </div>
 
           <div className="flex items-center gap-2 text-[10px] text-slate-400 font-inter">
@@ -1768,71 +1845,6 @@ function DesktopBillSplitter() {
         </div>
       </footer>
 
-      {/* --- Context Menu --- */}
-      {contextMenu && (
-        <div
-          className="fixed z-50 bg-white rounded-lg shadow-xl border border-slate-200/60 w-48 py-1 overflow-hidden"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="px-3 py-2 border-b border-slate-100/60 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-inter">
-            Actions
-          </div>
-          {contextMenu.personId ? (
-            <button
-              className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 font-inter"
-              onClick={() => {
-                toggleAssignment(contextMenu.itemId, contextMenu.personId!)
-                setContextMenu(null)
-              }}
-            >
-              Toggle Assignment
-            </button>
-          ) : (
-            <>
-              <button
-                className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 font-inter"
-                onClick={() => {
-                  const item = items.find(i => i.id === contextMenu.itemId)
-                  if (item) duplicateItem(item)
-                  setContextMenu(null)
-                }}
-              >
-                <Plus size={14} /> Duplicate Item
-              </button>
-              <button
-                className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 font-inter"
-                onClick={() => {
-                  toggleAllAssignments(contextMenu.itemId)
-                  setContextMenu(null)
-                }}
-              >
-                <Equal size={14} /> Split with Everyone
-              </button>
-              <button
-                className="w-full text-left px-4 py-2 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 font-inter"
-                onClick={() => {
-                  clearRowAssignments(contextMenu.itemId)
-                  setContextMenu(null)
-                }}
-              >
-                <Eraser size={14} /> Clear Row
-              </button>
-            </>
-          )}
-          <div className="h-px bg-slate-100 my-1"></div>
-          <button
-            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-inter"
-            onClick={() => {
-              deleteItem(contextMenu.itemId)
-              setContextMenu(null)
-            }}
-          >
-            <Trash2 size={14} /> Delete Item
-          </button>
-        </div>
-      )}
-
       {/* --- Person Editor Modal --- */}
       {editingPerson && (
         <div
@@ -1844,7 +1856,7 @@ function DesktopBillSplitter() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-base font-bold text-slate-900 font-inter">Edit Member</h3>
+              <h3 className="text-base font-bold text-slate-900 font-inter text-balance">Edit Member</h3>
               <button
                 onClick={() => setEditingPerson(null)}
                 className="text-slate-400 hover:text-slate-600 bg-slate-50 p-1 rounded-full"
@@ -1875,7 +1887,12 @@ function DesktopBillSplitter() {
                     <button
                       key={idx}
                       onClick={() => setEditingPerson({ ...editingPerson, colorIdx: idx, color: c.hex })}
-                      className={`w-8 h-8 rounded-full ${c.solid} border-2 border-white shadow-sm transition-transform hover:scale-110 ${editingPerson.colorIdx === idx ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : ''}`}
+                      aria-label={`Select ${c.id} color`}
+                      className={cn(
+                        "w-8 h-8 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110",
+                        c.solid,
+                        editingPerson.colorIdx === idx && "ring-2 ring-offset-2 ring-slate-400 scale-110"
+                      )}
                     />
                   ))}
                 </div>
@@ -1883,14 +1900,14 @@ function DesktopBillSplitter() {
 
               <div className="pt-4 border-t border-slate-100/60 flex gap-3">
                 <button
-                  onClick={() => removePerson(editingPerson.id)}
-                  className="flex-1 py-2.5 rounded-lg border border-red-100 text-red-600 text-xs font-bold uppercase tracking-wide hover:bg-red-50 transition-colors font-inter"
+                  onClick={() => openRemovePersonDialog(editingPerson)}
+                  className="flex-1 py-2.5 rounded-lg border border-red-100 text-red-600 text-xs font-bold uppercase hover:bg-red-50 transition-colors font-inter"
                 >
                   Remove
                 </button>
                 <button
                   onClick={() => updatePerson(editingPerson)}
-                  className="flex-[2] py-2.5 rounded-lg bg-slate-900 text-white text-xs font-bold uppercase tracking-wide hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 font-inter"
+                  className="flex-[2] py-2.5 rounded-lg bg-slate-900 text-white text-xs font-bold uppercase hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 font-inter"
                 >
                   Save Changes
                 </button>
