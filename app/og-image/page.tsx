@@ -1,3 +1,16 @@
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  title: "OG Image - SplitSimple",
+  alternates: {
+    canonical: "/og-image",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
+
 export default function OgImagePage() {
   return (
     <div className="w-[1200px] h-[630px] bg-slate-50 text-slate-900 relative overflow-hidden">

@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "SplitSimple - Easy Expense Splitting",
   description: "Split expenses with friends and colleagues effortlessly",
   generator: "v0.app",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "SplitSimple - Easy Expense Splitting",
     description: "Split expenses with friends and colleagues effortlessly",
@@ -41,6 +44,10 @@ export const metadata: Metadata = {
         alt: "SplitSimple bill splitting summary preview",
       },
     ],
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
   },
   other: {
     "theme-color": "#1E40AF",
