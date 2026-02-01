@@ -505,6 +505,23 @@ function DesktopBillSplitter() {
     setIsRemovePersonDialogOpen(false)
   }, [pendingRemovePerson, removePerson])
 
+  function handleUndo(): void {
+    dispatch({ type: 'UNDO' })
+    toast({ title: "Undone", duration: TIMING.TOAST_SHORT })
+    analytics.trackUndoRedoUsed("undo", state.historyIndex)
+  }
+
+  function handleRedo(): void {
+    dispatch({ type: 'REDO' })
+    toast({ title: "Redone", duration: TIMING.TOAST_SHORT })
+    analytics.trackUndoRedoUsed("redo", state.historyIndex)
+  }
+
+  function openNewBillDialog(): void {
+    newBillSourceRef.current = "button"
+    setIsNewBillDialogOpen(true)
+  }
+
   // --- Split Method Management ---
   const getSplitMethodIcon = (method: SplitMethod) => {
     const option = splitMethodOptions.find(o => o.value === method)
@@ -1001,11 +1018,7 @@ function DesktopBillSplitter() {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-slate-100 border border-slate-200/60 rounded-md px-1.5 py-1 shadow-sm">
               <button
-                onClick={() => {
-                  dispatch({ type: 'UNDO' })
-                  toast({ title: "Undone", duration: TIMING.TOAST_SHORT })
-                  analytics.trackUndoRedoUsed("undo", state.historyIndex)
-                }}
+                onClick={handleUndo}
                 disabled={!canUndo}
                 aria-label="Undo"
                 className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -1014,11 +1027,7 @@ function DesktopBillSplitter() {
                 <RotateCcw size={16} />
               </button>
               <button
-                onClick={() => {
-                  dispatch({ type: 'REDO' })
-                  toast({ title: "Redone", duration: TIMING.TOAST_SHORT })
-                  analytics.trackUndoRedoUsed("redo", state.historyIndex)
-                }}
+                onClick={handleRedo}
                 disabled={!canRedo}
                 aria-label="Redo"
                 className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -1030,10 +1039,7 @@ function DesktopBillSplitter() {
 
             <div className="flex items-center bg-slate-100 border border-slate-200/60 rounded-md overflow-hidden shadow-sm">
               <button
-                onClick={() => {
-                  newBillSourceRef.current = "button"
-                  setIsNewBillDialogOpen(true)
-                }}
+                onClick={openNewBillDialog}
                 className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter"
                 title="New Bill (Cmd+N)"
               >
