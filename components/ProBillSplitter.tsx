@@ -949,7 +949,7 @@ function DesktopBillSplitter() {
       {/* --- Header --- */}
       <header className="pro-header">
         <div className="w-full flex items-center justify-between gap-6">
-          {/* Left cluster: Brand + Title + Undo/Redo */}
+          {/* Left cluster: Brand + Title + Sync */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               <SplitSimpleIcon />
@@ -973,6 +973,32 @@ function DesktopBillSplitter() {
               </div>
             </div>
 
+          </div>
+
+          {/* Center: View switcher */}
+          <div className="hidden md:flex items-center gap-2 bg-slate-100 p-1 rounded-md">
+            <button
+              onClick={() => setActiveView('ledger')}
+              className={cn(
+                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                activeView === 'ledger' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <GridIcon size={14} /> Ledger
+            </button>
+            <button
+              onClick={() => setActiveView('breakdown')}
+              className={cn(
+                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                activeView === 'breakdown' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              <FileText size={14} /> Breakdown
+            </button>
+          </div>
+
+          {/* Right cluster: History + Primary actions */}
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-slate-100 border border-slate-200/60 rounded-md px-1.5 py-1 shadow-sm">
               <button
                 onClick={() => {
@@ -1001,160 +1027,134 @@ function DesktopBillSplitter() {
                 <RotateCw size={16} />
               </button>
             </div>
-          </div>
 
-          {/* Center: View switcher */}
-          <div className="hidden md:flex items-center gap-2 bg-slate-100 p-1 rounded-md">
-            <button
-              onClick={() => setActiveView('ledger')}
-              className={cn(
-                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
-                activeView === 'ledger' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              )}
-            >
-              <GridIcon size={14} /> Ledger
-            </button>
-            <button
-              onClick={() => setActiveView('breakdown')}
-              className={cn(
-                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
-                activeView === 'breakdown' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              )}
-            >
-              <FileText size={14} /> Breakdown
-            </button>
-          </div>
-
-          {/* Right cluster: New/Load + Sync/Scan/Share */}
-          <div className="flex items-center gap-3">
             <div className="flex items-center bg-slate-100 border border-slate-200/60 rounded-md overflow-hidden shadow-sm">
               <button
                 onClick={() => {
                   newBillSourceRef.current = "button"
                   setIsNewBillDialogOpen(true)
                 }}
-                className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter border-r border-slate-200/60"
+                className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter"
                 title="New Bill (Cmd+N)"
               >
                 <FileQuestion size={14} />
                 <span>New</span>
               </button>
+              <div className="h-6 w-px bg-slate-200/80" />
 
-              <DropdownMenu
-                open={newLoadDropdownOpen}
-                onOpenChange={(open) => {
-                  setNewLoadDropdownOpen(open)
-                  if (!open) setLoadBillError(null)
-                }}
-              >
-                <DropdownMenuTrigger asChild>
-                  <button className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter">
-                    <Search size={14} />
-                    <span>Load</span>
-                    <ChevronDown size={12} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <div className="px-2 py-2 space-y-2" onClick={(e) => e.stopPropagation()}>
-                    <label htmlFor="bill-id-input" className="text-xs text-slate-500 font-medium">
-                      Enter Bill ID:
-                    </label>
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
-                        <input
-                          id="bill-id-input"
-                          type="text"
-                          value={billId}
-                          name="bill-id"
-                          autoComplete="off"
-                          onChange={(e) => {
-                            setBillId(e.target.value)
-                            if (loadBillError) setLoadBillError(null)
-                          }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && billId.trim()) {
-                            handleLoadBill()
-                            setNewLoadDropdownOpen(false)
-                          }
-                          if (e.key === 'Escape') {
-                            setNewLoadDropdownOpen(false)
-                          }
+            <DropdownMenu
+              open={newLoadDropdownOpen}
+              onOpenChange={(open) => {
+                setNewLoadDropdownOpen(open)
+                if (!open) setLoadBillError(null)
+              }}
+            >
+              <DropdownMenuTrigger asChild>
+                <button className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter">
+                  <Search size={14} />
+                  <span>Load</span>
+                  <ChevronDown size={12} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="px-2 py-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                  <label htmlFor="bill-id-input" className="text-xs text-slate-500 font-medium">
+                    Enter Bill ID:
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                      <input
+                        id="bill-id-input"
+                        type="text"
+                        value={billId}
+                        name="bill-id"
+                        autoComplete="off"
+                        onChange={(e) => {
+                          setBillId(e.target.value)
+                          if (loadBillError) setLoadBillError(null)
                         }}
-                        onClick={(e) => e.stopPropagation()}
-                          placeholder="ABC123…"
-                          disabled={isLoadingBill}
-                          className="w-full h-8 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
-                        />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setNewLoadDropdownOpen(false)
-                          setBillId('')
-                          setLoadBillError(null)
-                        }}
-                        className="flex-1 h-7 px-2 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && billId.trim()) {
                           handleLoadBill()
                           setNewLoadDropdownOpen(false)
-                        }}
-                        disabled={isLoadingBill || !billId.trim()}
-                        className="flex-1 h-7 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-                      >
-                        {isLoadingBill ? 'Loading…' : 'Load'}
-                      </button>
-                    </div>
-                    {loadBillError && (
-                      <p className="text-[11px] text-red-600" role="alert">
-                        {loadBillError}
-                      </p>
-                    )}
+                        }
+                        if (e.key === 'Escape') {
+                          setNewLoadDropdownOpen(false)
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                        placeholder="ABC123…"
+                        disabled={isLoadingBill}
+                        className="w-full h-8 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
+                      />
                   </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setNewLoadDropdownOpen(false)
+                        setBillId('')
+                        setLoadBillError(null)
+                      }}
+                      className="flex-1 h-7 px-2 bg-slate-100 hover:bg-slate-200 rounded text-xs font-medium text-slate-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleLoadBill()
+                        setNewLoadDropdownOpen(false)
+                      }}
+                      disabled={isLoadingBill || !billId.trim()}
+                      className="flex-1 h-7 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                    >
+                      {isLoadingBill ? 'Loading…' : 'Load'}
+                    </button>
+                  </div>
+                  {loadBillError && (
+                    <p className="text-[11px] text-red-600" role="alert">
+                      {loadBillError}
+                    </p>
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <div className="h-6 w-px bg-slate-200/80" />
 
-            <div className="flex items-center bg-slate-50 border border-slate-200/60 rounded-full overflow-hidden shadow-sm">
-              <SyncStatusIndicator variant="header" />
-              <div className="h-6 w-px bg-slate-200/80" />
-              <ReceiptScanner
-                onImport={handleScanImport}
-                trigger={(
-                  <button
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100/60 transition-colors"
-                    title="Scan receipt"
-                  >
-                    <Camera size={14} />
-                    <span className="whitespace-nowrap">Scan Receipt</span>
-                  </button>
-                )}
-              />
-              <div className="h-6 w-px bg-slate-200/80" />
-              <div className="flex flex-col items-start">
+            <ReceiptScanner
+              onImport={handleScanImport}
+              trigger={(
                 <button
-                  onClick={copyBreakdown}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
-                  title="Copy summary to clipboard (Cmd+Shift+C)"
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200/60 transition-colors"
+                  title="Scan receipt"
                 >
-                  <ClipboardCopy size={14} /> Copy Summary
+                  <Camera size={14} />
+                  <span className="whitespace-nowrap">Scan Receipt</span>
                 </button>
-                {copyError && (
-                  <span className="mt-1 text-[10px] text-red-600" role="alert">
-                    {copyError}
-                  </span>
-                )}
-              </div>
-              <div className="h-6 w-px bg-slate-200/80" />
-              <div className="px-1">
-                <ShareBill variant="ghost" size="sm" showText={true} />
-              </div>
+              )}
+            />
+            <div className="h-6 w-px bg-slate-200/80" />
+
+            <div className="flex flex-col items-start">
+              <button
+                onClick={copyBreakdown}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
+                title="Copy summary to clipboard (Cmd+Shift+C)"
+              >
+                <ClipboardCopy size={14} /> Copy Summary
+              </button>
+              {copyError && (
+                <span className="mt-1 text-[10px] text-red-600" role="alert">
+                  {copyError}
+                </span>
+              )}
             </div>
+            <div className="h-6 w-px bg-slate-200/80" />
+            <div className="px-1">
+              <ShareBill variant="ghost" size="sm" showText={true} />
+            </div>
+          </div>
           </div>
         </div>
       </header>
