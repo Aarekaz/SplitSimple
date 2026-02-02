@@ -33,6 +33,12 @@ interface ScanError {
   description: string
 }
 
+interface OCRClientError extends Error {
+  code?: string
+  status?: number
+  retryAfter?: number
+}
+
 interface ReceiptScannerProps {
   onImport: (items: Omit<Item, 'id' | 'splitWith' | 'method'>[]) => void
   trigger?: React.ReactNode
@@ -113,34 +119,30 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
     } catch (error) {
       console.error('Receipt scanning error:', error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      const errorCode = (error as OCRClientError).code
 
       // Provide more specific error messages
       let title = "Scan Failed"
       let description = "Could not process receipt. Please try again."
 
-      if (
-        errorMessage.toLowerCase().includes("rate limit") ||
-        errorMessage.toLowerCase().includes("quota") ||
-        errorMessage.toLowerCase().includes("resource_exhausted") ||
-        errorMessage.includes("429")
-      ) {
+      if (errorCode === "RATE_LIMIT_ERROR") {
         title = "OCR Temporarily Unavailable"
         description = "There are issues with the OCR model due to rate limits. Please try again later."
-      } else if (errorMessage.includes("No items detected")) {
+      } else if (errorCode === "NO_ITEMS_DETECTED" || errorMessage.includes("No items detected")) {
         title = "No Items Found"
         description = "We couldn't detect any items in this receipt. Try a clearer image or add items manually."
+      } else if (errorCode === "INVALID_FILE" || errorCode === "FILE_TOO_LARGE") {
+        title = "Invalid File"
+        description = errorMessage
       } else if (errorMessage.includes("HEIC") || errorMessage.includes("conversion")) {
         title = "Image Format Issue"
         description = "Could not convert HEIC image. Try uploading a JPG or PNG instead."
-      } else if (errorMessage.includes("API_KEY")) {
+      } else if (errorCode === "API_KEY_MISSING") {
         title = "Configuration Error"
         description = "Receipt scanning is not configured. Please check your environment variables."
-      } else if (errorMessage.includes("API")) {
+      } else if (errorCode === "API_ERROR" || errorCode === "OCR_API_ERROR") {
         title = "Service Unavailable"
         description = "The receipt scanning service is temporarily unavailable. Please try again later or add items manually."
-      } else if (errorMessage.includes("file") || errorMessage.includes("size")) {
-        title = "Invalid File"
-        description = errorMessage
       } else {
         description = "Something went wrong while scanning. Please try again or add items manually."
       }
