@@ -118,7 +118,15 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
       let title = "Scan Failed"
       let description = "Could not process receipt. Please try again."
 
-      if (errorMessage.includes("No items detected")) {
+      if (
+        errorMessage.toLowerCase().includes("rate limit") ||
+        errorMessage.toLowerCase().includes("quota") ||
+        errorMessage.toLowerCase().includes("resource_exhausted") ||
+        errorMessage.includes("429")
+      ) {
+        title = "OCR Temporarily Unavailable"
+        description = "There are issues with the OCR model due to rate limits. Please try again later."
+      } else if (errorMessage.includes("No items detected")) {
         title = "No Items Found"
         description = "We couldn't detect any items in this receipt. Try a clearer image or add items manually."
       } else if (errorMessage.includes("HEIC") || errorMessage.includes("conversion")) {
@@ -134,8 +142,7 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
         title = "Invalid File"
         description = errorMessage
       } else {
-        // Show actual error message for debugging
-        description = `${errorMessage}\n\nCheck browser console for details.`
+        description = "Something went wrong while scanning. Please try again or add items manually."
       }
 
       setError({ title, description })
