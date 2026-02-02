@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Plus,
   Search,
@@ -222,7 +223,12 @@ function DesktopBillSplitter() {
   const { state, dispatch, canUndo, canRedo } = useBill()
   const { toast } = useToast()
   const analytics = useBillAnalytics()
-  const [activeView, setActiveView] = useState<'ledger' | 'breakdown'>('ledger')
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const viewParam = searchParams.get('view')
+  const normalizedView = viewParam === 'breakdown' ? 'breakdown' : 'ledger'
+  const [activeView, setActiveView] = useState<'ledger' | 'breakdown'>(normalizedView)
   const [billId, setBillId] = useState('')
   const [loadBillError, setLoadBillError] = useState<string | null>(null)
   const [copyError, setCopyError] = useState<string | null>(null)
@@ -239,6 +245,21 @@ function DesktopBillSplitter() {
   const [pendingDeleteItem, setPendingDeleteItem] = useState<Item | null>(null)
   const [isRemovePersonDialogOpen, setIsRemovePersonDialogOpen] = useState(false)
   const [pendingRemovePerson, setPendingRemovePerson] = useState<Person | null>(null)
+
+  const focusRingClass =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+
+  const setView = useCallback((nextView: 'ledger' | 'breakdown') => {
+    setActiveView(nextView)
+    const params = new URLSearchParams(searchParams.toString())
+    if (nextView === 'ledger') {
+      params.delete('view')
+    } else {
+      params.set('view', 'breakdown')
+    }
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }, [pathname, router, searchParams])
 
   const editInputRef = useRef<HTMLInputElement>(null)
   const loadBillRequestRef = useRef<string | null>(null) // Track current load request to prevent race conditions
@@ -960,6 +981,10 @@ function DesktopBillSplitter() {
     if (saved === '1') setHideStarter(true)
   }, [])
 
+  useEffect(() => {
+    setActiveView(normalizedView)
+  }, [normalizedView])
+
   // Seed a first row when empty so the grid is immediately ready to type.
   useLayoutEffect(() => {
     if (activeView !== 'ledger') return
@@ -1009,8 +1034,11 @@ function DesktopBillSplitter() {
                   style={{
                     width: `${Math.min(Math.max((title || '').length || 7, 7), 26)}ch`,
                   }}
-                  className="block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-auto min-w-[7ch] max-w-[26ch] hover:text-indigo-600 transition-colors font-inter"
-                  placeholder="Project Name"
+                  className={cn(
+                    "block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-auto min-w-[7ch] max-w-[26ch] hover:text-indigo-600 transition-colors font-inter",
+                    focusRingClass
+                  )}
+                  placeholder="Project name…"
                   aria-label="Bill title"
                   name="bill-title"
                   autoComplete="off"
@@ -1024,18 +1052,20 @@ function DesktopBillSplitter() {
           {/* Center: View switcher */}
           <div className="hidden md:flex items-center gap-2 bg-slate-100 p-1 rounded-md">
             <button
-              onClick={() => setActiveView('ledger')}
+              onClick={() => setView('ledger')}
               className={cn(
                 "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                focusRingClass,
                 activeView === 'ledger' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
             >
               <GridIcon size={14} /> Ledger
             </button>
             <button
-              onClick={() => setActiveView('breakdown')}
+              onClick={() => setView('breakdown')}
               className={cn(
                 "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                focusRingClass,
                 activeView === 'breakdown' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
             >
@@ -1050,7 +1080,10 @@ function DesktopBillSplitter() {
                 onClick={handleUndo}
                 disabled={!canUndo}
                 aria-label="Undo"
-                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className={cn(
+                  "p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
+                  focusRingClass
+                )}
                 title="Undo (Cmd+Z)"
               >
                 <RotateCcw size={16} />
@@ -1059,7 +1092,10 @@ function DesktopBillSplitter() {
                 onClick={handleRedo}
                 disabled={!canRedo}
                 aria-label="Redo"
-                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className={cn(
+                  "p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
+                  focusRingClass
+                )}
                 title="Redo (Cmd+Shift+Z)"
               >
                 <RotateCw size={16} />
@@ -1069,7 +1105,10 @@ function DesktopBillSplitter() {
             <div className="flex items-center bg-slate-100 border border-slate-200/60 rounded-md overflow-hidden shadow-sm">
               <button
                 onClick={openNewBillDialog}
-                className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter"
+                className={cn(
+                  "h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter",
+                  focusRingClass
+                )}
                 title="New Bill (Cmd+N)"
               >
                 <FileQuestion size={14} />
@@ -1085,7 +1124,10 @@ function DesktopBillSplitter() {
               }}
             >
               <DropdownMenuTrigger asChild>
-                <button className="h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter">
+                <button className={cn(
+                  "h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter",
+                  focusRingClass
+                )}>
                   <Search size={14} />
                   <span>Load</span>
                   <ChevronDown size={12} />
@@ -1108,19 +1150,22 @@ function DesktopBillSplitter() {
                           setBillId(e.target.value)
                           if (loadBillError) setLoadBillError(null)
                         }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && billId.trim()) {
-                          handleLoadBill()
-                          setNewLoadDropdownOpen(false)
-                        }
-                        if (e.key === 'Escape') {
-                          setNewLoadDropdownOpen(false)
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && billId.trim()) {
+                            handleLoadBill()
+                            setNewLoadDropdownOpen(false)
+                          }
+                          if (e.key === 'Escape') {
+                            setNewLoadDropdownOpen(false)
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
                         placeholder="ABC123…"
                         disabled={isLoadingBill}
-                        className="w-full h-8 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono"
+                        className={cn(
+                          "w-full h-8 pl-7 pr-2 bg-slate-50 border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white transition-colors disabled:opacity-50 font-mono",
+                          focusRingClass
+                        )}
                       />
                   </div>
                   <div className="flex gap-2">
@@ -1142,7 +1187,10 @@ function DesktopBillSplitter() {
                         setNewLoadDropdownOpen(false)
                       }}
                       disabled={isLoadingBill || !billId.trim()}
-                      className="flex-1 h-7 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                      className={cn(
+                        "flex-1 h-7 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1",
+                        focusRingClass
+                      )}
                     >
                       {isLoadingBill ? 'Loading…' : 'Load'}
                     </button>
@@ -1161,7 +1209,10 @@ function DesktopBillSplitter() {
               onImport={handleScanImport}
               trigger={(
                 <button
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200/60 transition-colors"
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200/60 transition-colors",
+                    focusRingClass
+                  )}
                   title="Scan receipt"
                 >
                   <Camera size={14} />
@@ -1174,7 +1225,10 @@ function DesktopBillSplitter() {
             <div className="flex flex-col items-start">
               <button
                 onClick={copyBreakdown}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 transition-colors",
+                  focusRingClass
+                )}
                 title="Copy summary to clipboard (Cmd+Shift+C)"
               >
                 <ClipboardCopy size={14} /> Copy Summary
@@ -1471,7 +1525,10 @@ function DesktopBillSplitter() {
                                   <button
                                     onClick={() => duplicateItem(item)}
                                     aria-label="Duplicate row"
-                                    className="text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1"
+                                    className={cn(
+                                      "size-8 flex items-center justify-center text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity",
+                                      focusRingClass
+                                    )}
                                     tabIndex={0}
                                     title="Duplicate row"
                                   >
@@ -1480,7 +1537,10 @@ function DesktopBillSplitter() {
                                   <button
                                     onClick={() => openDeleteDialog(item)}
                                     aria-label="Delete row"
-                                    className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity p-1"
+                                    className={cn(
+                                      "size-8 flex items-center justify-center text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity",
+                                      focusRingClass
+                                    )}
                                     tabIndex={0}
                                     title="Delete row"
                                   >
@@ -1676,13 +1736,13 @@ function DesktopBillSplitter() {
                                 </div>
                                 <div
                                   className={cn(
-                                    "grid overflow-hidden transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                                    "grid overflow-hidden transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
                                     isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
                                   )}
                                 >
                                   <div
                                     className={cn(
-                                      "overflow-hidden px-3 pb-3 pt-0 border-t border-slate-100/70 bg-slate-50/40 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                                      "overflow-hidden px-3 pb-3 pt-0 border-t border-slate-100/70 bg-slate-50/40 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100",
                                       isExpanded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"
                                     )}
                                   >
@@ -1947,18 +2007,20 @@ function DesktopBillSplitter() {
           <div className="flex items-center gap-2 md:hidden">
             <div className="flex bg-slate-100 p-1 rounded-md">
               <button
-                onClick={() => setActiveView('ledger')}
+                onClick={() => setView('ledger')}
                 className={cn(
                   "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                  focusRingClass,
                   activeView === 'ledger' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 )}
               >
                 <GridIcon size={14} /> Ledger
               </button>
               <button
-                onClick={() => setActiveView('breakdown')}
+                onClick={() => setView('breakdown')}
                 className={cn(
                   "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                  focusRingClass,
                   activeView === 'breakdown' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 )}
               >
