@@ -36,7 +36,7 @@ import { migrateBillSchema } from '@/lib/validation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
 
-import { ReceiptScanner } from '@/components/ReceiptScanner'
+import dynamic from 'next/dynamic'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,6 +100,23 @@ export const SplitSimpleIcon = () => (
 const formatCurrencySimple = (amount: number) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
 }
+
+const ReceiptScanner = dynamic(
+  () => import('@/components/ReceiptScanner').then((mod) => mod.ReceiptScanner),
+  { ssr: false }
+)
+
+const ProBillBreakdownView = dynamic(
+  () => import('@/components/ProBillBreakdownView'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full overflow-auto p-6 bg-slate-50 pro-scrollbar">
+        <div className="max-w-5xl mx-auto text-sm text-slate-500">Loading breakdown…</div>
+      </div>
+    ),
+  }
+)
 
 // --- Grid Cell Component (moved outside to prevent re-creation on every render) ---
 const GridCell = React.memo(({
@@ -188,6 +205,10 @@ const GridCell = React.memo(({
 })
 
 GridCell.displayName = 'GridCell'
+
+
+
+
 
 // --- Split Method Options (constant) ---
 const splitMethodOptions = [
@@ -323,13 +344,21 @@ function DesktopBillSplitter() {
     return shares
   }, [calculatedItems, people, subtotal, taxAmount, tipAmount, discountAmount])
 
+  const itemsById = useMemo(() => {
+    return new Map(items.map((item) => [item.id, item]))
+  }, [items])
+
+  const peopleById = useMemo(() => {
+    return new Map(people.map((person) => [person.id, person]))
+  }, [people])
+
   useEffect(() => {
     setExpandedPeople(new Set())
   }, [people.length])
 
   // --- Actions ---
   const toggleAssignment = useCallback((itemId: string, personId: string) => {
-    const item = items.find(i => i.id === itemId)
+    const item = itemsById.get(itemId)
     if (!item) return
 
     const isAssigned = item.splitWith.includes(personId)
@@ -341,10 +370,10 @@ function DesktopBillSplitter() {
       type: 'UPDATE_ITEM',
       payload: { ...item, splitWith: newSplitWith }
     })
-  }, [items, dispatch])
+  }, [itemsById, dispatch])
 
   const toggleAllAssignments = useCallback((itemId: string) => {
-    const item = items.find(i => i.id === itemId)
+    const item = itemsById.get(itemId)
     if (!item) return
 
     const allAssigned = people.every(p => item.splitWith.includes(p.id))
@@ -354,7 +383,7 @@ function DesktopBillSplitter() {
       type: 'UPDATE_ITEM',
       payload: { ...item, splitWith: newSplitWith }
     })
-  }, [items, people, dispatch])
+  }, [itemsById, people, dispatch])
 
   const togglePersonExpansion = useCallback((personId: string) => {
     setExpandedPeople(prev => {
@@ -369,22 +398,22 @@ function DesktopBillSplitter() {
   }, [])
 
   const clearRowAssignments = useCallback((itemId: string) => {
-    const item = items.find(i => i.id === itemId)
+    const item = itemsById.get(itemId)
     if (!item) return
     dispatch({
       type: 'UPDATE_ITEM',
       payload: { ...item, splitWith: [] }
     })
-  }, [items, dispatch])
+  }, [itemsById, dispatch])
 
   const updateItem = useCallback((id: string, updates: Partial<Item>) => {
-    const item = items.find(i => i.id === id)
+    const item = itemsById.get(id)
     if (!item) return
     dispatch({
       type: 'UPDATE_ITEM',
       payload: { ...item, ...updates }
     })
-  }, [items, dispatch])
+  }, [itemsById, dispatch])
 
   const addItem = useCallback(() => {
     const newItem: Omit<Item, 'id'> = {
@@ -399,13 +428,13 @@ function DesktopBillSplitter() {
   }, [people, dispatch, analytics])
 
   const deleteItem = useCallback((id: string) => {
-    const item = items.find(i => i.id === id)
+    const item = itemsById.get(id)
     dispatch({ type: 'REMOVE_ITEM', payload: id })
     if (item) {
       analytics.trackItemRemoved(item.method)
       toast({ title: "Item deleted", duration: TIMING.TOAST_SHORT })
     }
-  }, [items, dispatch, analytics, toast])
+  }, [itemsById, dispatch, analytics, toast])
 
   const confirmNewBill = useCallback(() => {
     dispatch({ type: 'NEW_BILL' })
@@ -483,7 +512,7 @@ function DesktopBillSplitter() {
   }, [dispatch, toast, analytics])
 
   const removePerson = useCallback((personId: string) => {
-    const person = people.find(p => p.id === personId)
+    const person = peopleById.get(personId)
     const hadItems = items.some(i => i.splitWith.includes(personId))
     dispatch({ type: 'REMOVE_PERSON', payload: personId })
     if (person) {
@@ -491,7 +520,7 @@ function DesktopBillSplitter() {
       toast({ title: "Person removed", description: person.name })
     }
     setEditingPerson(null)
-  }, [people, items, dispatch, analytics, toast])
+  }, [peopleById, items, dispatch, analytics, toast])
 
   const openRemovePersonDialog = useCallback((person: Person) => {
     setPendingRemovePerson(person)
@@ -529,7 +558,7 @@ function DesktopBillSplitter() {
   }
 
   const changeSplitMethod = useCallback((itemId: string, newMethod: SplitMethod) => {
-    const item = items.find(i => i.id === itemId)
+    const item = itemsById.get(itemId)
     if (!item) return
 
     const oldMethod = item.method
@@ -540,7 +569,7 @@ function DesktopBillSplitter() {
       description: `Changed to ${splitMethodOptions.find(o => o.value === newMethod)?.label}`,
       duration: TIMING.TOAST_SHORT
     })
-  }, [items, updateItem, analytics, toast])
+  }, [itemsById, updateItem, analytics, toast])
 
   // --- Bill ID Loading ---
   const handleLoadBill = useCallback(async () => {
@@ -1170,7 +1199,11 @@ function DesktopBillSplitter() {
         {/* LEDGER VIEW */}
         {activeView === 'ledger' && (
           <div className="h-full w-full">
-            <div className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar" tabIndex={-1}>
+            <div
+              className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar"
+              tabIndex={-1}
+              style={{ contentVisibility: 'auto' }}
+            >
               <div className="mx-auto w-full max-w-7xl">
                 <div className="grid grid-cols-12 gap-6">
                   <section className="col-span-12 xl:col-span-9">
@@ -1822,131 +1855,18 @@ function DesktopBillSplitter() {
 
         {/* BREAKDOWN VIEW */}
         {activeView === 'breakdown' && (
-          <div className="h-full overflow-auto p-6 bg-slate-50 pro-scrollbar">
-            <div className="max-w-5xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-16">
-                {/* LEFT: Bill Summary Receipt */}
-                <div className="md:col-span-5 space-y-6">
-                  <div className="bg-white rounded-xl border border-slate-200/60 p-6 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-900"></div>
-
-                    <div className="mb-6">
-                      <h2 className="text-lg font-bold text-slate-900 mb-1 font-inter text-balance">{title}</h2>
-                      <p className="text-xs text-slate-400 uppercase font-inter">Bill Summary</p>
-                    </div>
-
-                    <div className="space-y-2 mb-6 font-space-mono text-sm text-slate-600 tabular-nums">
-                      {calculatedItems.map(item => (
-                        <div key={item.id} className="flex justify-between">
-                          <span className="truncate pr-4">{item.name}</span>
-                          <span>{formatCurrencySimple(item.totalItemPrice)}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t border-dashed border-slate-200/60 pt-4 space-y-2 font-space-mono text-sm tabular-nums">
-                      <div className="flex justify-between text-slate-500">
-                        <span>Subtotal</span>
-                        <span>{formatCurrencySimple(subtotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-500">
-                        <span>Tax</span>
-                        <span>{formatCurrencySimple(taxAmount)}</span>
-                      </div>
-                      {tipAmount > 0 && (
-                        <div className="flex justify-between text-slate-500">
-                          <span>Tip</span>
-                          <span>{formatCurrencySimple(tipAmount)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-bold text-slate-900 pt-2 border-t border-slate-200/60">
-                        <span>Grand Total</span>
-                        <span>{formatCurrencySimple(grandTotal)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* RIGHT: Individual Breakdowns */}
-                <div className="md:col-span-7 space-y-4">
-                  {people.map(p => {
-                    const stats = personFinalShares[p.id]
-                    const colorObj = COLORS[p.colorIdx || 0]
-                    const initials = p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-
-                    return (
-                      <div key={p.id} className="bg-white rounded-lg border border-slate-200/60 shadow-sm hover:border-indigo-300 transition-colors">
-                        <div className="p-4 border-b border-slate-100/60 flex justify-between items-center bg-slate-50/50">
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white",
-                              colorObj.solid
-                            )}>
-                              {initials}
-                            </div>
-                            <div className="font-bold text-slate-900 font-inter text-balance">{p.name}</div>
-                          </div>
-                          <div className="font-space-mono font-bold text-slate-900 tabular-nums">
-                            {formatCurrencySimple(stats?.total || 0)}
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          {/* Share Graph */}
-                          <div className="mb-5">
-                            <div className="flex justify-between text-[10px] text-slate-400 uppercase font-bold mb-2 font-inter">
-                              <span>Share</span>
-                              <span className="tabular-nums">{stats?.ratio.toFixed(1) || 0}%</span>
-                            </div>
-                            <div className="flex gap-1.5 h-2">
-                              {[...Array(10)].map((_, i) => {
-                                const filled = i < Math.round((stats?.ratio || 0) / 10)
-                                return (
-                                  <div
-                                    key={i}
-                                    className={cn(
-                                      "flex-1 rounded-full transition-colors",
-                                      filled ? colorObj.solid : "bg-slate-100"
-                                    )}
-                                  ></div>
-                                )
-                              })}
-                            </div>
-                          </div>
-
-                          <div className="space-y-1 mb-4">
-                            {stats?.items.map(item => (
-                              <div key={item.id} className="flex justify-between text-sm text-slate-600">
-                                <span className="flex items-center gap-2 font-inter">
-                                  <div className="w-1 h-1 bg-slate-300 rounded-full"></div> {item.name}
-                                </span>
-                                <span className="font-space-mono text-xs tabular-nums">
-                                  {formatCurrencySimple(item.pricePerPerson)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="pt-3 border-t border-slate-50 flex gap-4 text-xs text-slate-400 font-space-mono tabular-nums">
-                            <span className="flex gap-1">
-                              Sub: <span className="text-slate-600">{formatCurrencySimple(stats?.subtotal || 0)}</span>
-                            </span>
-                            <span className="flex gap-1">
-                              Tax: <span className="text-slate-600">{formatCurrencySimple(stats?.tax || 0)}</span>
-                            </span>
-                            {stats?.tip > 0 && (
-                              <span className="flex gap-1">
-                                Tip: <span className="text-slate-600">{formatCurrencySimple(stats.tip)}</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
+          <ProBillBreakdownView
+            calculatedItems={calculatedItems}
+            colors={COLORS}
+            formatCurrency={formatCurrencySimple}
+            grandTotal={grandTotal}
+            people={people}
+            personFinalShares={personFinalShares}
+            subtotal={subtotal}
+            taxAmount={taxAmount}
+            tipAmount={tipAmount}
+            title={title}
+          />
         )}
       </main>
 
