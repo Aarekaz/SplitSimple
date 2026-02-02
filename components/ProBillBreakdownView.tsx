@@ -47,7 +47,7 @@ export default function ProBillBreakdownView({
   taxAmount,
   tipAmount,
   title,
-}: ProBillBreakdownViewProps): JSX.Element {
+}: ProBillBreakdownViewProps) {
   return (
     <div className="h-full overflow-auto p-6 bg-slate-50 pro-scrollbar" style={{ contentVisibility: 'auto' }}>
       <div className="max-w-5xl mx-auto">

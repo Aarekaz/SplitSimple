@@ -706,13 +706,13 @@ function DesktopBillSplitter() {
       let nextColIdx = currentColIdx
 
       if (direction === 'down') {
-        if (currentRowIdx < items.length - 1) nextRow += 1
+        if (currentRowIdx < hotkeyState.items.length - 1) nextRow += 1
       } else if (direction === 'up') {
         if (currentRowIdx > 0) nextRow -= 1
       } else if (direction === 'right') {
         if (currentColIdx < colOrder.length - 1) {
           nextColIdx += 1
-        } else if (currentRowIdx < items.length - 1) {
+        } else if (currentRowIdx < hotkeyState.items.length - 1) {
           nextRow += 1
           nextColIdx = 0
         }
@@ -850,7 +850,7 @@ function DesktopBillSplitter() {
     if (hotkeyState.activeView !== 'ledger') return
 
     // Type-to-edit from selection
-    if (!editing && isEditableCell && (isPrintableKey || e.key === 'Backspace' || e.key === 'Delete')) {
+    if (!hotkeyState.editing && isEditableCell && (isPrintableKey || e.key === 'Backspace' || e.key === 'Delete')) {
       e.preventDefault()
       const seed = (e.key === 'Backspace' || e.key === 'Delete') ? '' : e.key
       startTypingEdit(seed)
@@ -904,7 +904,7 @@ function DesktopBillSplitter() {
       if (item) hotkeyActions.toggleAssignment(item.id, hotkeyState.selectedCell.col)
       return
     }
-  }, [])
+  }, [analytics])
 
   useEffect(() => {
     window.addEventListener('keydown', handleGlobalKeyDown)
