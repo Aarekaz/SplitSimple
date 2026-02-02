@@ -72,7 +72,7 @@ export function EmptyState({
               onClick={secondaryAction.onClick} 
               variant="outline"
               size="lg"
-              className="gap-2 min-w-[160px] h-12 rounded-xl border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-[background-color,border-color,box-shadow,color] duration-200 font-medium"
+              className="gap-2 min-w-[160px] h-12 rounded-xl border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-[background-color,border-color,box-shadow,color] duration-200 ease-out motion-reduce:transition-none font-medium"
             >
               {secondaryAction.label}
             </Button>

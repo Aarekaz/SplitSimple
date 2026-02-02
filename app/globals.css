@@ -361,13 +361,13 @@
   }
 
   .proportion-bar-fill {
-    @apply h-full transition-[width] duration-250;
+    @apply h-full transition-[width] duration-250 ease-out;
     background: currentColor;
   }
 
   .proportion-bar-segment {
     @apply h-full;
-    transition: width 0.3s var(--ease-smooth);
+    transition: width 0.25s var(--ease-out-cubic);
   }
 
   /* Simple block-based bars for inline display */
@@ -539,11 +539,11 @@
 
   /* Button press effect */
   .btn-press {
-    @apply transition-transform duration-100;
+    @apply transition-transform duration-100 ease-out;
   }
 
   .btn-press:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 
   /* Number change flash */
@@ -782,7 +782,7 @@
   }
 
   .ledger-grid-row {
-    @apply border-b border-border hover:bg-muted/20 transition-colors duration-150;
+    @apply border-b border-border hover:bg-muted/20 transition-colors duration-150 ease-out;
   }
 
   /* Mini inline proportion bars for table cells */
@@ -804,7 +804,7 @@
 
   /* Clickable person cell states */
   .person-cell-assigned {
-    @apply transition-[filter] duration-150;
+    @apply transition-[filter] duration-150 ease-out;
   }
 
   .person-cell-assigned:hover {
@@ -812,7 +812,7 @@
   }
 
   .person-cell-unassigned {
-    @apply bg-muted/40 transition-colors duration-150;
+    @apply bg-muted/40 transition-colors duration-150 ease-out;
   }
 
   .person-cell-unassigned:hover {
