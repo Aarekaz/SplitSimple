@@ -28,6 +28,11 @@ import { useToast } from "@/hooks/use-toast"
 
 type ScannerState = 'idle' | 'uploading' | 'processing' | 'reviewing'
 
+interface ScanError {
+  title: string
+  description: string
+}
+
 interface ReceiptScannerProps {
   onImport: (items: Omit<Item, 'id' | 'splitWith' | 'method'>[]) => void
   trigger?: React.ReactNode
@@ -40,7 +45,7 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
   const [scannedItems, setScannedItems] = useState<OCRResult['items']>([])
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotate] = useState(0)
-  const [activeTab, setActiveTab] = useState('image')
+  const [error, setError] = useState<ScanError | null>(null)
   const { toast } = useToast()
 
   const handleReset = useCallback(() => {
@@ -49,6 +54,7 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
     setScannedItems([])
     setZoom(1)
     setRotate(0)
+    setError(null)
   }, [])
 
   const handleOpenChange = (open: boolean) => {
@@ -58,7 +64,35 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
     }
   }
 
+  const validateFile = (file: File) => {
+    const maxSize = 5 * 1024 * 1024
+    if (!file.type.startsWith('image/')) {
+      return {
+        title: "Unsupported File",
+        description: "Please upload an image file (JPG, PNG, HEIC)."
+      }
+    }
+    if (file.size > maxSize) {
+      return {
+        title: "File Too Large",
+        description: "Please upload an image under 5MB."
+      }
+    }
+    return null
+  }
+
   const processImage = async (file: File) => {
+    const validationError = validateFile(file)
+    if (validationError) {
+      setError(validationError)
+      toast({
+        title: validationError.title,
+        description: validationError.description,
+        variant: "destructive"
+      })
+      return
+    }
+
     setState('processing')
 
     try {
@@ -104,11 +138,8 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
         description = `${errorMessage}\n\nCheck browser console for details.`
       }
 
-      toast({
-        title,
-        description,
-        variant: "destructive"
-      })
+      setError({ title, description })
+      toast({ title, description, variant: "destructive" })
       setState('idle')
     }
   }
@@ -130,6 +161,14 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
   }
 
   const handleImport = () => {
+    if (scannedItems.length === 0) {
+      toast({
+        title: "No items to import",
+        description: "Add at least one item before importing.",
+        variant: "destructive"
+      })
+      return
+    }
     onImport(scannedItems)
     setIsOpen(false)
     toast({
@@ -148,15 +187,20 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
         )}
       </DialogTrigger>
       <DialogContent className={cn(
-        "max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden transition-[max-width,height] duration-300",
+        "max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden transition-[max-width,height] duration-300 ease-out motion-reduce:transition-none",
         state === 'reviewing' ? "sm:max-w-5xl" : "sm:max-w-xl h-auto"
       )}>
         {state === 'idle' && (
-          <UploadView onUpload={processImage} onPaste={handlePasteText} />
+          <UploadView
+            onUpload={processImage}
+            onPaste={handlePasteText}
+            error={error}
+            onDismissError={() => setError(null)}
+          />
         )}
 
         {state === 'processing' && (
-          <ProcessingView />
+          <ProcessingView onCancel={handleReset} />
         )}
 
         {state === 'reviewing' && (
@@ -179,7 +223,17 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
 
 // --- Sub-Components ---
 
-function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onPaste: (text: string) => void }) {
+function UploadView({
+  onUpload,
+  onPaste,
+  error,
+  onDismissError
+}: {
+  onUpload: (file: File) => void
+  onPaste: (text: string) => void
+  error: ScanError | null
+  onDismissError: () => void
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
   const [pasteText, setPasteText] = useState("")
@@ -218,10 +272,23 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
         </div>
 
         <TabsContent value="image" className="flex-1 p-6 pt-4">
+          {error && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold">{error.title}</div>
+                  <p className="text-xs text-red-600">{error.description}</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={onDismissError} className="h-7 w-7 text-red-500 hover:bg-red-100">
+                  <X size={14} />
+                </Button>
+              </div>
+            </div>
+          )}
           <button
             type="button"
             className={cn(
-              "border-2 border-dashed rounded-xl h-64 w-full flex flex-col items-center justify-center text-center p-6 transition-colors cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-400",
+              "border-2 border-dashed rounded-xl h-64 w-full flex flex-col items-center justify-center text-center p-6 transition-colors duration-200 ease-out motion-reduce:transition-none cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-400",
               dragActive ? "border-indigo-500 bg-indigo-50/30" : "border-slate-200"
             )}
             onDragEnter={handleDrag}
@@ -268,13 +335,13 @@ Garlic Naan 4.50
   )
 }
 
-function ProcessingView() {
+function ProcessingView({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="h-[400px] flex flex-col items-center justify-center text-center p-6 space-y-6">
       <div className="relative">
-        <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
+        <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse motion-reduce:animate-none"></div>
         <div className="relative bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
-          <ScanLine className="w-12 h-12 text-indigo-600 animate-pulse" />
+          <ScanLine className="w-12 h-12 text-indigo-600 animate-pulse motion-reduce:animate-none" />
         </div>
       </div>
       <div className="space-y-2">
@@ -283,6 +350,9 @@ function ProcessingView() {
           Our AI is analyzing the items and prices. This usually takes a few seconds.
         </p>
       </div>
+      <Button variant="ghost" onClick={onCancel} className="text-slate-500 hover:text-slate-700">
+        Cancel
+      </Button>
     </div>
   )
 }
@@ -310,8 +380,6 @@ function ReviewView({
   rotation,
   setRotate
 }: ReviewViewProps) {
-  const [activeTab, setActiveTab] = useState<"split" | "list">("split") // 'split' is desktop default, mobile handles via CSS
-
   const handleItemChange = (index: number, field: keyof typeof items[0], value: string | number) => {
     const newItems = [...items]
     newItems[index] = { ...newItems[index], [field]: value }
@@ -409,8 +477,28 @@ function ReviewView({
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {items.length === 0 && (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center">
+                <p className="text-sm font-semibold text-slate-700">No items detected yet</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Add a missing item manually or go back and try a clearer image.
+                </p>
+                <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+                  <Button variant="outline" onClick={onCancel} className="h-9">
+                    Try another image
+                  </Button>
+                  <Button onClick={handleAddItem} className="h-9">
+                    Add item manually
+                  </Button>
+                </div>
+              </div>
+            )}
             {items.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-3 group animate-in fade-in slide-in-from-bottom-2 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ animationDelay: `${idx * 50}ms` }}>
+              <div
+                key={idx}
+                className="flex items-start gap-3 group animate-in fade-in slide-in-from-bottom-2 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none"
+                style={{ animationDelay: `${idx * 50}ms` }}
+              >
                 <div className="w-16 pt-1">
                   <label htmlFor={`item-qty-${idx}`} className="block text-[10px] font-bold text-slate-400 mb-1">QTY</label>
                   <input 
