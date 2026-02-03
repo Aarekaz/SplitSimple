@@ -14,7 +14,7 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
       <button
         onClick={() => onChange("cards")}
         className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-[background-color,color,box-shadow]",
           value === "cards"
             ? "bg-white text-slate-900 shadow-sm"
             : "text-slate-600 hover:text-slate-900"
@@ -26,7 +26,7 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
       <button
         onClick={() => onChange("grid")}
         className={cn(
-          "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-[background-color,color,box-shadow]",
           value === "grid"
             ? "bg-white text-slate-900 shadow-sm"
             : "text-slate-600 hover:text-slate-900"

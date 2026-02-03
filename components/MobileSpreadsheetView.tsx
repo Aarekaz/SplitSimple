@@ -57,7 +57,7 @@ export function MobileSpreadsheetView() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div id="main-content" className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b">
         <div className="px-4 py-3 flex items-center gap-3">
@@ -67,6 +67,7 @@ export function MobileSpreadsheetView() {
               value={state.currentBill.title}
               onChange={(e) => dispatch({ type: "SET_BILL_TITLE", payload: e.target.value })}
               className="h-9 text-base font-semibold border-none px-0 focus-visible:ring-0 bg-transparent"
+              aria-label="Bill title"
             />
             <p className="text-[11px] text-muted-foreground uppercase tracking-widest">SplitSimple</p>
           </div>
@@ -86,7 +87,7 @@ export function MobileSpreadsheetView() {
       <div className="flex-1 overflow-hidden relative">
         <div
           className={cn(
-            "absolute inset-0 transition-all duration-300 ease-in-out",
+            "absolute inset-0 transition-[opacity,transform] duration-300 ease-in-out",
             viewMode === "cards" ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-full pointer-events-none"
           )}
         >
@@ -94,7 +95,7 @@ export function MobileSpreadsheetView() {
         </div>
         <div
           className={cn(
-            "absolute inset-0 transition-all duration-300 ease-in-out",
+            "absolute inset-0 transition-[opacity,transform] duration-300 ease-in-out",
             viewMode === "grid" ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full pointer-events-none"
           )}
         >

@@ -361,13 +361,13 @@
   }
 
   .proportion-bar-fill {
-    @apply h-full transition-all duration-300;
+    @apply h-full transition-[width] duration-250 ease-out;
     background: currentColor;
   }
 
   .proportion-bar-segment {
     @apply h-full;
-    transition: width 0.3s var(--ease-smooth);
+    transition: width 0.25s var(--ease-out-cubic);
   }
 
   /* Simple block-based bars for inline display */
@@ -456,7 +456,7 @@
 
   /* ===== Interactive Elements ===== */
   .receipt-button {
-    @apply inline-flex items-center gap-2 px-3 py-2 border-2 border-border bg-card text-foreground hover:bg-muted/50 font-medium transition-all;
+    @apply inline-flex items-center gap-2 px-3 py-2 border-2 border-border bg-card text-foreground hover:bg-muted/50 font-medium transition-[transform,box-shadow,background-color,border-color,color];
     box-shadow: var(--receipt-shadow);
   }
 
@@ -471,7 +471,7 @@
   }
 
   .receipt-input {
-    @apply border-2 border-border bg-card px-3 py-2 font-mono tabular-nums transition-all;
+    @apply border-2 border-border bg-card px-3 py-2 font-mono tabular-nums transition-[border-color,box-shadow,background-color];
     font-family: var(--font-numbers);
   }
 
@@ -502,7 +502,7 @@
 
   /* ===== Clickable Element Enhancements ===== */
   .clickable-badge {
-    @apply transition-all duration-150 ease-out cursor-pointer;
+    @apply transition-[transform,box-shadow] duration-150 ease-out cursor-pointer;
   }
 
   .clickable-badge:hover {
@@ -520,7 +520,10 @@
   select:focus {
     @apply outline-none ring-2 ring-primary ring-offset-2;
     background-color: rgba(var(--primary), 0.02);
-    transition: all 0.2s var(--ease-out-cubic);
+    transition:
+      box-shadow 0.2s var(--ease-out-cubic),
+      border-color 0.2s var(--ease-out-cubic),
+      background-color 0.2s var(--ease-out-cubic);
   }
 
   input::placeholder {
@@ -536,11 +539,11 @@
 
   /* Button press effect */
   .btn-press {
-    @apply transition-transform duration-100;
+    @apply transition-transform duration-100 ease-out;
   }
 
   .btn-press:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
   }
 
   /* Number change flash */
@@ -554,7 +557,7 @@
   }
 
   .number-flash {
-    animation: number-flash 0.4s ease-out;
+    animation: number-flash 0.2s ease-out;
   }
 
   /* Success ripple effect */
@@ -568,7 +571,7 @@
   }
 
   .success-ripple {
-    animation: success-ripple 0.6s ease-out;
+    animation: success-ripple 0.25s ease-out;
   }
 
   /* Delete slide-out */
@@ -600,7 +603,7 @@
   }
 
   .add-slide-in {
-    animation: add-slide-in 0.3s var(--ease-spring);
+    animation: add-slide-in 0.25s var(--ease-spring);
   }
 
   /* Pulse animation for new inputs */
@@ -614,7 +617,7 @@
   }
 
   .input-focus-hint {
-    animation: pulse-border 2s ease-in-out 3;
+    animation: pulse-border 0.3s ease-in-out 3;
   }
 
   /* Stagger slide-in animations */
@@ -630,11 +633,11 @@
   }
 
   .animate-slide-in-1 {
-    animation: slide-in-up 0.4s ease-out 0.15s both;
+    animation: slide-in-up 0.25s ease-out 0.15s both;
   }
 
   .animate-slide-in-2 {
-    animation: slide-in-up 0.4s ease-out 0.3s both;
+    animation: slide-in-up 0.25s ease-out 0.3s both;
   }
 
   /* Person cell assignment animations */
@@ -714,7 +717,7 @@
   }
 
   .ledger-row {
-    @apply border-b border-border transition-all duration-200;
+    @apply border-b border-border transition-[transform,box-shadow,background-color,border-color] duration-200;
     border-left: 3px solid transparent;
     transform-origin: center;
   }
@@ -779,7 +782,7 @@
   }
 
   .ledger-grid-row {
-    @apply border-b border-border hover:bg-muted/20 transition-colors duration-150;
+    @apply border-b border-border hover:bg-muted/20 transition-colors duration-150 ease-out;
   }
 
   /* Mini inline proportion bars for table cells */
@@ -801,7 +804,7 @@
 
   /* Clickable person cell states */
   .person-cell-assigned {
-    @apply transition-all duration-150;
+    @apply transition-[filter] duration-150 ease-out;
   }
 
   .person-cell-assigned:hover {
@@ -809,7 +812,7 @@
   }
 
   .person-cell-unassigned {
-    @apply bg-muted/40 transition-all duration-150;
+    @apply bg-muted/40 transition-colors duration-150 ease-out;
   }
 
   .person-cell-unassigned:hover {
@@ -872,7 +875,7 @@
   }
 
   .dock-item {
-    @apply rounded-lg p-2 transition-all duration-200 border-2 border-transparent;
+    @apply rounded-lg p-2 transition-[transform,background-color,border-color] duration-200 border-2 border-transparent;
     background: transparent;
   }
 
@@ -890,7 +893,7 @@
 
   /* ===== Animation Classes ===== */
   .animate-receipt-print {
-    animation: receipt-print 0.4s ease-out;
+    animation: receipt-print 0.25s ease-out;
   }
 
   @keyframes receipt-print {
@@ -905,7 +908,7 @@
   }
 
   .success-pulse {
-    animation: success-pulse 0.6s var(--ease-smooth);
+    animation: success-pulse 0.25s var(--ease-smooth);
   }
 
   @keyframes success-pulse {
@@ -915,7 +918,7 @@
   }
 
   .error-shake {
-    animation: error-shake 0.5s ease-in-out;
+    animation: error-shake 0.25s ease-in-out;
   }
 
   @keyframes error-shake {
@@ -932,7 +935,7 @@
   }
 
   .long-press-active {
-    animation: long-press-pulse 0.5s ease-out;
+    animation: long-press-pulse 0.25s ease-out;
   }
 
   /* Touch-specific improvements */
@@ -1031,14 +1034,15 @@
 
   /* ===== Pro SaaS Design System ===== */
   .pro-app-shell {
-    @apply h-screen w-full overflow-hidden relative;
+    @apply h-dvh w-full overflow-hidden relative;
     background: #F8FAFC; /* slate-50 */
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   .pro-header {
     @apply fixed top-0 left-0 right-0 flex items-center justify-between px-6;
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
     z-index: 20;
     background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(8px);
@@ -1048,7 +1052,8 @@
 
   .pro-footer {
     @apply fixed bottom-0 left-0 right-0 flex items-center justify-between px-6;
-    height: 56px;
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     z-index: 40;
     background: #FFFFFF;
     border-top: 1px solid #E2E8F0;
@@ -1057,8 +1062,8 @@
 
   .pro-main {
     @apply absolute inset-0 overflow-hidden;
-    padding-top: 64px;
-    padding-bottom: 56px;
+    padding-top: calc(64px + env(safe-area-inset-top));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
     z-index: 10;
   }
 
@@ -1090,13 +1095,13 @@
   }
 
   .pro-tile-inactive {
-    @apply flex items-center justify-center transition-all duration-100;
+    @apply flex items-center justify-center transition-colors duration-100;
     color: #94A3B8; /* slate-400 */
     background: transparent;
   }
 
   .pro-tile-active {
-    @apply flex items-center justify-center rounded-md transition-all duration-100;
+    @apply flex items-center justify-center rounded-md transition-[transform,filter,background-color] duration-100;
     color: white;
   }
 
@@ -1138,5 +1143,27 @@
   .pro-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: #CBD5E1 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition-property: opacity, color, background-color, border-color, box-shadow !important;
+    transition-duration: 150ms !important;
+    transition-timing-function: var(--ease-out-cubic) !important;
+    scroll-behavior: auto !important;
+  }
+
+  .ledger-row:hover,
+  .receipt-button:hover,
+  .clickable-badge:hover,
+  .dock-item:hover,
+  .btn-press:active,
+  .clickable-badge:active,
+  button:active,
+  a:active,
+  [role="button"]:active {
+    transform: none !important;
   }
 }

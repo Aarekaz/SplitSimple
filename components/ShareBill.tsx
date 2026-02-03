@@ -208,7 +208,9 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
                 disabled={isStoring}
                 className="flex-1 font-mono text-sm"
                 onClick={(e) => (e.target as HTMLInputElement).select()}
-                placeholder={isStoring ? "Generating link..." : ""}
+                placeholder={isStoring ? "Generating link…" : ""}
+                name="share-url"
+                autoComplete="off"
               />
               <div className="flex gap-2 justify-center sm:justify-start">
                 <Button
@@ -218,6 +220,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
                   disabled={isStoring || !shareUrl}
                   className="flex-shrink-0"
                   title="Copy link"
+                  aria-label="Copy share link"
                 >
                   {copied ? (
                     <Check className="h-4 w-4 text-green-600" />
@@ -232,6 +235,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
                   disabled={isStoring || !shareUrl}
                   className="flex-shrink-0"
                   title="Open in new tab"
+                  aria-label="Open share link in new tab"
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>

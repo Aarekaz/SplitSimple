@@ -240,7 +240,7 @@ export function MobileGridView() {
                         <td
                           key={person.id}
                           className={cn(
-                            "border-r border-slate-200 px-2 py-4 cursor-pointer transition-all min-h-[60px]",
+                            "border-r border-slate-200 px-2 py-4 cursor-pointer transition-[background-color,border-color,transform] duration-150 min-h-[60px]",
                             isAssigned
                               ? "bg-opacity-10 active:scale-95"
                               : "bg-white hover:bg-slate-50 active:bg-slate-100"
@@ -440,6 +440,7 @@ export function MobileGridView() {
                         variant="outline"
                         onClick={() => handleUpdateItem({ quantity: Math.max(1, editingItem.quantity - 1) })}
                         className="h-11 w-11"
+                        aria-label="Decrease quantity"
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -455,6 +456,7 @@ export function MobileGridView() {
                         variant="outline"
                         onClick={() => handleUpdateItem({ quantity: editingItem.quantity + 1 })}
                         className="h-11 w-11"
+                        aria-label="Increase quantity"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>

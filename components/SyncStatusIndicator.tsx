@@ -170,7 +170,7 @@ export function SyncStatusIndicator({ compact = false, inline = false, variant =
     <div className={cn("flex items-center gap-2", className)}>
       <div
         className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-[color,background-color,opacity,box-shadow,border-color]",
           config.color,
           config.bgColor,
           state.syncStatus === "error" && "cursor-pointer hover:opacity-80"

@@ -329,7 +329,7 @@ export function LedgerItemsTable() {
               placeholder="Search items by name, price, or person..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10 h-9 text-sm border-border/50 bg-background/50 focus:bg-background focus:border-primary/50 transition-all"
+              className="pl-10 pr-10 h-9 text-sm border-border/50 bg-background/50 focus:bg-background focus:border-primary/50 transition-[background-color,border-color,color,box-shadow]"
             />
             {searchQuery && (
               <button
@@ -517,7 +517,7 @@ export function LedgerItemsTable() {
                             aria-checked={isAssigned}
                             role="switch"
                             className={`
-                              w-full h-full px-3 py-3 text-right cursor-pointer transition-all duration-200 group
+                              w-full h-full px-3 py-3 text-right cursor-pointer transition-[background-color,border-color,transform] duration-200 group
                               focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset
                               active:scale-95 touch-manipulation
                               ${isAssigned
@@ -576,8 +576,9 @@ export function LedgerItemsTable() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDeleteItem(item.id)}
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,color] duration-150"
                         title="Delete item"
+                        aria-label="Delete item"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>

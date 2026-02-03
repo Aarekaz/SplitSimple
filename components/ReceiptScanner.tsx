@@ -28,6 +28,17 @@ import { useToast } from "@/hooks/use-toast"
 
 type ScannerState = 'idle' | 'uploading' | 'processing' | 'reviewing'
 
+interface ScanError {
+  title: string
+  description: string
+}
+
+interface OCRClientError extends Error {
+  code?: string
+  status?: number
+  retryAfter?: number
+}
+
 interface ReceiptScannerProps {
   onImport: (items: Omit<Item, 'id' | 'splitWith' | 'method'>[]) => void
   trigger?: React.ReactNode
@@ -40,7 +51,7 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
   const [scannedItems, setScannedItems] = useState<OCRResult['items']>([])
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotate] = useState(0)
-  const [activeTab, setActiveTab] = useState('image')
+  const [error, setError] = useState<ScanError | null>(null)
   const { toast } = useToast()
 
   const handleReset = useCallback(() => {
@@ -49,6 +60,7 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
     setScannedItems([])
     setZoom(1)
     setRotate(0)
+    setError(null)
   }, [])
 
   const handleOpenChange = (open: boolean) => {
@@ -58,7 +70,35 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
     }
   }
 
+  const validateFile = (file: File) => {
+    const maxSize = 5 * 1024 * 1024
+    if (!file.type.startsWith('image/')) {
+      return {
+        title: "Unsupported File",
+        description: "Please upload an image file (JPG, PNG, HEIC)."
+      }
+    }
+    if (file.size > maxSize) {
+      return {
+        title: "File Too Large",
+        description: "Please upload an image under 5MB."
+      }
+    }
+    return null
+  }
+
   const processImage = async (file: File) => {
+    const validationError = validateFile(file)
+    if (validationError) {
+      setError(validationError)
+      toast({
+        title: validationError.title,
+        description: validationError.description,
+        variant: "destructive"
+      })
+      return
+    }
+
     setState('processing')
 
     try {
@@ -79,36 +119,36 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
     } catch (error) {
       console.error('Receipt scanning error:', error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      const errorCode = (error as OCRClientError).code
 
       // Provide more specific error messages
       let title = "Scan Failed"
       let description = "Could not process receipt. Please try again."
 
-      if (errorMessage.includes("No items detected")) {
+      if (errorCode === "RATE_LIMIT_ERROR") {
+        title = "OCR Temporarily Unavailable"
+        description = "There are issues with the OCR model due to rate limits. Please try again later."
+      } else if (errorCode === "NO_ITEMS_DETECTED" || errorMessage.includes("No items detected")) {
         title = "No Items Found"
         description = "We couldn't detect any items in this receipt. Try a clearer image or add items manually."
+      } else if (errorCode === "INVALID_FILE" || errorCode === "FILE_TOO_LARGE") {
+        title = "Invalid File"
+        description = errorMessage
       } else if (errorMessage.includes("HEIC") || errorMessage.includes("conversion")) {
         title = "Image Format Issue"
         description = "Could not convert HEIC image. Try uploading a JPG or PNG instead."
-      } else if (errorMessage.includes("API_KEY")) {
+      } else if (errorCode === "API_KEY_MISSING") {
         title = "Configuration Error"
         description = "Receipt scanning is not configured. Please check your environment variables."
-      } else if (errorMessage.includes("API")) {
+      } else if (errorCode === "API_ERROR" || errorCode === "OCR_API_ERROR") {
         title = "Service Unavailable"
         description = "The receipt scanning service is temporarily unavailable. Please try again later or add items manually."
-      } else if (errorMessage.includes("file") || errorMessage.includes("size")) {
-        title = "Invalid File"
-        description = errorMessage
       } else {
-        // Show actual error message for debugging
-        description = `${errorMessage}\n\nCheck browser console for details.`
+        description = "Something went wrong while scanning. Please try again or add items manually."
       }
 
-      toast({
-        title,
-        description,
-        variant: "destructive"
-      })
+      setError({ title, description })
+      toast({ title, description, variant: "destructive" })
       setState('idle')
     }
   }
@@ -130,6 +170,14 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
   }
 
   const handleImport = () => {
+    if (scannedItems.length === 0) {
+      toast({
+        title: "No items to import",
+        description: "Add at least one item before importing.",
+        variant: "destructive"
+      })
+      return
+    }
     onImport(scannedItems)
     setIsOpen(false)
     toast({
@@ -148,15 +196,20 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
         )}
       </DialogTrigger>
       <DialogContent className={cn(
-        "max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden transition-all duration-300",
+        "max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden transition-[max-width,height] duration-300 ease-out motion-reduce:transition-none",
         state === 'reviewing' ? "sm:max-w-5xl" : "sm:max-w-xl h-auto"
       )}>
         {state === 'idle' && (
-          <UploadView onUpload={processImage} onPaste={handlePasteText} />
+          <UploadView
+            onUpload={processImage}
+            onPaste={handlePasteText}
+            error={error}
+            onDismissError={() => setError(null)}
+          />
         )}
 
         {state === 'processing' && (
-          <ProcessingView />
+          <ProcessingView onCancel={handleReset} />
         )}
 
         {state === 'reviewing' && (
@@ -179,7 +232,17 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
 
 // --- Sub-Components ---
 
-function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onPaste: (text: string) => void }) {
+function UploadView({
+  onUpload,
+  onPaste,
+  error,
+  onDismissError
+}: {
+  onUpload: (file: File) => void
+  onPaste: (text: string) => void
+  error: ScanError | null
+  onDismissError: () => void
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
   const [pasteText, setPasteText] = useState("")
@@ -218,9 +281,23 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
         </div>
 
         <TabsContent value="image" className="flex-1 p-6 pt-4">
-          <div 
+          {error && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold">{error.title}</div>
+                  <p className="text-xs text-red-600">{error.description}</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={onDismissError} className="h-7 w-7 text-red-500 hover:bg-red-100">
+                  <X size={14} />
+                </Button>
+              </div>
+            </div>
+          )}
+          <button
+            type="button"
             className={cn(
-              "border-2 border-dashed rounded-xl h-64 flex flex-col items-center justify-center text-center p-6 transition-all cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-400",
+              "border-2 border-dashed rounded-xl h-64 w-full flex flex-col items-center justify-center text-center p-6 transition-colors duration-200 ease-out motion-reduce:transition-none cursor-pointer bg-slate-50/50 hover:bg-slate-50 hover:border-indigo-400",
               dragActive ? "border-indigo-500 bg-indigo-50/30" : "border-slate-200"
             )}
             onDragEnter={handleDrag}
@@ -228,6 +305,7 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
             onDragOver={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
+            aria-label="Upload receipt image"
           >
             <input 
               ref={fileInputRef}
@@ -241,18 +319,21 @@ function UploadView({ onUpload, onPaste }: { onUpload: (file: File) => void, onP
             </div>
             <h3 className="text-sm font-bold text-slate-900 mb-1">Click to upload or drag & drop</h3>
             <p className="text-xs text-slate-500">Supports JPG, PNG, HEIC (Max 5MB) • Preview unavailable for HEIC</p>
-          </div>
+          </button>
         </TabsContent>
 
         <TabsContent value="text" className="flex-1 p-6 pt-4 flex flex-col gap-4">
           <textarea 
             className="flex-1 w-full p-4 rounded-xl border border-slate-200 bg-slate-50 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-            placeholder="Paste receipt text here...
+            placeholder="Paste receipt text here…
 Example:
 Garlic Naan 4.50
 2x Butter Chicken 32.00"
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
+            aria-label="Receipt text"
+            name="receipt-text"
+            autoComplete="off"
           />
           <Button onClick={() => onPaste(pasteText)} disabled={!pasteText.trim()} className="w-full">
             Process Text
@@ -263,21 +344,24 @@ Garlic Naan 4.50
   )
 }
 
-function ProcessingView() {
+function ProcessingView({ onCancel }: { onCancel: () => void }) {
   return (
     <div className="h-[400px] flex flex-col items-center justify-center text-center p-6 space-y-6">
       <div className="relative">
-        <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
+        <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full animate-pulse motion-reduce:animate-none"></div>
         <div className="relative bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
-          <ScanLine className="w-12 h-12 text-indigo-600 animate-pulse" />
+          <ScanLine className="w-12 h-12 text-indigo-600 animate-pulse motion-reduce:animate-none" />
         </div>
       </div>
       <div className="space-y-2">
-        <h3 className="text-lg font-bold text-slate-900">Scanning Receipt...</h3>
+        <h3 className="text-lg font-bold text-slate-900">Scanning Receipt…</h3>
         <p className="text-sm text-slate-500 max-w-xs mx-auto">
           Our AI is analyzing the items and prices. This usually takes a few seconds.
         </p>
       </div>
+      <Button variant="ghost" onClick={onCancel} className="text-slate-500 hover:text-slate-700">
+        Cancel
+      </Button>
     </div>
   )
 }
@@ -305,8 +389,6 @@ function ReviewView({
   rotation,
   setRotate
 }: ReviewViewProps) {
-  const [activeTab, setActiveTab] = useState<"split" | "list">("split") // 'split' is desktop default, mobile handles via CSS
-
   const handleItemChange = (index: number, field: keyof typeof items[0], value: string | number) => {
     const newItems = [...items]
     newItems[index] = { ...newItems[index], [field]: value }
@@ -341,15 +423,33 @@ function ReviewView({
 	        {image && (
 	          <div className="flex-1 bg-slate-900 relative overflow-hidden md:block hidden">
 	            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-slate-800/90 p-1.5 rounded-lg backdrop-blur-sm border border-slate-700">
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-slate-700" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white hover:bg-slate-700"
+                onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}
+                aria-label="Zoom out"
+              >
                 <Minus size={14} />
               </Button>
               <span className="text-xs font-mono text-white w-12 text-center">{Math.round(zoom * 100)}%</span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-slate-700" onClick={() => setZoom(Math.min(3, zoom + 0.25))}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white hover:bg-slate-700"
+                onClick={() => setZoom(Math.min(3, zoom + 0.25))}
+                aria-label="Zoom in"
+              >
                 <Plus size={14} />
               </Button>
               <div className="w-px h-4 bg-slate-700 mx-1"></div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-slate-700" onClick={() => setRotate((rotation + 90) % 360)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-white hover:bg-slate-700"
+                onClick={() => setRotate((rotation + 90) % 360)}
+                aria-label="Rotate image"
+              >
                 <RotateCw size={14} />
               </Button>
 	            </div>
@@ -386,33 +486,62 @@ function ReviewView({
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {items.length === 0 && (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center">
+                <p className="text-sm font-semibold text-slate-700">No items detected yet</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Add a missing item manually or go back and try a clearer image.
+                </p>
+                <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+                  <Button variant="outline" onClick={onCancel} className="h-9">
+                    Try another image
+                  </Button>
+                  <Button onClick={handleAddItem} className="h-9">
+                    Add item manually
+                  </Button>
+                </div>
+              </div>
+            )}
             {items.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-3 group animate-in fade-in slide-in-from-bottom-2 duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+              <div
+                key={idx}
+                className="flex items-start gap-3 group animate-in fade-in slide-in-from-bottom-2 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none"
+                style={{ animationDelay: `${idx * 50}ms` }}
+              >
                 <div className="w-16 pt-1">
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1">QTY</label>
+                  <label htmlFor={`item-qty-${idx}`} className="block text-[10px] font-bold text-slate-400 mb-1">QTY</label>
                   <input 
+                    id={`item-qty-${idx}`}
                     type="number" 
                     value={item.quantity}
+                    name={`item-qty-${idx}`}
+                    autoComplete="off"
                     onChange={(e) => handleItemChange(idx, 'quantity', parseInt(e.target.value) || 1)}
                     className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm font-mono text-center focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                 </div>
                 <div className="flex-1 pt-1">
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1">ITEM</label>
+                  <label htmlFor={`item-name-${idx}`} className="block text-[10px] font-bold text-slate-400 mb-1">ITEM</label>
                   <input 
+                    id={`item-name-${idx}`}
                     type="text" 
                     value={item.name}
+                    name={`item-name-${idx}`}
+                    autoComplete="off"
                     onChange={(e) => handleItemChange(idx, 'name', e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-sm font-medium focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                   />
                 </div>
                 <div className="w-24 pt-1">
-                  <label className="block text-[10px] font-bold text-slate-400 mb-1">PRICE</label>
+                  <label htmlFor={`item-price-${idx}`} className="block text-[10px] font-bold text-slate-400 mb-1">PRICE</label>
                   <div className="relative">
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
                     <input 
+                      id={`item-price-${idx}`}
                       type="number" 
                       value={item.price}
+                      name={`item-price-${idx}`}
+                      autoComplete="off"
                       onChange={(e) => handleItemChange(idx, 'price', e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded pl-5 pr-2 py-1.5 text-sm font-mono text-right focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
                     />
@@ -424,6 +553,7 @@ function ReviewView({
                     size="icon" 
                     className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50"
                     onClick={() => handleDelete(idx)}
+                    aria-label="Delete item"
                   >
                     <Trash2 size={14} />
                   </Button>

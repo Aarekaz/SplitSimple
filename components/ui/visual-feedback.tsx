@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { Check, X, TrendingUp, Users, DollarSign } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface SuccessRippleProps {
   children: React.ReactNode
@@ -12,19 +13,20 @@ interface SuccessRippleProps {
 
 export function SuccessRipple({ children, trigger, className }: SuccessRippleProps) {
   const [showRipple, setShowRipple] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
-    if (trigger) {
+    if (trigger && !prefersReducedMotion) {
       setShowRipple(true)
-      const timer = setTimeout(() => setShowRipple(false), 600)
+      const timer = setTimeout(() => setShowRipple(false), 240)
       return () => clearTimeout(timer)
     }
     return undefined
-  }, [trigger])
+  }, [trigger, prefersReducedMotion])
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
-      {showRipple && (
+      {showRipple && !prefersReducedMotion && (
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-radial from-green-400/30 via-green-400/10 to-transparent animate-ping" />
         </div>
@@ -44,11 +46,16 @@ interface ProgressIndicatorProps {
 export function ProgressIndicator({ total, completed, label, className }: ProgressIndicatorProps) {
   const percentage = total > 0 ? (completed / total) * 100 : 0
   const [animatedPercentage, setAnimatedPercentage] = useState(0)
+  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
-    const timer = setTimeout(() => setAnimatedPercentage(percentage), 100)
+    if (prefersReducedMotion) {
+      setAnimatedPercentage(percentage)
+      return undefined
+    }
+    const timer = setTimeout(() => setAnimatedPercentage(percentage), 50)
     return () => clearTimeout(timer)
-  }, [percentage])
+  }, [percentage, prefersReducedMotion])
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -62,10 +69,10 @@ export function ProgressIndicator({ total, completed, label, className }: Progre
       )}
       <div className="relative h-2 bg-muted rounded-full overflow-hidden">
         <div 
-          className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-700 ease-out progress-shine"
+          className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-[width,opacity] duration-250 ease-out progress-shine"
           style={{ width: `${animatedPercentage}%` }}
         />
-        {percentage === 100 && (
+        {percentage === 100 && !prefersReducedMotion && (
           <div className="absolute inset-0 bg-gradient-to-r from-green-400/50 to-emerald-400/50 animate-pulse" />
         )}
       </div>
@@ -86,6 +93,7 @@ export function BillHealthIndicator({
   hasUnassignedItems = false, 
   className 
 }: BillHealthIndicatorProps) {
+  const prefersReducedMotion = useReducedMotion()
   const getHealthStatus = () => {
     if (!hasItems && !hasPeople) return { color: 'text-muted-foreground', message: 'Getting started', icon: Users }
     if (!hasPeople) return { color: 'text-orange-500', message: 'Add people to continue', icon: Users }
@@ -99,8 +107,8 @@ export function BillHealthIndicator({
   return (
     <div className={cn("flex items-center gap-2", color, className)}>
       <div className="relative">
-        <div className="w-2 h-2 rounded-full bg-current animate-pulse" />
-        {color === 'text-green-500' && (
+        <div className={cn("w-2 h-2 rounded-full bg-current", !prefersReducedMotion && "animate-pulse")} />
+        {color === 'text-green-500' && !prefersReducedMotion && (
           <div className="absolute inset-0 w-2 h-2 rounded-full bg-current animate-ping" />
         )}
       </div>
@@ -117,13 +125,14 @@ interface CelebrationOverlayProps {
 }
 
 export function CelebrationOverlay({ show, onComplete, message = "Great job!" }: CelebrationOverlayProps) {
+  const prefersReducedMotion = useReducedMotion()
   useEffect(() => {
     if (show && onComplete) {
-      const timer = setTimeout(onComplete, 2000)
+      const timer = setTimeout(onComplete, prefersReducedMotion ? 0 : 1200)
       return () => clearTimeout(timer)
     }
     return undefined
-  }, [show, onComplete])
+  }, [show, onComplete, prefersReducedMotion])
 
   if (!show) return null
 
@@ -152,15 +161,16 @@ interface ErrorShakeProps {
 
 export function ErrorShake({ children, trigger, className }: ErrorShakeProps) {
   const [shouldShake, setShouldShake] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
-    if (trigger) {
+    if (trigger && !prefersReducedMotion) {
       setShouldShake(true)
-      const timer = setTimeout(() => setShouldShake(false), 500)
+      const timer = setTimeout(() => setShouldShake(false), 250)
       return () => clearTimeout(timer)
     }
     return undefined
-  }, [trigger])
+  }, [trigger, prefersReducedMotion])
 
   return (
     <div className={cn(shouldShake && "error-shake", className)}>
@@ -178,15 +188,22 @@ interface AnimatedCounterProps {
 
 export function AnimatedCounter({ 
   value, 
-  duration = 500, 
+  duration = 250, 
   formatFn = (v) => v.toString(), 
   className 
 }: AnimatedCounterProps) {
   const [displayValue, setDisplayValue] = useState(value)
   const [isIncreasing, setIsIncreasing] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
     if (value === displayValue) return
+
+    if (prefersReducedMotion) {
+      setDisplayValue(value)
+      setIsIncreasing(false)
+      return
+    }
 
     const isIncrease = value > displayValue
     setIsIncreasing(isIncrease)
@@ -213,11 +230,11 @@ export function AnimatedCounter({
     }
 
     requestAnimationFrame(animate)
-  }, [value, displayValue, duration])
+  }, [value, displayValue, duration, prefersReducedMotion])
 
   return (
     <span className={cn(
-      "transition-all duration-200",
+      "transition-[color,transform] duration-200",
       isIncreasing && "text-green-600 scale-105",
       className
     )}>

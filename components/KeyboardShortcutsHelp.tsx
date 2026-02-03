@@ -89,6 +89,7 @@ export function KeyboardShortcutsHelp() {
           size="icon"
           className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
           title="Keyboard shortcuts (Press ?)"
+          aria-label="Open keyboard shortcuts"
         >
           <HelpCircle className="h-4 w-4" />
         </Button>

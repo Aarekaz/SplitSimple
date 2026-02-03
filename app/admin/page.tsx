@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Shield,
@@ -141,14 +141,28 @@ export default function AdminPage() {
   const [showBillDialog, setShowBillDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [billToDelete, setBillToDelete] = useState<string | null>(null)
+  const fetchDebounceRef = useRef<number | null>(null)
+  const fetchAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     checkAuth()
   }, [])
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) return
+
+    if (fetchDebounceRef.current) {
+      window.clearTimeout(fetchDebounceRef.current)
+    }
+
+    fetchDebounceRef.current = window.setTimeout(() => {
       fetchBills()
+    }, 250)
+
+    return () => {
+      if (fetchDebounceRef.current) {
+        window.clearTimeout(fetchDebounceRef.current)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, currentPage, searchQuery, statusFilter, sortBy, sortOrder])
@@ -212,6 +226,12 @@ export default function AdminPage() {
 
   const fetchBills = async () => {
     try {
+      if (fetchAbortRef.current) {
+        fetchAbortRef.current.abort()
+      }
+      const controller = new AbortController()
+      fetchAbortRef.current = controller
+
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '20',
@@ -221,7 +241,9 @@ export default function AdminPage() {
         sortOrder
       })
 
-      const response = await fetch(`/api/admin/bills?${params}`)
+      const response = await fetch(`/api/admin/bills?${params}`, {
+        signal: controller.signal
+      })
 
       if (response.ok) {
         const data = await response.json()
@@ -230,6 +252,9 @@ export default function AdminPage() {
         setTotalPages(data.pagination.totalPages)
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return
+      }
       console.error('Error fetching bills:', error)
       toast({
         title: 'Error',
@@ -357,10 +382,10 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div id="main-content" className="flex h-screen items-center justify-center">
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading...</p>
+          <p>Loading…</p>
         </div>
       </div>
     )
@@ -368,7 +393,7 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div id="main-content" className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-center mb-4">
@@ -389,12 +414,14 @@ export default function AdminPage() {
                     type="password"
                     placeholder="Enter admin password"
                     value={password}
+                    name="admin-password"
+                    autoComplete="current-password"
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Logging in...' : 'Login'}
+                  {isLoading ? 'Logging in…' : 'Login'}
                 </Button>
               </div>
             </form>
@@ -405,7 +432,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div id="main-content" className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Clean, Minimal Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-6 py-4">
@@ -536,7 +563,7 @@ export default function AdminPage() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-purple-500 h-2 rounded-full transition-all duration-700" 
+                          className="bg-purple-500 h-2 rounded-full transition-[width] duration-700" 
                           style={{ width: `${Math.round(stats.completionRate)}%` }}
                         />
                       </div>
@@ -549,7 +576,7 @@ export default function AdminPage() {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div 
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-700" 
+                          className="bg-blue-500 h-2 rounded-full transition-[width] duration-700" 
                           style={{ width: `${Math.round(stats.shareRate)}%` }}
                         />
                       </div>
@@ -674,7 +701,7 @@ export default function AdminPage() {
                   
                   <div className="flex items-center gap-2 mt-3">
                     <div className="flex-1 bg-green-200 rounded-full h-2">
-                      <div className="bg-green-500 h-2 rounded-full transition-all duration-500" style={{
+                      <div className="bg-green-500 h-2 rounded-full transition-[width] duration-500" style={{
                         width: `${Math.min(100, (stats.activeBills / stats.totalBills) * 100)}%`
                       }} />
                     </div>
@@ -769,10 +796,13 @@ export default function AdminPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search bills by title, ID, or amount..."
+                  placeholder="Search bills by title, ID, or amount…"
                   value={searchQuery}
+                  name="search-bills"
+                  autoComplete="off"
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  aria-label="Search bills"
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
               </div>
               
@@ -780,7 +810,8 @@ export default function AdminPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  aria-label="Filter by status"
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -791,7 +822,8 @@ export default function AdminPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  aria-label="Sort by"
+                  className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
                   <option value="lastModified">Last Modified</option>
                   <option value="createdAt">Created</option>
@@ -872,6 +904,7 @@ export default function AdminPage() {
                               setShowBillDialog(true)
                             }}
                             title="View details"
+                            aria-label="View bill details"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -880,6 +913,7 @@ export default function AdminPage() {
                             size="icon"
                             onClick={() => window.open(bill.shareUrl, '_blank')}
                             title="Open in new tab"
+                            aria-label="Open share link in new tab"
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
@@ -888,6 +922,7 @@ export default function AdminPage() {
                             size="icon"
                             onClick={() => copyToClipboard(bill.shareUrl)}
                             title="Copy share link"
+                            aria-label="Copy share link"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -896,6 +931,7 @@ export default function AdminPage() {
                             size="icon"
                             onClick={() => handleExtendBill(bill.id)}
                             title="Extend expiration"
+                            aria-label="Extend bill expiration"
                           >
                             <Clock className="h-4 w-4" />
                           </Button>
@@ -907,6 +943,7 @@ export default function AdminPage() {
                               setShowDeleteDialog(true)
                             }}
                             title="Delete bill"
+                            aria-label="Delete bill"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -996,6 +1033,7 @@ export default function AdminPage() {
                     variant="outline"
                     size="icon"
                     onClick={() => copyToClipboard(selectedBill.shareUrl)}
+                    aria-label="Copy share URL"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>

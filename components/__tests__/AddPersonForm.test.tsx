@@ -32,7 +32,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    expect(screen.getByPlaceholderText('Enter name')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/enter name/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument()
   })
 
@@ -43,7 +43,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    expect(screen.getByPlaceholderText('Enter name')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/enter name/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /add/i })).not.toBeInTheDocument()
   })
 
@@ -57,7 +57,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    const input = screen.getByPlaceholderText('Enter name')
+    const input = screen.getByPlaceholderText(/enter name/i)
     const submitButton = screen.getByRole('button', { name: /add/i })
 
     await user.type(input, 'Alice')
@@ -78,7 +78,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    const input = screen.getByPlaceholderText('Enter name')
+    const input = screen.getByPlaceholderText(/enter name/i)
     await user.type(input, 'Bob')
     await user.keyboard('{Enter}')
 
@@ -114,7 +114,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    const input = screen.getByPlaceholderText('Enter name')
+    const input = screen.getByPlaceholderText(/enter name/i)
     const submitButton = screen.getByRole('button', { name: /add/i })
 
     await user.type(input, '  Charlie  ')
@@ -135,7 +135,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    const input = screen.getByPlaceholderText('Enter name')
+    const input = screen.getByPlaceholderText(/enter name/i)
     const submitButton = screen.getByRole('button', { name: /add/i })
 
     await user.type(input, 'David')
@@ -156,7 +156,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    const input = screen.getByPlaceholderText('Enter name')
+    const input = screen.getByPlaceholderText(/enter name/i)
     await user.type(input, 'Eve')
     await user.keyboard('{Escape}')
 
@@ -171,7 +171,7 @@ describe('AddPersonForm', () => {
     )
 
     // Input should be focused (testing library limitation - we check if it's rendered)
-    expect(screen.getByPlaceholderText('Enter name')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/enter name/i)).toBeInTheDocument()
   })
 
   it('validates name length', async () => {
@@ -184,7 +184,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    const input = screen.getByPlaceholderText('Enter name')
+    const input = screen.getByPlaceholderText(/enter name/i)
     const submitButton = screen.getByRole('button', { name: /add/i })
 
     // Test very long name (over 50 character limit)
@@ -209,7 +209,7 @@ describe('AddPersonForm', () => {
       </TestWrapper>
     )
 
-    const input = screen.getByPlaceholderText('Enter name')
+    const input = screen.getByPlaceholderText(/enter name/i)
     const submitButton = screen.getByRole('button', { name: /add/i })
 
     await user.type(input, "O'Reilly")

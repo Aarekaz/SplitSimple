@@ -112,6 +112,16 @@ export function TotalsPanel({
               <div
                 className="p-4 cursor-pointer"
                 onClick={() => togglePersonExpansion(person.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    togglePersonExpansion(person.id)
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
+                aria-label={`Toggle ${person.name} details`}
               >
                 {/* Collapsed Row */}
                 <div className="flex items-center justify-between gap-3">
@@ -135,7 +145,8 @@ export function TotalsPanel({
                         e.stopPropagation()
                         handleRemovePerson(person.id)
                       }}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,color] duration-150"
+                      aria-label={`Remove ${person.name}`}
                     >
                       <X className="h-3.5 w-3.5" />
                     </Button>

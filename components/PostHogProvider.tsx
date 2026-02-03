@@ -1,57 +1,97 @@
 "use client"
 
-import posthog from "posthog-js"
 import { PostHogProvider as PHProvider } from "posthog-js/react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      api_host: "/ingest",
-      ui_host: "https://us.posthog.com",
-      defaults: '2025-05-24',
-      capture_exceptions: true, // This enables capturing exceptions using Error Tracking
-      debug: process.env.NODE_ENV === "development", // Debug only in development
-      disable_session_recording: false, // Ensure session recording works
-      capture_pageview: true,
-      capture_pageleave: true,
-      session_recording: {
-        maskAllInputs: true, // Mask sensitive input data
-        maskTextSelector: '.receipt-title', // Mask bill titles for privacy
-      },
-      loaded: (posthog) => {
-        // PostHog loaded successfully
-      }
-    })
+  const [client, setClient] = useState<any>(null)
 
-    // Generate a unique user ID for analytics (privacy-friendly)
-    const getOrCreateUserId = () => {
-      let userId = localStorage.getItem('splitsimple_user_id')
-      if (!userId) {
-        userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-        localStorage.setItem('splitsimple_user_id', userId)
+  useEffect(() => {
+    let cancelled = false
+    let idleCallbackId: number | null = null
+    let idleTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+    const init = async () => {
+      const { default: posthog } = await import("posthog-js")
+      if (cancelled) return
+
+      posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+        api_host: "/ingest",
+        ui_host: "https://us.posthog.com",
+        defaults: "2025-05-24",
+        capture_exceptions: true, // This enables capturing exceptions using Error Tracking
+        debug: process.env.NODE_ENV === "development", // Debug only in development
+        disable_session_recording: false, // Ensure session recording works
+        capture_pageview: true,
+        capture_pageleave: true,
+        session_recording: {
+          maskAllInputs: true, // Mask sensitive input data
+          maskTextSelector: ".receipt-title", // Mask bill titles for privacy
+        },
+        loaded: () => {
+          // PostHog loaded successfully
+        },
+      })
+
+      // Generate a unique user ID for analytics (privacy-friendly)
+      const getOrCreateUserId = () => {
+        let userId = localStorage.getItem("splitsimple_user_id")
+        if (!userId) {
+          userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+          localStorage.setItem("splitsimple_user_id", userId)
+        }
+        return userId
       }
-      return userId
+
+      // Identify the user with PostHog
+      const userId = getOrCreateUserId()
+      posthog.identify(userId, {
+        app_version: "1.0.0",
+        platform: "web",
+        user_type: "anonymous",
+      })
+
+      // Set user properties for better analytics
+      posthog.people.set({
+        first_seen: new Date().toISOString(),
+        browser: navigator.userAgent,
+        screen_resolution: `${window.screen.width}x${window.screen.height}`,
+      })
+
+      setClient(posthog)
     }
 
-    // Identify the user with PostHog
-    const userId = getOrCreateUserId()
-    posthog.identify(userId, {
-      app_version: '1.0.0',
-      platform: 'web',
-      user_type: 'anonymous',
-    })
+    if (process.env.NODE_ENV === "production") {
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        idleCallbackId = (window as Window & {
+          requestIdleCallback?: (cb: () => void) => number
+        }).requestIdleCallback?.(() => {
+          init()
+        }) ?? null
+      } else {
+        idleTimeoutId = setTimeout(() => {
+          init()
+        }, 0)
+      }
+    } else {
+      init()
+    }
 
-    // Set user properties for better analytics
-    posthog.people.set({
-      first_seen: new Date().toISOString(),
-      browser: navigator.userAgent,
-      screen_resolution: `${window.screen.width}x${window.screen.height}`,
-    })
+    return () => {
+      cancelled = true
+      if (idleCallbackId !== null && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+        ;(window as Window & { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback?.(idleCallbackId)
+      }
+      if (idleTimeoutId !== null) {
+        clearTimeout(idleTimeoutId)
+      }
+    }
   }, [])
 
+  if (!client) return <>{children}</>
+
   return (
-    <PHProvider client={posthog}>
+    <PHProvider client={client}>
       {children}
     </PHProvider>
   )

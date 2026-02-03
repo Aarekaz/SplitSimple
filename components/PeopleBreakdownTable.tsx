@@ -163,7 +163,7 @@ export function PeopleBreakdownTable({
                         {Array.from({ length: 12 }).map((_, i) => (
                           <div
                             key={i}
-                            className="flex-1 rounded-sm transition-all"
+                            className="flex-1 rounded-sm transition-[background-color,border-color,opacity]"
                             style={{
                               backgroundColor: i < filledBlocks ? person.color : 'transparent',
                               opacity: i < filledBlocks ? 0.6 : 0.2,
@@ -181,8 +181,9 @@ export function PeopleBreakdownTable({
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemovePerson(person.id)}
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,color] duration-150"
                       title={`Remove ${person.name}`}
+                      aria-label={`Remove ${person.name}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>

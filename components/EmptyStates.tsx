@@ -72,7 +72,7 @@ export function EmptyState({
               onClick={secondaryAction.onClick} 
               variant="outline"
               size="lg"
-              className="gap-2 min-w-[160px] h-12 rounded-xl border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-all duration-200 font-medium"
+              className="gap-2 min-w-[160px] h-12 rounded-xl border-border/50 hover:border-primary/30 hover:bg-muted/50 transition-[background-color,border-color,box-shadow,color] duration-200 ease-out motion-reduce:transition-none font-medium"
             >
               {secondaryAction.label}
             </Button>
@@ -105,7 +105,7 @@ export function QuickStartCard({
   return (
     <Card 
       className={cn(
-        "cursor-pointer transition-all duration-300 float-card-sm border-0 hover:shadow-md group",
+        "cursor-pointer transition-[box-shadow,transform,background-color,border-color] duration-300 float-card-sm border-0 hover:shadow-md group",
         isPrimary && "bg-gradient-to-br from-primary/5 to-primary/0",
         className
       )}
@@ -114,7 +114,7 @@ export function QuickStartCard({
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <div className={cn(
-            "p-3 rounded-xl transition-all duration-200 flex-shrink-0",
+            "p-3 rounded-xl transition-[background-color,box-shadow,color] duration-200 flex-shrink-0",
             isPrimary 
               ? "bg-gradient-to-br from-primary to-primary/90 text-white shadow-md group-hover:shadow-lg" 
               : "bg-gradient-to-br from-muted to-muted/50 group-hover:from-muted/80 group-hover:to-muted/30"

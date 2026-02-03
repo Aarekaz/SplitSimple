@@ -68,7 +68,7 @@ export function MobileItemCard({
   const totalPrice = parseFloat(item.price) || 0
 
   return (
-    <Card className={cn("group transition-all duration-200", className)}>
+    <Card className={cn("group transition-[box-shadow,transform,background-color,border-color] duration-200", className)}>
       <CardContent className="p-4">
         {/* Main Item Row */}
         <div className="space-y-3">

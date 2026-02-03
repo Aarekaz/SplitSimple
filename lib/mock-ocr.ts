@@ -17,6 +17,20 @@ const MOCK_RECEIPT_ITEMS = [
  * Scan receipt image using the backend API
  * Falls back to mock data if API is unavailable or fails
  */
+interface OCRApiError extends Error {
+  code?: string
+  status?: number
+  retryAfter?: number
+}
+
+function createApiError(message: string, code?: string, status?: number, retryAfter?: number): OCRApiError {
+  const error = new Error(message) as OCRApiError
+  error.code = code
+  error.status = status
+  error.retryAfter = retryAfter
+  return error
+}
+
 export async function scanReceiptImage(file: File): Promise<OCRResult> {
   try {
     // Create FormData for multipart upload
@@ -48,20 +62,27 @@ export async function scanReceiptImage(file: File): Promise<OCRResult> {
 
     // If no items found, throw to trigger fallback
     if (data.warning && data.items?.length === 0) {
-      throw new Error("No items detected in receipt")
+      throw createApiError("No items detected in receipt", "NO_ITEMS_DETECTED", response.status)
     }
 
     // API error - throw to trigger fallback
-    throw new Error(data.error || "API request failed")
+    const retryAfter = response.headers.get('Retry-After')
+    throw createApiError(
+      data.error || "API request failed",
+      data.code,
+      response.status,
+      retryAfter ? Number(retryAfter) : undefined
+    )
   } catch (error) {
     // Log error but don't fail completely - use mock as fallback
     console.warn("Receipt scan API failed, using mock data:", error)
 
     // Check if it's a network error or API key missing
     const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorCode = (error as OCRApiError).code
 
     // If it's an API key missing error, use mock data silently
-    if (errorMessage.includes("API key") || errorMessage.includes("API_KEY_MISSING")) {
+    if (errorMessage.includes("API key") || errorCode === "API_KEY_MISSING") {
       await new Promise(resolve => setTimeout(resolve, 1500))
       return {
         items: MOCK_RECEIPT_ITEMS

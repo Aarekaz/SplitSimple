@@ -2,6 +2,7 @@
 
 import { useEffect, useState, memo } from "react"
 import { formatNumber } from "@/lib/utils"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface AnimatedNumberProps {
   value: number
@@ -16,16 +17,23 @@ export const AnimatedNumber = memo(function AnimatedNumber({
   value,
   className = "",
   formatFn = formatNumber, // Use smart number formatting by default
-  duration = 300,
+  duration = 250,
   prefix = "",
   suffix = ""
 }: AnimatedNumberProps) {
   const [displayValue, setDisplayValue] = useState(value)
   const [isAnimating, setIsAnimating] = useState(false)
   const [shouldPulse, setShouldPulse] = useState(false)
+  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
     if (value === displayValue) return
+    if (prefersReducedMotion) {
+      setDisplayValue(value)
+      setIsAnimating(false)
+      setShouldPulse(false)
+      return
+    }
 
     const difference = Math.abs(value - displayValue)
     const percentChange = displayValue !== 0 ? (difference / Math.abs(displayValue)) : Infinity
@@ -36,7 +44,7 @@ export const AnimatedNumber = memo(function AnimatedNumber({
       setDisplayValue(value)
       // Still trigger pulse for visual feedback
       setShouldPulse(true)
-      setTimeout(() => setShouldPulse(false), 600)
+      setTimeout(() => setShouldPulse(false), 250)
       return
     }
 
@@ -47,7 +55,7 @@ export const AnimatedNumber = memo(function AnimatedNumber({
     // Trigger pulse for significant changes
     if (Math.abs(difference) > Math.abs(startValue) * 0.1) {
       setShouldPulse(true)
-      setTimeout(() => setShouldPulse(false), 600)
+      setTimeout(() => setShouldPulse(false), 250)
     }
 
     const animate = () => {
@@ -72,11 +80,11 @@ export const AnimatedNumber = memo(function AnimatedNumber({
     }
 
     requestAnimationFrame(animate)
-  }, [value, displayValue, duration])
+  }, [value, displayValue, duration, prefersReducedMotion])
 
   return (
     <span
-      className={`${className} ${isAnimating ? 'transition-all duration-300' : ''} ${shouldPulse ? 'success-pulse' : ''} currency-display`}
+      className={`${className} ${isAnimating ? 'transition-[color,transform] duration-200' : ''} ${shouldPulse ? 'success-pulse' : ''} currency-display`}
       style={{
         fontFeatureSettings: '"tnum" 1, "zero" 1', // Enhanced font features
         fontVariantNumeric: 'tabular-nums',
