@@ -112,7 +112,7 @@ const ProBillBreakdownView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full overflow-auto p-6 bg-slate-50 pro-scrollbar">
+      <div className="h-full overflow-auto p-6 bg-slate-50 overflow-auto">
         <div className="max-w-5xl mx-auto text-sm text-slate-500">Loading breakdown…</div>
       </div>
     ),
@@ -1016,9 +1016,9 @@ function DesktopBillSplitter() {
   }, [editing])
 
   return (
-    <div className="pro-app-shell selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="h-dvh w-full overflow-hidden relative bg-background font-sans selection:bg-primary/20 selection:text-primary">
       {/* --- Header --- */}
-      <header className="pro-header">
+      <header className="fixed top-0 left-0 right-0 flex items-center justify-between px-6 z-20 bg-card/80 backdrop-blur-sm border-b-2 border-border shadow-[var(--receipt-shadow)]" style={{ height: 'calc(64px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="w-full flex items-center justify-between gap-6">
           {/* Left cluster: Brand + Title + Sync */}
           <div className="flex items-center gap-3 min-w-0">
@@ -1035,7 +1035,7 @@ function DesktopBillSplitter() {
                     width: `${Math.min(Math.max((title || '').length || 7, 7), 26)}ch`,
                   }}
                   className={cn(
-                    "block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-auto min-w-[7ch] max-w-[26ch] hover:text-indigo-600 transition-colors font-inter",
+                    "block text-sm font-bold bg-transparent border-none p-0 focus:ring-0 text-slate-900 w-auto min-w-[7ch] max-w-[26ch] hover:text-indigo-600 transition-colors font-sans",
                     focusRingClass
                   )}
                   placeholder="Project name…"
@@ -1054,7 +1054,7 @@ function DesktopBillSplitter() {
             <button
               onClick={() => setView('ledger')}
               className={cn(
-                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-sans",
                 focusRingClass,
                 activeView === 'ledger' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
@@ -1064,7 +1064,7 @@ function DesktopBillSplitter() {
             <button
               onClick={() => setView('breakdown')}
               className={cn(
-                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-sans",
                 focusRingClass,
                 activeView === 'breakdown' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
@@ -1106,7 +1106,7 @@ function DesktopBillSplitter() {
               <button
                 onClick={openNewBillDialog}
                 className={cn(
-                  "h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter",
+                  "h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-sans",
                   focusRingClass
                 )}
                 title="New Bill (Cmd+N)"
@@ -1125,7 +1125,7 @@ function DesktopBillSplitter() {
             >
               <DropdownMenuTrigger asChild>
                 <button className={cn(
-                  "h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-inter",
+                  "h-8 px-3 hover:bg-slate-200 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-2 font-sans",
                   focusRingClass
                 )}>
                   <Search size={14} />
@@ -1249,12 +1249,12 @@ function DesktopBillSplitter() {
       </header>
 
       {/* --- Main Workspace --- */}
-      <main id="main-content" className="pro-main">
+      <main id="main-content" className="absolute inset-0 overflow-hidden z-10" style={{ paddingTop: 'calc(64px + env(safe-area-inset-top))', paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
         {/* LEDGER VIEW */}
         {activeView === 'ledger' && (
           <div className="h-full w-full">
             <div
-              className="h-full overflow-auto px-6 py-6 outline-none pro-scrollbar"
+              className="h-full overflow-auto px-6 py-6 outline-none overflow-auto"
               tabIndex={-1}
               style={{ contentVisibility: 'auto' }}
             >
@@ -1263,8 +1263,8 @@ function DesktopBillSplitter() {
                   <section className="col-span-12 xl:col-span-9">
                     <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
                       <div className="px-5 py-4 border-b border-slate-200/80">
-                        <h2 className="text-base font-semibold text-slate-900 text-balance font-inter">Items & split</h2>
-                        <p className="text-xs text-slate-500 text-pretty font-inter">
+                        <h2 className="text-base font-semibold text-slate-900 text-balance font-sans">Items & split</h2>
+                        <p className="text-xs text-slate-500 text-pretty font-sans">
                           Add items, set prices, and assign people to split each line.
                         </p>
                       </div>
@@ -1288,7 +1288,7 @@ function DesktopBillSplitter() {
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-inter">
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-sans">
                           <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Tab/Enter to commit</span>
                           <span className="px-2 py-1 rounded bg-slate-50 border border-slate-200">Esc to exit</span>
                         </div>
@@ -1302,9 +1302,9 @@ function DesktopBillSplitter() {
                           aria-colcount={4 + people.length + 1}
                         >
                           {/* Sticky Header */}
-                          <div className="pro-grid-header flex text-[10px] font-bold text-slate-500 uppercase">
+                          <div className="sticky top-0 bg-card border-b-2 border-border z-30 shadow-[var(--receipt-shadow)] flex text-[10px] font-bold text-slate-500 uppercase">
                             <div className="w-12 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">#</div>
-                            <div className="w-72 p-3 border-r border-slate-100/60 flex items-center pro-sticky-left">Item Description</div>
+                            <div className="w-72 p-3 border-r border-slate-100/60 flex items-center sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Item Description</div>
                             <div className="w-28 p-3 text-right border-r border-slate-100/60 flex items-center justify-end">Price</div>
                             <div className="w-20 p-3 text-center border-r border-slate-100/60 flex items-center justify-center">Qty</div>
 
@@ -1330,7 +1330,7 @@ function DesktopBillSplitter() {
                                   )}>
                                     {initials}
                                   </div>
-                                  <span className="text-[9px] truncate max-w-full font-bold text-slate-700 font-inter">
+                                  <span className="text-[9px] truncate max-w-full font-bold text-slate-700 font-sans">
                                     {p.name.split(' ')[0]}
                                   </span>
                                 </button>
@@ -1344,7 +1344,7 @@ function DesktopBillSplitter() {
                                   >
                                     <Plus size={16} />
                                   </button>
-                            <div className="w-28 p-3 text-right flex items-center justify-end border-l border-slate-200 pro-sticky-right">
+                            <div className="w-28 p-3 text-right flex items-center justify-end border-l border-slate-200 sticky right-0 bg-card z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                               Total
                             </div>
                           </div>
@@ -1356,8 +1356,8 @@ function DesktopBillSplitter() {
                                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                                   <Plus className="h-8 w-8 text-slate-400" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2 font-inter text-balance">No items yet</h3>
-                                <p className="text-sm text-slate-500 mb-6 max-w-sm font-inter text-pretty">
+                                <h3 className="text-lg font-bold text-slate-900 mb-2 font-sans text-balance">No items yet</h3>
+                                <p className="text-sm text-slate-500 mb-6 max-w-sm font-sans text-pretty">
                                   Add your first item to start splitting the bill. Press <kbd className="px-2 py-1 bg-slate-100 rounded text-xs font-bold">⌘⇧N</kbd> or click the button below.
                                 </p>
                                 <button
@@ -1375,7 +1375,7 @@ function DesktopBillSplitter() {
                                 <ContextMenuTrigger asChild>
                                   <div className="flex group hover:bg-slate-50/50 transition-colors h-12 text-sm">
                                 {/* Index / "Equal" Button */}
-                                <div className="w-12 border-r border-slate-100/60 flex items-center justify-center text-[10px] text-slate-300 font-space-mono select-none bg-slate-50/30 group-hover:bg-white transition-colors tabular-nums">
+                                <div className="w-12 border-r border-slate-100/60 flex items-center justify-center text-[10px] text-slate-300 font-mono select-none bg-slate-50/30 group-hover:bg-white transition-colors tabular-nums">
                                   <span className="group-hover:hidden">{String(rIdx + 1).padStart(2, '0')}</span>
                                   <button
                                     onClick={() => toggleAllAssignments(item.id)}
@@ -1388,13 +1388,13 @@ function DesktopBillSplitter() {
                                 </div>
 
                                 {/* Name + Split Method Selector */}
-                                <div className="w-72 border-r border-slate-100/60 pro-sticky-left group-hover:bg-slate-50 transition-colors relative p-0 flex items-center">
+                                <div className="w-72 border-r border-slate-100/60 sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-slate-50 transition-colors relative p-0 flex items-center">
                                   <div className="flex-1">
                                     <GridCell
                                       row={rIdx}
                                       col="name"
                                       value={item.name}
-                                      className="text-slate-700 font-medium bg-transparent font-inter"
+                                      className="text-slate-700 font-medium bg-transparent font-sans"
                                       isSelected={selectedCell.row === rIdx && selectedCell.col === 'name'}
                                       isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'name'}
                                       itemId={item.id}
@@ -1426,7 +1426,7 @@ function DesktopBillSplitter() {
                                           changeSplitMethod(item.id, option.value)
                                         }}
                                         className={cn(
-                                          "text-xs flex items-center gap-2 font-inter",
+                                          "text-xs flex items-center gap-2 font-sans",
                                           item.method === option.value ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-600"
                                         )}
                                       >
@@ -1446,7 +1446,7 @@ function DesktopBillSplitter() {
                                     col="price"
                                     value={item.price}
                                     type="number"
-                                    className="text-right font-space-mono text-slate-600 bg-slate-50/30 tabular-nums"
+                                    className="text-right font-mono text-slate-600 bg-slate-50/30 tabular-nums"
                                     isSelected={selectedCell.row === rIdx && selectedCell.col === 'price'}
                                     isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'price'}
                                     itemId={item.id}
@@ -1464,7 +1464,7 @@ function DesktopBillSplitter() {
                                     col="qty"
                                     value={item.qty}
                                     type="number"
-                                    className="text-center font-space-mono text-slate-500 bg-slate-50/30 tabular-nums"
+                                    className="text-center font-mono text-slate-500 bg-slate-50/30 tabular-nums"
                                     isSelected={selectedCell.row === rIdx && selectedCell.col === 'qty'}
                                     isEditing={editing && selectedCell.row === rIdx && selectedCell.col === 'qty'}
                                     itemId={item.id}
@@ -1507,12 +1507,12 @@ function DesktopBillSplitter() {
                                             color.textSolid
                                           )}
                                         >
-                                          <span className="font-space-mono text-xs font-bold tabular-nums">
+                                          <span className="font-mono text-xs font-bold tabular-nums">
                                             ${(item.pricePerPerson || 0).toFixed(2)}
                                           </span>
                                         </div>
                                       ) : (
-                                        <span className="text-slate-400 font-space-mono text-sm font-bold opacity-50 select-none">
+                                        <span className="text-slate-400 font-mono text-sm font-bold opacity-50 select-none">
                                           -
                                         </span>
                                       )}
@@ -1549,7 +1549,7 @@ function DesktopBillSplitter() {
                                 </div>
 
                                 {/* Row Total */}
-                                <div className="w-28 pro-sticky-right border-l border-slate-200 flex items-center justify-end px-4 group-hover:bg-slate-50 font-space-mono text-xs font-bold text-slate-800 tabular-nums">
+                                <div className="w-28 sticky right-0 bg-card z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)] border-l border-slate-200 flex items-center justify-end px-4 group-hover:bg-slate-50 font-mono text-xs font-bold text-slate-800 tabular-nums">
                                   ${(item.totalItemPrice || 0).toFixed(2)}
                                 </div>
                                   </div>
@@ -1585,7 +1585,7 @@ function DesktopBillSplitter() {
                             {calculatedItems.length > 0 && (
                               <button
                                 onClick={addItem}
-                                className="w-full py-2 px-4 text-slate-400 text-xs font-semibold hover:text-indigo-600 hover:bg-slate-50/80 transition-colors flex items-center justify-start gap-2 border-t border-slate-200 font-inter"
+                                className="w-full py-2 px-4 text-slate-400 text-xs font-semibold hover:text-indigo-600 hover:bg-slate-50/80 transition-colors flex items-center justify-start gap-2 border-t border-slate-200 font-sans"
                                 title="Add new item (Cmd+Shift+N)"
                               >
                                 <Plus size={14} /> Add another item
@@ -1602,8 +1602,8 @@ function DesktopBillSplitter() {
                       <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h3 className="text-sm font-semibold text-slate-900 text-balance font-inter">Start splitting in minutes</h3>
-                            <p className="text-xs text-slate-500 text-pretty font-inter">
+                            <h3 className="text-sm font-semibold text-slate-900 text-balance font-sans">Start splitting in minutes</h3>
+                            <p className="text-xs text-slate-500 text-pretty font-sans">
                               Add people first, then items. Use Tab/Enter to move like a spreadsheet.
                             </p>
                           </div>
@@ -1659,8 +1659,8 @@ function DesktopBillSplitter() {
                     <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-900 text-balance font-inter">People</h3>
-                          <p className="text-xs text-slate-500 text-pretty font-inter">Track who is splitting the bill.</p>
+                          <h3 className="text-sm font-semibold text-slate-900 text-balance font-sans">People</h3>
+                          <p className="text-xs text-slate-500 text-pretty font-sans">Track who is splitting the bill.</p>
                         </div>
                         <button
                           onClick={addPerson}
@@ -1674,7 +1674,7 @@ function DesktopBillSplitter() {
 
                       <div className="mt-4 space-y-2">
                         {people.length === 0 ? (
-                          <div className="rounded-lg border border-dashed border-slate-200 p-4 text-xs text-slate-500 font-inter text-pretty">
+                          <div className="rounded-lg border border-dashed border-slate-200 p-4 text-xs text-slate-500 font-sans text-pretty">
                             No people yet. Add someone to start splitting.
                           </div>
                         ) : (
@@ -1704,14 +1704,14 @@ function DesktopBillSplitter() {
                                 >
                                   <div className="flex items-center gap-2">
                                     <div className={cn("size-2.5 rounded-full", colorObj.solid)} />
-                                    <span className="text-sm font-medium text-slate-700 font-inter">{p.name}</span>
+                                    <span className="text-sm font-medium text-slate-700 font-sans">{p.name}</span>
                                   </div>
                                   <div className="flex items-center gap-3">
                                     <div className="text-right">
-                                      <div className="text-xs font-semibold text-slate-900 font-space-mono tabular-nums">
+                                      <div className="text-xs font-semibold text-slate-900 font-mono tabular-nums">
                                         {formatCurrencySimple(stats?.total || 0)}
                                       </div>
-                                      <div className="text-[10px] text-slate-400 font-space-mono tabular-nums">
+                                      <div className="text-[10px] text-slate-400 font-mono tabular-nums">
                                         {percent.toFixed(0)}%
                                       </div>
                                     </div>
@@ -1747,7 +1747,7 @@ function DesktopBillSplitter() {
                                     )}
                                   >
                                     <div className="pt-3 space-y-2">
-                                      <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 font-space-mono tabular-nums">
+                                      <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 font-mono tabular-nums">
                                         <div className="flex items-center justify-between">
                                           <span>Subtotal</span>
                                           <span className="text-slate-700">{formatCurrencySimple(stats?.subtotal || 0)}</span>
@@ -1779,7 +1779,7 @@ function DesktopBillSplitter() {
                                                   ? `${item.name || 'Item'} ×${item.qty}`
                                                   : (item.name || 'Item')}
                                               </span>
-                                              <span className="font-space-mono tabular-nums">
+                                              <span className="font-mono tabular-nums">
                                                 {formatCurrencySimple(item.pricePerPerson)}
                                               </span>
                                             </div>
@@ -1801,8 +1801,8 @@ function DesktopBillSplitter() {
                     <div className="rounded-xl border border-slate-200/70 bg-white p-5 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-900 text-balance font-inter">Bill totals</h3>
-                          <p className="text-xs text-slate-500 text-pretty font-inter">Adjust tax, tip, and discounts.</p>
+                          <h3 className="text-sm font-semibold text-slate-900 text-balance font-sans">Bill totals</h3>
+                          <p className="text-xs text-slate-500 text-pretty font-sans">Adjust tax, tip, and discounts.</p>
                         </div>
                         <button
                           onClick={() => {
@@ -1827,7 +1827,7 @@ function DesktopBillSplitter() {
                         </button>
                       </div>
 
-                      <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-inter">
+                      <div className="mt-4 grid grid-cols-2 gap-3 text-xs font-sans">
                         <div className="space-y-1">
                           <label htmlFor="bill-tax" className="text-slate-500">Tax</label>
                           <input
@@ -1841,7 +1841,7 @@ function DesktopBillSplitter() {
                               dispatch({ type: 'SET_TAX', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
                             }}
-                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-space-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                             placeholder="0.00"
                           />
                         </div>
@@ -1858,7 +1858,7 @@ function DesktopBillSplitter() {
                               dispatch({ type: 'SET_TIP', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
                             }}
-                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-space-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                             placeholder="0.00"
                           />
                         </div>
@@ -1875,34 +1875,34 @@ function DesktopBillSplitter() {
                               dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
                             }}
-                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-space-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-right font-mono text-slate-700 tabular-nums focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                             placeholder="0.00"
                           />
                         </div>
                         <div className="space-y-1">
                           <label className="text-slate-500">Subtotal</label>
-                          <div className="h-9 rounded-md border border-slate-200 bg-slate-50 px-2 flex items-center justify-end font-space-mono text-slate-700 tabular-nums">
+                          <div className="h-9 rounded-md border border-slate-200 bg-slate-50 px-2 flex items-center justify-end font-mono text-slate-700 tabular-nums">
                             {formatCurrencySimple(subtotal)}
                           </div>
                         </div>
                       </div>
 
-                      <div className="mt-4 space-y-2 text-xs font-inter">
+                      <div className="mt-4 space-y-2 text-xs font-sans">
                         <div className="flex items-center justify-between text-slate-500">
                           <span>Tax</span>
-                          <span className="font-space-mono tabular-nums">{formatCurrencySimple(taxAmount)}</span>
+                          <span className="font-mono tabular-nums">{formatCurrencySimple(taxAmount)}</span>
                         </div>
                         <div className="flex items-center justify-between text-slate-500">
                           <span>Tip</span>
-                          <span className="font-space-mono tabular-nums">{formatCurrencySimple(tipAmount)}</span>
+                          <span className="font-mono tabular-nums">{formatCurrencySimple(tipAmount)}</span>
                         </div>
                         <div className="flex items-center justify-between text-slate-500">
                           <span>Discount</span>
-                          <span className="font-space-mono tabular-nums">-{formatCurrencySimple(discountAmount)}</span>
+                          <span className="font-mono tabular-nums">-{formatCurrencySimple(discountAmount)}</span>
                         </div>
                         <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-sm font-semibold text-slate-900">
                           <span>Grand total</span>
-                          <span className="font-space-mono tabular-nums">{formatCurrencySimple(grandTotal)}</span>
+                          <span className="font-mono tabular-nums">{formatCurrencySimple(grandTotal)}</span>
                         </div>
                       </div>
                     </div>
@@ -1992,9 +1992,9 @@ function DesktopBillSplitter() {
       </AlertDialog>
 
       {/* --- Footer --- */}
-      <footer className="pro-footer">
+      <footer className="fixed bottom-0 left-0 right-0 flex items-center justify-between px-6 z-40 bg-card border-t-2 border-border shadow-[var(--receipt-shadow)]" style={{ height: 'calc(56px + env(safe-area-inset-bottom))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="w-full flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5 text-[10px] text-slate-500 font-inter">
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3 py-1.5 text-[10px] text-slate-500 font-sans">
             <span className="font-semibold text-slate-700 tabular-nums">{items.length}</span>
             <span>items</span>
             <span className="text-slate-300">•</span>
@@ -2009,7 +2009,7 @@ function DesktopBillSplitter() {
               <button
                 onClick={() => setView('ledger')}
                 className={cn(
-                  "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                  "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-sans",
                   focusRingClass,
                   activeView === 'ledger' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 )}
@@ -2019,7 +2019,7 @@ function DesktopBillSplitter() {
               <button
                 onClick={() => setView('breakdown')}
                 className={cn(
-                  "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-inter",
+                  "px-3 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 font-sans",
                   focusRingClass,
                   activeView === 'breakdown' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                 )}
@@ -2029,7 +2029,7 @@ function DesktopBillSplitter() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-inter">
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-sans">
             <div className="flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧N</kbd>
               <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-bold">⌘⇧P</kbd>
@@ -2042,7 +2042,7 @@ function DesktopBillSplitter() {
               href="https://anuragd.me"
               target="_blank"
               rel="noreferrer"
-              className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors font-inter"
+              className="text-[10px] font-medium text-slate-400 hover:text-slate-600 transition-colors font-sans"
             >
               Anurag Dhungana
             </a>
@@ -2059,19 +2059,19 @@ function DesktopBillSplitter() {
           {editingPerson && (
             <div className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-2 font-inter">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2 font-sans">
                   Display Name
                 </label>
                 <input
                   autoFocus
                   value={editingPerson.name}
                   onChange={(e) => setEditingPerson({ ...editingPerson, name: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-inter"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-sans"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-3 font-inter">
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-3 font-sans">
                   Color Theme
                 </label>
                 <div className="flex gap-3 flex-wrap">
@@ -2093,13 +2093,13 @@ function DesktopBillSplitter() {
               <div className="pt-4 border-t border-slate-100/60 flex gap-3">
                 <button
                   onClick={() => openRemovePersonDialog(editingPerson)}
-                  className="flex-1 py-2.5 rounded-lg border border-red-100 text-red-600 text-xs font-bold uppercase hover:bg-red-50 transition-colors font-inter"
+                  className="flex-1 py-2.5 rounded-lg border border-red-100 text-red-600 text-xs font-bold uppercase hover:bg-red-50 transition-colors font-sans"
                 >
                   Remove
                 </button>
                 <button
                   onClick={() => updatePerson(editingPerson)}
-                  className="flex-[2] py-2.5 rounded-lg bg-slate-900 text-white text-xs font-bold uppercase hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 font-inter"
+                  className="flex-[2] py-2.5 rounded-lg bg-slate-900 text-white text-xs font-bold uppercase hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20 font-sans"
                 >
                   Save Changes
                 </button>

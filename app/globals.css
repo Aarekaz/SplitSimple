@@ -88,10 +88,10 @@
   --sidebar-border: #D4D2CC;
   --sidebar-ring: #7C3AED;
 
-  /* Font - System fonts for reliable deployment */
-  --font-receipt: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
-  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-numbers: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Courier New", monospace;
+  /* Font - Inter for UI, Space Mono for receipt/numbers */
+  --font-receipt: 'Space Mono', ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Courier New", monospace;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-numbers: 'Space Mono', ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Courier New", monospace;
 
   /* ===== Receipt Elevation System ===== */
   --receipt-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
@@ -986,7 +986,7 @@
   /* Custom scrollbar styling to match receipt theme */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #D4D2CC #FFFEF9;
+    scrollbar-color: var(--border) var(--background);
   }
 
   *::-webkit-scrollbar {
@@ -995,155 +995,26 @@
   }
 
   *::-webkit-scrollbar-track {
-    background: #FFFEF9;
+    background: var(--background);
     border-radius: 4px;
   }
 
   *::-webkit-scrollbar-thumb {
-    background: #D4D2CC;
+    background: var(--border);
     border-radius: 4px;
-    border: 2px solid #FFFEF9;
+    border: 2px solid var(--background);
     transition: background 0.2s ease;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: #A8A29E;
+    background: var(--muted-foreground);
   }
 
   *::-webkit-scrollbar-thumb:active {
-    background: #78716C;
+    background: var(--foreground);
   }
 
-  /* Darker scrollbar for dark mode (if ever implemented) */
-  .dark *::-webkit-scrollbar-track {
-    background: #1A1918;
-  }
-
-  .dark *::-webkit-scrollbar-thumb {
-    background: #44403C;
-    border-color: #1A1918;
-  }
-
-  .dark *::-webkit-scrollbar-thumb:hover {
-    background: #57534E;
-  }
-
-  .dark * {
-    scrollbar-color: #44403C #1A1918;
-  }
-
-  /* ===== Pro SaaS Design System ===== */
-  .pro-app-shell {
-    @apply h-dvh w-full overflow-hidden relative;
-    background: #F8FAFC; /* slate-50 */
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-
-  .pro-header {
-    @apply fixed top-0 left-0 right-0 flex items-center justify-between px-6;
-    height: calc(64px + env(safe-area-inset-top));
-    padding-top: env(safe-area-inset-top);
-    z-index: 20;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid #E2E8F0; /* slate-200 */
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-footer {
-    @apply fixed bottom-0 left-0 right-0 flex items-center justify-between px-6;
-    height: calc(56px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    z-index: 40;
-    background: #FFFFFF;
-    border-top: 1px solid #E2E8F0;
-    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-main {
-    @apply absolute inset-0 overflow-hidden;
-    padding-top: calc(64px + env(safe-area-inset-top));
-    padding-bottom: calc(56px + env(safe-area-inset-bottom));
-    z-index: 10;
-  }
-
-  .pro-grid {
-    display: grid;
-    grid-template-columns:
-      48px
-      minmax(240px, 2fr)
-      100px
-      80px
-      repeat(var(--person-count, 3), minmax(100px, 1fr))
-      100px;
-  }
-
-  .pro-sticky-left {
-    @apply sticky left-0 bg-white z-20;
-    box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-sticky-right {
-    @apply sticky right-0 bg-white z-20;
-    box-shadow: -2px 0 5px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-grid-header {
-    @apply sticky top-0 bg-white border-b border-slate-200;
-    z-index: 30;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-tile-inactive {
-    @apply flex items-center justify-center transition-colors duration-100;
-    color: #94A3B8; /* slate-400 */
-    background: transparent;
-  }
-
-  .pro-tile-active {
-    @apply flex items-center justify-center rounded-md transition-[transform,filter,background-color] duration-100;
-    color: white;
-  }
-
-  .pro-tile-active:hover {
-    filter: brightness(0.95);
-  }
-
-  .pro-tile-active:active {
-    transform: scale(0.95);
-  }
-
-  .font-space-mono {
-    font-family: 'Space Mono', monospace;
-  }
-
-  .font-inter {
-    font-family: 'Inter', sans-serif;
-  }
-
-  /* Minimal scrollbar for pro design */
-  .pro-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  .pro-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .pro-scrollbar::-webkit-scrollbar-thumb {
-    background: #CBD5E1; /* slate-300 */
-    border-radius: 3px;
-  }
-
-  .pro-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8; /* slate-400 */
-  }
-
-  .pro-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
-  }
+  /* Pro SaaS classes removed — use receipt design tokens instead */
 }
 
 @media (prefers-reduced-motion: reduce) {
