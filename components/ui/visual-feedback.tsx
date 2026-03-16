@@ -128,7 +128,7 @@ export function CelebrationOverlay({ show, onComplete, message = "Great job!" }:
   const prefersReducedMotion = useReducedMotion()
   useEffect(() => {
     if (show && onComplete) {
-      const timer = setTimeout(onComplete, prefersReducedMotion ? 0 : 1200)
+      const timer = setTimeout(onComplete, prefersReducedMotion ? 0 : 300)
       return () => clearTimeout(timer)
     }
     return undefined
@@ -237,7 +237,7 @@ export function AnimatedCounter({
       "transition-[color,transform] duration-200",
       isIncreasing && "text-green-600 scale-105",
       className
-    )}>
+    )} style={{ willChange: 'transform' }}>
       {formatFn(displayValue)}
     </span>
   )

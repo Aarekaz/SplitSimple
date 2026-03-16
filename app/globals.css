@@ -105,19 +105,16 @@
   --warning-glow: rgba(217, 119, 6, 0.15);
   --error-glow: rgba(220, 38, 38, 0.15);
 
-  /* ===== Smooth easing curves ===== */
+  /* ===== Easing curves (Emil Kowalski defaults) ===== */
   --ease-out-cubic: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out-cubic: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
 
-  /* ===== Transition durations ===== */
+  /* ===== Transition durations (300ms max for UI) ===== */
   --duration-instant: 0.1s;
-  --duration-fast: 0.2s;
-  --duration-normal: 0.3s;
-  --duration-slow: 0.4s;
-  --duration-slower: 0.6s;
+  --duration-fast: 0.15s;
+  --duration-normal: 0.2s;
 
   /* ===== Spacing scale (8px base) ===== */
   --spacing-unit: 8px;
@@ -520,13 +517,14 @@
 
   /* ===== Micro-interactions (Phase 1 #5) ===== */
 
-  /* Button press effect */
+  /* Button press effect — asymmetric timing: fast press, slower release */
   .btn-press {
-    @apply transition-transform duration-100 ease-out;
+    transition: transform 0.2s var(--ease-out-cubic);
   }
 
   .btn-press:active {
     transform: scale(0.97);
+    transition-duration: 0.08s;
   }
 
   /* Number change flash */
@@ -540,7 +538,7 @@
   }
 
   .number-flash {
-    animation: number-flash 0.2s ease-out;
+    animation: number-flash 0.2s var(--ease-out-cubic);
   }
 
   /* Success ripple effect */
@@ -554,7 +552,7 @@
   }
 
   .success-ripple {
-    animation: success-ripple 0.25s ease-out;
+    animation: success-ripple 0.25s var(--ease-out-cubic);
   }
 
   /* Delete slide-out */
@@ -570,7 +568,7 @@
   }
 
   .delete-slide {
-    animation: delete-slide 0.3s ease-out forwards;
+    animation: delete-slide 0.25s var(--ease-out-cubic) forwards;
   }
 
   /* Add slide-in */
@@ -616,11 +614,11 @@
   }
 
   .animate-slide-in-1 {
-    animation: slide-in-up 0.25s ease-out 0.15s both;
+    animation: slide-in-up 0.25s var(--ease-out-cubic) 0.15s both;
   }
 
   .animate-slide-in-2 {
-    animation: slide-in-up 0.25s ease-out 0.3s both;
+    animation: slide-in-up 0.25s var(--ease-out-cubic) 0.3s both;
   }
 
   /* Person cell assignment animations */
@@ -700,17 +698,14 @@
   }
 
   .ledger-row {
-    @apply border-b border-border transition-[transform,box-shadow,background-color,border-color] duration-200;
+    @apply border-b border-border;
     border-left: 3px solid transparent;
-    transform-origin: center;
+    transition: background-color 0.15s var(--ease-out-cubic), border-color 0.15s var(--ease-out-cubic);
   }
 
   .ledger-row:hover {
     @apply bg-muted/30;
-    border-left-color: hsl(var(--primary));
-    transform: scale(1.002);
-    box-shadow: 0 2px 8px -2px rgba(var(--primary), 0.15),
-                0 0 0 1px rgba(var(--primary), 0.05);
+    border-left-color: var(--primary);
   }
 
   .ledger-row-expanded {
@@ -846,7 +841,7 @@
   }
 
   .success-pulse {
-    animation: success-pulse 0.25s var(--ease-smooth);
+    animation: success-pulse 0.25s var(--ease-out-cubic);
   }
 
   @keyframes success-pulse {
@@ -956,19 +951,23 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Keep opacity crossfades as fallback — don't kill all animation */
   * {
-    animation: none !important;
-    transition-property: opacity, color, background-color, border-color, box-shadow !important;
-    transition-duration: 150ms !important;
-    transition-timing-function: var(--ease-out-cubic) !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
 
-  .ledger-row:hover,
-  .receipt-button:hover,
-  .clickable-badge:hover,
-  .dock-item:hover,
+  /* Allow opacity + color transitions, disable transforms */
+  *:not([data-allow-motion]) {
+    transition-property: opacity, color, background-color, border-color, box-shadow !important;
+    transition-duration: 150ms !important;
+    transition-timing-function: var(--ease-out-cubic) !important;
+  }
+
+  /* Disable all transform-based motion */
   .btn-press:active,
+  .clickable-badge:hover,
   .clickable-badge:active,
   button:active,
   a:active,

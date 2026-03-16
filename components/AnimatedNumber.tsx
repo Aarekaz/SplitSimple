@@ -88,6 +88,7 @@ export const AnimatedNumber = memo(function AnimatedNumber({
       style={{
         fontFeatureSettings: '"tnum" 1, "zero" 1', // Enhanced font features
         fontVariantNumeric: 'tabular-nums',
+        willChange: 'transform',
       }}
     >
       {prefix}{formatFn(displayValue)}{suffix}
