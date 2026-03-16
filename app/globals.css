@@ -418,15 +418,7 @@
     @apply bg-primary/10 text-primary;
   }
 
-  /* ===== Drag Handle (receipt style) ===== */
-  .drag-handle {
-    @apply text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing transition-colors;
-  }
-
-  .drag-handle::before {
-    content: '::';
-    @apply font-mono font-bold text-base;
-  }
+  /* Removed: .drag-handle (unused) */
 
   /* ===== Validation States ===== */
   .validation-success {
@@ -446,9 +438,7 @@
     @apply border-t-2 border-border;
   }
 
-  .receipt-line-dashed {
-    @apply border-t-2 border-dashed border-border;
-  }
+  /* Removed: .receipt-line-dashed (unused) */
 
   .receipt-line-double {
     @apply border-t-4 border-double border-border;
@@ -470,14 +460,7 @@
     box-shadow: var(--receipt-shadow);
   }
 
-  .receipt-input {
-    @apply border-2 border-border bg-card px-3 py-2 font-mono tabular-nums transition-[border-color,box-shadow,background-color];
-    font-family: var(--font-numbers);
-  }
-
-  .receipt-input:focus {
-    @apply outline-none ring-2 ring-primary/50 border-primary;
-  }
+  /* Removed: .receipt-input (unused — components use shadcn Input) */
 
   /* ===== Hover States ===== */
   .hover-highlight {
@@ -826,10 +809,7 @@
     font-family: var(--font-receipt);
   }
 
-  /* Row expand/collapse button */
-  .ledger-expand-btn {
-    @apply inline-flex items-center justify-center w-6 h-6 rounded hover:bg-muted/60 transition-colors cursor-pointer;
-  }
+  /* Removed: .ledger-expand-btn (unused) */
 
   /* Ledger footer for totals */
   .ledger-footer {
@@ -847,49 +827,7 @@
     box-shadow: var(--receipt-shadow);
   }
 
-  .float-panel {
-    @apply bg-card border-2 border-border p-6;
-    box-shadow: var(--receipt-shadow-lg);
-  }
-
-  /* Glass header updated for receipt style */
-  .glass-header {
-    @apply bg-muted/90 backdrop-blur-sm border-b-2 border-border;
-    box-shadow: var(--receipt-shadow);
-  }
-
-  /* ===== Floating Dock (keep for now, update style) ===== */
-  .floating-dock {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
-    @apply bg-card border-2 border-border;
-    box-shadow: var(--receipt-shadow-lg);
-    border-radius: 12px;
-    padding: 8px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .dock-item {
-    @apply rounded-lg p-2 transition-[transform,background-color,border-color] duration-200 border-2 border-transparent;
-    background: transparent;
-  }
-
-  .dock-item:hover {
-    @apply bg-muted border-primary/30;
-    transform: translateY(-2px);
-  }
-
-  .dock-divider {
-    width: 2px;
-    height: 24px;
-    @apply bg-border;
-    margin: 0 4px;
-  }
+  /* Removed: .float-panel, .glass-header, .floating-dock, .dock-divider (unused) */
 
   /* ===== Animation Classes ===== */
   .animate-receipt-print {
