@@ -43,13 +43,13 @@ Rules:
 function getDefaultModel(provider: OCRProvider): string {
   switch (provider) {
     case "google":
-      return process.env.OCR_MODEL || "gemini-2.0-flash"
+      return process.env.OCR_MODEL || "gemini-2.5-flash"
     case "openai":
       return process.env.OCR_MODEL || "gpt-4o"
     case "anthropic":
       return process.env.OCR_MODEL || "claude-sonnet-4-20250514"
     default:
-      return "gemini-2.0-flash"
+      return "gemini-2.5-flash"
   }
 }
 
@@ -195,10 +195,10 @@ export async function fileToBase64(file: File): Promise<{ data: string; mimeType
 export function getAvailableProviders(): Record<OCRProvider, string[]> {
   return {
     google: [
+      "gemini-2.5-flash",
       "gemini-2.0-flash",
       "gemini-1.5-flash",
       "gemini-1.5-pro",
-      "gemini-2.0-flash-exp"
     ],
     openai: [
       "gpt-4o",
