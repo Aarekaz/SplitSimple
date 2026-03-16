@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Plus,
@@ -15,13 +15,11 @@ import {
   RotateCcw,
   RotateCw,
   FileQuestion,
-  Users,
-  Scale,
-  Percent,
-  Calculator,
   ChevronDown,
   Camera,
-  Pencil
+  Pencil,
+  Users,
+  Scale,
 } from 'lucide-react'
 import { useBill } from '@/contexts/BillContext'
 import type { Item, Person } from '@/contexts/BillContext'
@@ -36,6 +34,11 @@ import { getBillFromCloud } from '@/lib/sharing'
 import { migrateBillSchema } from '@/lib/validation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
+import { PERSON_COLORS, SPLIT_METHOD_OPTIONS, formatCurrency } from '@/lib/design-tokens'
+import type { SplitMethod } from '@/lib/design-tokens'
+import { SplitSimpleIcon } from '@/components/SplitSimpleIcon'
+import { GridCell } from '@/components/GridCell'
+import { useBillCalculations } from '@/hooks/use-bill-calculations'
 
 import dynamic from 'next/dynamic'
 import {
@@ -68,39 +71,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-export type SplitMethod = "even" | "shares" | "percent" | "exact"
-
-// --- DESIGN TOKENS ---
-const COLORS = [
-  { id: 'indigo', bg: 'bg-primary/20', solid: 'bg-primary', text: 'text-primary', textSolid: 'text-white', hex: '#4F46E5' },
-  { id: 'orange', bg: 'bg-orange-100', solid: 'bg-orange-500', text: 'text-orange-700', textSolid: 'text-white', hex: '#F97316' },
-  { id: 'rose', bg: 'bg-rose-100', solid: 'bg-rose-500', text: 'text-rose-700', textSolid: 'text-white', hex: '#F43F5E' },
-  { id: 'emerald', bg: 'bg-emerald-100', solid: 'bg-emerald-500', text: 'text-emerald-700', textSolid: 'text-white', hex: '#10B981' },
-  { id: 'blue', bg: 'bg-blue-100', solid: 'bg-blue-500', text: 'text-blue-700', textSolid: 'text-white', hex: '#3B82F6' },
-  { id: 'amber', bg: 'bg-amber-100', solid: 'bg-amber-500', text: 'text-amber-700', textSolid: 'text-white', hex: '#F59E0B' },
-]
-
-export const SplitSimpleIcon = () => (
-  <div className="w-8 h-8 rounded-lg shadow-md flex items-center justify-center bg-card">
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-6 h-6"
-      aria-hidden="true"
-    >
-      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1Z" fill="#16a34a" />
-      <path d="M16 8h-6a2 2 0 1 0 0 4h6" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 17.5v-11" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  </div>
-)
-
-const formatCurrencySimple = (amount: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
-}
+// COLORS, SplitMethod, SplitSimpleIcon, GridCell, formatCurrency — imported from extracted modules
+const COLORS = PERSON_COLORS
+const formatCurrencySimple = formatCurrency
 
 const ReceiptScanner = dynamic(
   () => import('@/components/ReceiptScanner').then((mod) => mod.ReceiptScanner),
@@ -119,105 +92,13 @@ const ProBillBreakdownView = dynamic(
   }
 )
 
-// --- Grid Cell Component (moved outside to prevent re-creation on every render) ---
-const GridCell = React.memo(({
-  row,
-  col,
-  value,
-  type = 'text',
-  className = '',
-  isSelected,
-  isEditing,
-  itemId,
-  field,
-  onCellEdit,
-  onCellClick,
-  editInputRef
-}: {
-  row: number
-  col: string
-  value: string | number
-  type?: string
-  className?: string
-  isSelected: boolean
-  isEditing: boolean
-  itemId: string
-  field: 'name' | 'price' | 'qty'
-  onCellEdit: (itemId: string, field: 'name' | 'price' | 'qty', value: string) => void
-  onCellClick: (row: number, col: string) => void
-  editInputRef: React.RefObject<HTMLInputElement | null>
-}) => {
-  // Use text type with numeric inputMode for number fields (removes spinner arrows)
-  const isNumericField = field === 'price' || field === 'qty'
-  const inputType = 'text'
-  const inputMode = isNumericField ? 'decimal' : undefined
-  const placeholder =
-    field === 'name' ? 'Type item…' :
-    field === 'price' ? '0.00' :
-    field === 'qty' ? '1' : ''
-
-  if (isEditing) {
-    return (
-      <div className="absolute inset-0 z-30">
-        <input
-          ref={editInputRef}
-          type={inputType}
-          inputMode={inputMode}
-          value={value}
-          name={`${field}-${itemId}`}
-          autoComplete="off"
-          aria-label={`Edit ${field}`}
-          onChange={e => onCellEdit(itemId, field, e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "w-full h-full px-4 py-3 text-sm border-2 border-primary focus:outline-none",
-            className
-          )}
-        />
-      </div>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      role="gridcell"
-      tabIndex={isSelected ? 0 : -1}
-      aria-selected={isSelected}
-      aria-label={`Row ${row + 1} ${field}`}
-      onClick={() => onCellClick(row, col)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onCellClick(row, col)
-        }
-      }}
-      className={cn(
-        "w-full h-full px-4 py-3 flex items-center cursor-text relative text-left",
-        isSelected && "ring-inset ring-2 ring-ring z-10",
-        className
-      )}
-    >
-      <span className={cn("truncate w-full", !value && "text-muted-foreground/40 font-normal")}>
-        {value ? (field === 'price' ? `$${value}` : value) : placeholder}
-      </span>
-    </button>
-  )
-})
-
-GridCell.displayName = 'GridCell'
+// GridCell — imported from @/components/GridCell
 
 
 
 
 
-// --- Split Method Options (constant) ---
-const splitMethodOptions = [
-  { value: 'even' as SplitMethod, label: 'Even Split', icon: Users },
-  { value: 'shares' as SplitMethod, label: 'By Shares', icon: Scale },
-  { value: 'percent' as SplitMethod, label: 'By Percent', icon: Percent },
-  { value: 'exact' as SplitMethod, label: 'Exact Amount', icon: Calculator },
-]
+const splitMethodOptions = SPLIT_METHOD_OPTIONS
 
 function DesktopBillSplitter() {
   const { state, dispatch, canUndo, canRedo } = useBill()
@@ -297,81 +178,11 @@ function DesktopBillSplitter() {
     return 'ontouchstart' in window || navigator.maxTouchPoints > 0
   }
 
-  // --- Derived Data ---
-  const hasMeaningfulItems = useMemo(() => {
-    return items.some(i => (i.name || '').trim() !== '' || (i.price || '').trim() !== '' || (i.quantity || 1) !== 1)
-  }, [items])
-
-  const calculatedItems = useMemo(() => items.map(item => {
-    const priceNumber = parseFloat(item.price || '0')
-    const qty = item.quantity || 1
-    const totalItemPrice = priceNumber * qty
-    const splitCount = item.splitWith.length
-    const pricePerPerson = splitCount > 0 ? totalItemPrice / splitCount : 0
-    return { ...item, totalItemPrice, pricePerPerson, priceNumber, qty }
-  }), [items])
-
-  const { subtotal, taxAmount, tipAmount, discountAmount, grandTotal } = useMemo(() => {
-    const sub = calculatedItems.reduce((acc, item) => acc + item.totalItemPrice, 0)
-    const tax = parseFloat(state.currentBill.tax || '0')
-    const tip = parseFloat(state.currentBill.tip || '0')
-    const disc = parseFloat(state.currentBill.discount || '0')
-    return {
-      subtotal: sub,
-      taxAmount: tax,
-      tipAmount: tip,
-      discountAmount: disc,
-      grandTotal: sub + tax + tip - disc
-    }
-  }, [calculatedItems, state.currentBill.tax, state.currentBill.tip, state.currentBill.discount])
-
-  const personFinalShares = useMemo(() => {
-    const shares: Record<string, {
-      subtotal: number
-      tax: number
-      tip: number
-      discount: number
-      total: number
-      ratio: number
-      items: typeof calculatedItems
-    }> = {}
-
-    const totalWeight = subtotal > 0 ? subtotal : 1
-
-    people.forEach(p => {
-      let personSub = 0
-      calculatedItems.forEach(item => {
-        if (item.splitWith.includes(p.id)) {
-          personSub += item.pricePerPerson
-        }
-      })
-
-      const ratio = totalWeight > 0 ? personSub / totalWeight : 0
-      const tax = taxAmount * ratio
-      const tip = tipAmount * ratio
-      const disc = discountAmount * ratio
-
-      shares[p.id] = {
-        subtotal: personSub,
-        tax,
-        tip,
-        discount: disc,
-        total: personSub + tax + tip - disc,
-        ratio: ratio * 100,
-        items: calculatedItems.filter(i => i.splitWith.includes(p.id))
-      }
-    })
-
-    return shares
-  }, [calculatedItems, people, subtotal, taxAmount, tipAmount, discountAmount])
-
-  const itemsById = useMemo(() => {
-    return new Map(items.map((item) => [item.id, item]))
-  }, [items])
-
-  const peopleById = useMemo(() => {
-    return new Map(people.map((person) => [person.id, person]))
-  }, [people])
+  // --- Derived Data (extracted to hook) ---
+  const {
+    calculatedItems, subtotal, taxAmount, tipAmount, discountAmount, grandTotal,
+    personFinalShares, hasMeaningfulItems, itemsById, peopleById
+  } = useBillCalculations(items, people, state.currentBill)
 
   useEffect(() => {
     setExpandedPeople(new Set())
