@@ -49,7 +49,7 @@ export default function ProBillBreakdownView({
   title,
 }: ProBillBreakdownViewProps) {
   return (
-    <div className="h-full overflow-auto p-6 bg-muted/50 overflow-auto" style={{ contentVisibility: 'auto' }}>
+    <div className="h-full overflow-auto p-6 bg-muted/50" style={{ contentVisibility: 'auto' }}>
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-16">
           {/* LEFT: Bill Summary Receipt */}

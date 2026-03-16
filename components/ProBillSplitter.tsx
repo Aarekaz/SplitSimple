@@ -85,7 +85,7 @@ const ProBillBreakdownView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full overflow-auto p-6 bg-muted/50 overflow-auto">
+      <div className="h-full overflow-auto p-6 bg-muted/50">
         <div className="max-w-5xl mx-auto text-sm text-muted-foreground">Loading breakdown…</div>
       </div>
     ),
@@ -827,7 +827,8 @@ function DesktopBillSplitter() {
   }, [editing])
 
   return (
-    <div className="h-dvh w-full overflow-hidden relative bg-background font-sans selection:bg-primary/20 selection:text-primary">
+    <div className="h-dvh w-full overflow-hidden relative bg-background font-sans selection:bg-primary/20 selection:text-primary touch-action-manipulation" style={{ touchAction: 'manipulation' }}>
+      <h1 className="sr-only">SplitSimple — Bill Splitter</h1>
       {/* --- Header --- */}
       <header className="fixed top-0 left-0 right-0 flex items-center justify-between px-6 z-20 bg-card/80 backdrop-blur-sm border-b-2 border-border shadow-[var(--receipt-shadow)]" style={{ height: 'calc(64px + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="w-full flex items-center justify-between gap-6">
@@ -1065,7 +1066,7 @@ function DesktopBillSplitter() {
         {activeView === 'ledger' && (
           <div className="h-full w-full">
             <div
-              className="h-full overflow-auto px-6 py-6 outline-none overflow-auto"
+              className="h-full overflow-auto px-6 py-6 outline-none"
               tabIndex={-1}
               style={{ contentVisibility: 'auto' }}
             >
@@ -1313,7 +1314,7 @@ function DesktopBillSplitter() {
                                       {isAssigned ? (
                                         <div
                                           className={cn(
-                                            "w-20 py-1.5 rounded-md shadow-sm text-center transform transition-transform active:scale-95",
+                                            "w-20 py-1.5 rounded-md shadow-sm text-center transform transition-transform active:scale-[0.97]",
                                             color.solid,
                                             color.textSolid
                                           )}
@@ -1853,7 +1854,7 @@ function DesktopBillSplitter() {
               href="https://anuragd.me"
               target="_blank"
               rel="noreferrer"
-              className="text-[10px] font-medium text-muted-foreground hover:text-muted-foreground transition-colors font-sans"
+              className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors font-sans"
             >
               Anurag Dhungana
             </a>
@@ -1870,22 +1871,25 @@ function DesktopBillSplitter() {
           {editingPerson && (
             <div className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase mb-2 font-sans">
+                <label htmlFor="person-display-name" className="block text-xs font-bold text-muted-foreground uppercase mb-2 font-sans">
                   Display Name
                 </label>
                 <input
+                  id="person-display-name"
                   autoFocus
                   value={editingPerson.name}
+                  name="person-name"
+                  autoComplete="off"
                   onChange={(e) => setEditingPerson({ ...editingPerson, name: e.target.value })}
                   className="w-full bg-muted/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground font-medium focus:ring-2 focus:ring-ring focus:border-transparent font-sans"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-muted-foreground uppercase mb-3 font-sans">
+                <label id="color-theme-label" className="block text-xs font-bold text-muted-foreground uppercase mb-3 font-sans">
                   Color Theme
                 </label>
-                <div className="flex gap-3 flex-wrap">
+                <div className="flex gap-3 flex-wrap" role="radiogroup" aria-labelledby="color-theme-label">
                   {COLORS.map((c, idx) => (
                     <button
                       key={idx}
