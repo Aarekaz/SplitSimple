@@ -57,9 +57,9 @@ export function MobileSpreadsheetView() {
   }
 
   return (
-    <div id="main-content" className="min-h-screen bg-slate-50 flex flex-col">
+    <div id="main-content" className="min-h-screen bg-muted/50 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b">
         <div className="px-4 py-3 flex items-center gap-3">
           <SplitSimpleIcon />
           <div className="flex-1 min-w-0">

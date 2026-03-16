@@ -10,14 +10,14 @@ interface ViewToggleProps {
 
 export function ViewToggle({ value, onChange }: ViewToggleProps) {
   return (
-    <div className="inline-flex bg-slate-100 p-1 rounded-lg">
+    <div className="inline-flex bg-muted p-1 rounded-lg">
       <button
         onClick={() => onChange("cards")}
         className={cn(
           "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-[background-color,color,box-shadow]",
           value === "cards"
-            ? "bg-white text-slate-900 shadow-sm"
-            : "text-slate-600 hover:text-slate-900"
+            ? "bg-card text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
         )}
       >
         <LayoutList className="h-3.5 w-3.5" />
@@ -28,8 +28,8 @@ export function ViewToggle({ value, onChange }: ViewToggleProps) {
         className={cn(
           "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-[background-color,color,box-shadow]",
           value === "grid"
-            ? "bg-white text-slate-900 shadow-sm"
-            : "text-slate-600 hover:text-slate-900"
+            ? "bg-card text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
         )}
       >
         <LayoutGrid className="h-3.5 w-3.5" />
