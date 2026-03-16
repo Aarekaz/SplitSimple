@@ -26,7 +26,7 @@ function QuickStartCard({ icon, title, description, action, variant = "default" 
   return (
     <Card 
       className={cn(
-        "cursor-pointer transition-[transform,box-shadow,background-color,border-color] duration-200 hover:shadow-lg active:scale-95",
+        "cursor-pointer transition-[transform,box-shadow,background-color,border-color] duration-200 hover:shadow-lg active:scale-[0.97]",
         variant === "primary" && "border-primary bg-primary/5 hover:bg-primary/10"
       )}
       onClick={action}
@@ -166,7 +166,7 @@ export function MobileFirstUI() {
               <UserPlus className="w-9 h-9 text-primary" />
             </div>
             {/* Success indicator */}
-            <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-success rounded-full flex items-center justify-center animate-bounce motion-reduce:animate-none">
               <Plus className="w-3 h-3 text-white" />
             </div>
           </div>

@@ -37,7 +37,7 @@ import { formatCurrency } from "@/lib/utils"
 import { copyToClipboard, generateSummaryText } from "@/lib/export"
 import { useToast } from "@/hooks/use-toast"
 import { useBillAnalytics } from "@/hooks/use-analytics"
-import { SplitSimpleIcon } from "@/components/ProBillSplitter"
+import { SplitSimpleIcon } from "@/components/SplitSimpleIcon"
 import { BillLookup } from "@/components/BillLookup"
 import { ShareBill } from "@/components/ShareBill"
 import { ReceiptScanner } from "@/components/ReceiptScanner"
@@ -45,7 +45,7 @@ import { cn } from "@/lib/utils"
 
 // Color palette for people
 const COLORS = [
-  { id: 'indigo', bg: 'bg-indigo-100', solid: 'bg-indigo-600', text: 'text-indigo-700', textSolid: 'text-white', hex: '#4F46E5' },
+  { id: 'indigo', bg: 'bg-primary/20', solid: 'bg-primary', text: 'text-primary', textSolid: 'text-white', hex: '#4F46E5' },
   { id: 'orange', bg: 'bg-orange-100', solid: 'bg-orange-500', text: 'text-orange-700', textSolid: 'text-white', hex: '#F97316' },
   { id: 'rose', bg: 'bg-rose-100', solid: 'bg-rose-500', text: 'text-rose-700', textSolid: 'text-white', hex: '#F43F5E' },
   { id: 'emerald', bg: 'bg-emerald-100', solid: 'bg-emerald-500', text: 'text-emerald-700', textSolid: 'text-white', hex: '#10B981' },
@@ -229,9 +229,9 @@ export function MobileCardView() {
   }, [items, people, state.currentBill.tax, state.currentBill.tip, state.currentBill.discount])
 
   return (
-    <div className="h-full bg-slate-50 flex flex-col">
+    <div className="h-full bg-muted/50 flex flex-col">
       {/* Grand Total Card - Always Visible */}
-      <div className="bg-white border-b px-4 py-4">
+      <div className="bg-card border-b px-4 py-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Grand total</p>
@@ -246,8 +246,8 @@ export function MobileCardView() {
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="flex-1 flex flex-col">
-        <div className="bg-white border-b px-4 pt-2">
-          <TabsList className="w-full h-10 bg-slate-100">
+        <div className="bg-card border-b px-4 pt-2">
+          <TabsList className="w-full h-10 bg-muted">
             <TabsTrigger value="items" className="flex-1">
               <Receipt className="h-4 w-4" />
               <span>Items</span>
@@ -324,7 +324,7 @@ export function MobileCardView() {
                                 assignedPeople.slice(0, 3).map(person => (
                                   <span
                                     key={person.id}
-                                    className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-100"
+                                    className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted"
                                   >
                                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: person.color }} />
                                     {person.name.split(' ')[0]}
@@ -383,7 +383,7 @@ export function MobileCardView() {
                     <Card key={person.id} className="overflow-hidden">
                       <CardContent className="p-0">
                         {/* Person Header */}
-                        <div className="p-4 bg-slate-50 border-b flex items-center justify-between">
+                        <div className="p-4 bg-muted/50 border-b flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div
                               className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
@@ -404,8 +404,8 @@ export function MobileCardView() {
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="px-4 py-3 bg-slate-50/50">
-                          <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-slate-200">
+                        <div className="px-4 py-3 bg-muted/30">
+                          <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-muted">
                             <div
                               className="h-full transition-[width,opacity] rounded-full"
                               style={{
@@ -482,7 +482,7 @@ export function MobileCardView() {
       </Tabs>
 
       {/* Bottom Action Bar */}
-      <div className="sticky bottom-0 z-40 bg-white border-t px-4 pt-3 pb-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}>
+      <div className="sticky bottom-0 z-40 bg-card border-t px-4 pt-3 pb-4" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}>
         <div className="flex gap-2 mb-3">
           <Button onClick={handleCopySummary} className="flex-1">
             <Copy className="h-4 w-4 mr-2" />
@@ -550,7 +550,7 @@ export function MobileCardView() {
         <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto p-0">
           {editingItem && (
             <>
-              <SheetHeader className="p-4 border-b sticky top-0 bg-white z-10">
+              <SheetHeader className="p-4 border-b sticky top-0 bg-card z-10">
                 <SheetTitle>Edit Item</SheetTitle>
               </SheetHeader>
               <div className="p-4 space-y-5">
@@ -592,7 +592,7 @@ export function MobileCardView() {
                 </div>
 
                 {/* Total */}
-                <div className="flex items-center justify-between bg-slate-100 rounded-lg px-4 py-3">
+                <div className="flex items-center justify-between bg-muted rounded-lg px-4 py-3">
                   <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Total</span>
                   <span className="text-xl font-bold">
                     {formatCurrency((parseFloat(editingItem.price || "0") || 0) * (editingItem.quantity || 1))}
@@ -682,7 +682,7 @@ export function MobileCardView() {
       {/* People Management Sheet */}
       <Sheet open={peopleManagementOpen} onOpenChange={setPeopleManagementOpen}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto p-0">
-          <SheetHeader className="p-4 border-b sticky top-0 bg-white z-10">
+          <SheetHeader className="p-4 border-b sticky top-0 bg-card z-10">
             <SheetTitle>Manage People</SheetTitle>
           </SheetHeader>
           <div className="p-4 space-y-4">
@@ -750,7 +750,7 @@ export function MobileCardView() {
         <SheetContent side="bottom" className="max-h-[75vh] overflow-y-auto p-0">
           {editingPerson && (
             <>
-              <SheetHeader className="p-4 border-b sticky top-0 bg-white z-10">
+              <SheetHeader className="p-4 border-b sticky top-0 bg-card z-10">
                 <SheetTitle>Edit Person</SheetTitle>
               </SheetHeader>
               <div className="p-4 space-y-5">
@@ -796,7 +796,7 @@ export function MobileCardView() {
 
                 {/* Person Stats */}
                 {personTotals[editingPerson.id] && (
-                  <div className="bg-slate-100 rounded-lg p-4 space-y-2">
+                  <div className="bg-muted rounded-lg p-4 space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       Current Bill
                     </p>

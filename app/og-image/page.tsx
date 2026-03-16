@@ -61,10 +61,10 @@ export default function OgImagePage() {
             </div>
 
             <div className="space-y-4">
-              <h1 className="text-6xl font-bold tracking-tight text-slate-900 font-inter">
+              <h1 className="text-6xl font-bold tracking-tight text-slate-900 font-sans">
                 Split bills in seconds.
               </h1>
-              <p className="text-xl text-slate-600 max-w-2xl font-inter">
+              <p className="text-xl text-slate-600 max-w-2xl font-sans">
                 Split expenses with friends and colleagues effortlessly. Assign items, tips, and taxes with a clean
                 spreadsheet workflow.
               </p>
@@ -82,7 +82,7 @@ export default function OgImagePage() {
               </span>
             </div>
 
-            <div className="text-sm text-slate-500 font-space-mono">
+            <div className="text-sm text-slate-500 font-mono">
               splitsimple.anuragd.me
             </div>
           </div>
