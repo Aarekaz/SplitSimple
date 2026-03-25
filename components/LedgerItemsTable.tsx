@@ -355,8 +355,8 @@ export function LedgerItemsTable() {
         {people.length > 5 && (
           <div className="absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none z-20 flex items-center justify-center">
             <div className="flex flex-col items-center gap-1">
-              <ChevronRight className="h-4 w-4 text-primary animate-bounce" style={{ animationDuration: '1.5s' }} />
-              <ChevronRight className="h-4 w-4 text-primary/60 animate-bounce" style={{ animationDuration: '1.5s', animationDelay: '0.15s' }} />
+              <ChevronRight className="h-4 w-4 text-primary animate-bounce [animation-iteration-count:3]" style={{ animationDuration: '1.5s' }} />
+              <ChevronRight className="h-4 w-4 text-primary/60 animate-bounce [animation-iteration-count:3]" style={{ animationDuration: '1.5s', animationDelay: '0.15s' }} />
             </div>
           </div>
         )}
@@ -519,7 +519,7 @@ export function LedgerItemsTable() {
                             className={`
                               w-full h-full px-3 py-3 text-right cursor-pointer transition-[background-color,border-color,transform] duration-200 group
                               focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset
-                              active:scale-95 touch-manipulation
+                              active:scale-[0.97] touch-manipulation
                               ${isAssigned
                                 ? 'person-cell-assigned hover:brightness-95 active:brightness-90'
                                 : 'person-cell-unassigned bg-muted/40 hover:bg-muted/60 active:bg-muted/70'

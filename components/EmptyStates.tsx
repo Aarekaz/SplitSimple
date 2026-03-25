@@ -42,10 +42,10 @@ export function EmptyState({
         </div>
         
         {/* Floating elements for visual interest */}
-        <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center animate-bounce delay-100 shadow-md">
+        <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center animate-bounce motion-reduce:animate-none delay-100 shadow-md">
           <Plus className="w-4 h-4 text-primary" />
         </div>
-        <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-lg animate-pulse delay-300 shadow-md" />
+        <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-lg animate-pulse motion-reduce:animate-none delay-300 shadow-md" />
       </div>
       
       <div className="space-y-3 mb-8">
@@ -163,7 +163,7 @@ interface EmptyItemsStateProps {
 export function EmptyItemsState({ onAddItem, hasPeople }: EmptyItemsStateProps) {
   return (
     <EmptyState
-      icon={<ShoppingCart className="w-10 h-10 text-blue-600" />}
+      icon={<ShoppingCart className="w-10 h-10 text-primary" />}
       title={hasPeople ? "Ready to add items?" : "Almost there!"}
       description={
         hasPeople 
@@ -185,7 +185,7 @@ interface EmptyPeopleStateProps {
 export function EmptyPeopleState({ onAddPerson }: EmptyPeopleStateProps) {
   return (
     <EmptyState
-      icon={<Users className="w-10 h-10 text-purple-600" />}
+      icon={<Users className="w-10 h-10 text-primary" />}
       title="Let's get started!"
       description="Add the first person to your group and we'll help you split costs fairly"
       action={{
@@ -213,10 +213,10 @@ export function OnboardingFlow({ onQuickStart, onAddPerson }: OnboardingFlowProp
             <Receipt className="w-11 h-11 text-white relative z-10" />
           </div>
           {/* Floating decorations */}
-          <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-br from-success to-success/80 rounded-xl flex items-center justify-center animate-bounce shadow-md">
+          <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-br from-success to-success/80 rounded-lg flex items-center justify-center animate-bounce motion-reduce:animate-none shadow-md">
             <DollarSign className="w-4 h-4 text-white" />
           </div>
-          <div className="absolute -bottom-1 -left-1 w-5 h-5 bg-gradient-to-br from-secondary to-secondary/80 rounded-lg animate-pulse delay-500 shadow-md" />
+          <div className="absolute -bottom-1 -left-1 w-5 h-5 bg-gradient-to-br from-secondary to-secondary/80 rounded-lg animate-pulse motion-reduce:animate-none delay-500 shadow-md" />
         </div>
         
         <div>
@@ -288,7 +288,7 @@ export function OnboardingFlow({ onQuickStart, onAddPerson }: OnboardingFlowProp
 // Loading skeleton for empty states
 export function EmptyStateLoading() {
   return (
-    <div className="text-center py-12 px-6 animate-pulse">
+    <div className="text-center py-12 px-6 animate-pulse motion-reduce:animate-none">
       <div className="w-24 h-24 mx-auto bg-muted rounded-2xl mb-6" />
       <div className="space-y-3 mb-8">
         <div className="h-8 bg-muted rounded w-48 mx-auto" />

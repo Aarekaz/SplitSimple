@@ -58,7 +58,7 @@ export function MobileActionButton({
             <Button
               size="lg"
               variant="secondary"
-              className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 delay-75 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 delay-[25ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
               onClick={() => handleAction(onAddItem)}
             >
               <ShoppingCart className="h-5 w-5 mr-3" />
@@ -68,7 +68,7 @@ export function MobileActionButton({
             <Button
               size="lg"
               variant="secondary"
-              className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 delay-100 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              className="h-14 px-6 shadow-lg animate-in slide-in-from-bottom-2 duration-200 delay-[50ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
               onClick={() => handleAction(onAddPerson)}
             >
               <Users className="h-5 w-5 mr-3" />

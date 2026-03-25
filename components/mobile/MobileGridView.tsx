@@ -120,17 +120,17 @@ export function MobileGridView() {
   }, [items, people])
 
   return (
-    <div className="h-full flex flex-col bg-slate-50">
+    <div className="h-full flex flex-col bg-muted/50">
       {/* Empty State */}
       {items.length === 0 ? (
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="text-center space-y-4 max-w-sm">
-            <div className="w-20 h-20 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
-              <Plus className="h-10 w-10 text-slate-400" />
+            <div className="w-20 h-20 mx-auto bg-muted rounded-full flex items-center justify-center">
+              <Plus className="h-10 w-10 text-muted-foreground" />
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-2">No items yet</h3>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-muted-foreground">
                 Add your first item to start splitting expenses in spreadsheet view
               </p>
             </div>
@@ -144,7 +144,7 @@ export function MobileGridView() {
         <>
           {/* Scroll Hint */}
           {people.length > 2 && (
-            <div className="bg-slate-100 border-b px-4 py-2 flex items-center justify-center gap-2 text-xs text-slate-600">
+            <div className="bg-muted border-b px-4 py-2 flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <span>Swipe left to see more people</span>
               <span className="text-lg">→</span>
             </div>
@@ -158,28 +158,28 @@ export function MobileGridView() {
 
               <table className="w-full border-collapse">
                 {/* Header */}
-                <thead className="sticky top-0 z-20 bg-white border-b-2 border-slate-200">
+                <thead className="sticky top-0 z-20 bg-card border-b-2 border-border">
               <tr>
                 {/* Frozen Column Header */}
-                <th className="sticky left-0 z-30 bg-slate-100 border-r border-slate-200 px-3 py-2 text-left shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
-                  <span className="text-xs font-bold uppercase text-slate-600">Item</span>
+                <th className="sticky left-0 z-30 bg-muted border-r border-border px-3 py-2 text-left shadow-[2px_0_4px_var(--color-border)]">
+                  <span className="text-xs font-bold uppercase text-muted-foreground">Item</span>
                 </th>
 
                 {/* Qty Header */}
-                <th className="bg-slate-100 border-r border-slate-200 px-2 py-2 min-w-[60px]">
-                  <span className="text-xs font-bold uppercase text-slate-600">Qty</span>
+                <th className="bg-muted border-r border-border px-2 py-2 min-w-[60px]">
+                  <span className="text-xs font-bold uppercase text-muted-foreground">Qty</span>
                 </th>
 
                 {/* Price Header */}
-                <th className="bg-slate-100 border-r border-slate-200 px-2 py-2 min-w-[80px]">
-                  <span className="text-xs font-bold uppercase text-slate-600">$</span>
+                <th className="bg-muted border-r border-border px-2 py-2 min-w-[80px]">
+                  <span className="text-xs font-bold uppercase text-muted-foreground">$</span>
                 </th>
 
                 {/* People Headers */}
                 {people.map((person, idx) => (
                   <th
                     key={person.id}
-                    className="bg-slate-100 border-r border-slate-200 px-2 py-2 min-w-[80px]"
+                    className="bg-muted border-r border-border px-2 py-2 min-w-[80px]"
                   >
                     <div className="flex flex-col items-center gap-1">
                       <div
@@ -188,7 +188,7 @@ export function MobileGridView() {
                       >
                         {person.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                       </div>
-                      <span className="text-[9px] font-bold text-slate-700 truncate max-w-full">
+                      <span className="text-[9px] font-bold text-foreground truncate max-w-full">
                         {person.name.split(' ')[0]}
                       </span>
                     </div>
@@ -196,8 +196,8 @@ export function MobileGridView() {
                 ))}
 
                 {/* Total Header */}
-                <th className="sticky right-0 z-30 bg-slate-100 border-l-2 border-slate-300 px-2 py-2 min-w-[80px]">
-                  <span className="text-xs font-bold uppercase text-slate-600">Total</span>
+                <th className="sticky right-0 z-30 bg-muted border-l-2 border-border px-2 py-2 min-w-[80px]">
+                  <span className="text-xs font-bold uppercase text-muted-foreground">Total</span>
                 </th>
               </tr>
             </thead>
@@ -208,24 +208,24 @@ export function MobileGridView() {
                 const itemTotal = (parseFloat(item.price || "0") || 0) * (item.quantity || 1)
 
                 return (
-                  <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50">
+                  <tr key={item.id} className="border-b border-border hover:bg-muted/50">
                     {/* Frozen: Item Name */}
                     <td
-                      className="sticky left-0 z-10 bg-white border-r border-slate-200 px-3 py-4 min-w-[120px] cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition-colors shadow-[2px_0_4px_rgba(0,0,0,0.05)]"
+                      className="sticky left-0 z-10 bg-card border-r border-border px-3 py-4 min-w-[120px] cursor-pointer hover:bg-muted active:bg-muted transition-colors shadow-[2px_0_4px_var(--color-border)]"
                       onClick={() => setEditingItem(item)}
                     >
-                      <div className="text-sm font-medium text-slate-900 line-clamp-2">
-                        {item.name || <span className="text-slate-400 italic">Untitled</span>}
+                      <div className="text-sm font-medium text-foreground line-clamp-2">
+                        {item.name || <span className="text-muted-foreground italic">Untitled</span>}
                       </div>
                     </td>
 
                     {/* Quantity */}
-                    <td className="bg-white border-r border-slate-200 px-2 py-3 text-center">
+                    <td className="bg-card border-r border-border px-2 py-3 text-center">
                       <span className="text-sm font-mono">{item.quantity}</span>
                     </td>
 
                     {/* Price */}
-                    <td className="bg-white border-r border-slate-200 px-2 py-3 text-right">
+                    <td className="bg-card border-r border-border px-2 py-3 text-right">
                       <span className="text-sm font-mono">${parseFloat(item.price || "0").toFixed(2)}</span>
                     </td>
 
@@ -240,10 +240,10 @@ export function MobileGridView() {
                         <td
                           key={person.id}
                           className={cn(
-                            "border-r border-slate-200 px-2 py-4 cursor-pointer transition-[background-color,border-color,transform] duration-150 min-h-[60px]",
+                            "border-r border-border px-2 py-4 cursor-pointer transition-[background-color,border-color,transform] duration-150 min-h-[60px]",
                             isAssigned
-                              ? "bg-opacity-10 active:scale-95"
-                              : "bg-white hover:bg-slate-50 active:bg-slate-100"
+                              ? "bg-opacity-10 active:scale-[0.97]"
+                              : "bg-card hover:bg-muted/50 active:bg-muted"
                           )}
                           style={{
                             backgroundColor: isAssigned ? `${person.color}20` : undefined
@@ -259,12 +259,12 @@ export function MobileGridView() {
                                 >
                                   ✓
                                 </div>
-                                <span className="text-[11px] font-mono font-medium text-slate-700">
+                                <span className="text-[11px] font-mono font-medium text-foreground">
                                   {formatCurrency(perPersonAmount)}
                                 </span>
                               </>
                             ) : (
-                              <span className="text-slate-300 text-xl">-</span>
+                              <span className="text-muted-foreground/40 text-xl">-</span>
                             )}
                           </div>
                         </td>
@@ -272,7 +272,7 @@ export function MobileGridView() {
                     })}
 
                     {/* Total */}
-                    <td className="sticky right-0 z-10 bg-white border-l-2 border-slate-300 px-2 py-3 text-right">
+                    <td className="sticky right-0 z-10 bg-card border-l-2 border-border px-2 py-3 text-right">
                       <span className="text-sm font-mono font-bold">{formatCurrency(itemTotal)}</span>
                     </td>
                   </tr>
@@ -280,10 +280,10 @@ export function MobileGridView() {
               })}
 
               {/* Add Row Button */}
-              <tr className="border-b border-slate-200">
+              <tr className="border-b border-border">
                 <td
                   colSpan={3 + people.length + 1}
-                  className="sticky left-0 bg-white px-3 py-2"
+                  className="sticky left-0 bg-card px-3 py-2"
                 >
                   <button
                     onClick={handleAddItem}
@@ -297,21 +297,21 @@ export function MobileGridView() {
             </tbody>
 
             {/* Footer with Totals */}
-            <tfoot className="sticky bottom-0 z-20 bg-white border-t-2 border-slate-300">
+            <tfoot className="sticky bottom-0 z-20 bg-card border-t-2 border-border">
               {/* Subtotal Row */}
-              <tr className="bg-slate-50">
-                <td className="sticky left-0 z-30 bg-slate-50 border-r border-slate-200 px-3 py-2 font-bold text-xs uppercase">
+              <tr className="bg-muted/50">
+                <td className="sticky left-0 z-30 bg-muted/50 border-r border-border px-3 py-2 font-bold text-xs uppercase">
                   Subtotal
                 </td>
-                <td className="border-r border-slate-200" colSpan={2}></td>
+                <td className="border-r border-border" colSpan={2}></td>
                 {people.map(person => (
-                  <td key={person.id} className="border-r border-slate-200 px-2 py-2 text-center">
+                  <td key={person.id} className="border-r border-border px-2 py-2 text-center">
                     <span className="text-xs font-mono font-medium">
                       {formatCurrency(personTotals[person.id] || 0)}
                     </span>
                   </td>
                 ))}
-                <td className="sticky right-0 z-30 bg-slate-50 border-l-2 border-slate-300 px-2 py-2 text-right">
+                <td className="sticky right-0 z-30 bg-muted/50 border-l-2 border-border px-2 py-2 text-right">
                   <span className="text-xs font-mono font-bold">
                     {formatCurrency(summary.subtotal)}
                   </span>
@@ -319,25 +319,25 @@ export function MobileGridView() {
               </tr>
 
               {/* Tax Row */}
-              <tr className="bg-slate-50">
-                <td className="sticky left-0 z-30 bg-slate-50 border-r border-slate-200 px-3 py-2 font-bold text-xs uppercase">
+              <tr className="bg-muted/50">
+                <td className="sticky left-0 z-30 bg-muted/50 border-r border-border px-3 py-2 font-bold text-xs uppercase">
                   Tax
                 </td>
-                <td className="border-r border-slate-200" colSpan={2}>
+                <td className="border-r border-border" colSpan={2}>
                   <span className="text-xs font-mono">{formatCurrency(parseFloat(state.currentBill.tax || "0"))}</span>
                 </td>
                 {people.map(person => {
                   const ratio = summary.subtotal > 0 ? (personTotals[person.id] || 0) / summary.subtotal : 0
                   const personTax = parseFloat(state.currentBill.tax || "0") * ratio
                   return (
-                    <td key={person.id} className="border-r border-slate-200 px-2 py-2 text-center">
+                    <td key={person.id} className="border-r border-border px-2 py-2 text-center">
                       <span className="text-xs font-mono">
                         {formatCurrency(personTax)}
                       </span>
                     </td>
                   )
                 })}
-                <td className="sticky right-0 z-30 bg-slate-50 border-l-2 border-slate-300 px-2 py-2 text-right">
+                <td className="sticky right-0 z-30 bg-muted/50 border-l-2 border-border px-2 py-2 text-right">
                   <span className="text-xs font-mono font-bold">
                     {formatCurrency(parseFloat(state.currentBill.tax || "0"))}
                   </span>
@@ -345,11 +345,11 @@ export function MobileGridView() {
               </tr>
 
               {/* Grand Total Row */}
-              <tr className="bg-slate-100 border-t-2 border-slate-300">
-                <td className="sticky left-0 z-30 bg-slate-100 border-r border-slate-200 px-3 py-2 font-bold text-xs uppercase">
+              <tr className="bg-muted border-t-2 border-border">
+                <td className="sticky left-0 z-30 bg-muted border-r border-border px-3 py-2 font-bold text-xs uppercase">
                   Total
                 </td>
-                <td className="border-r border-slate-200" colSpan={2}></td>
+                <td className="border-r border-border" colSpan={2}></td>
                 {people.map(person => {
                   const ratio = summary.subtotal > 0 ? (personTotals[person.id] || 0) / summary.subtotal : 0
                   const personTax = parseFloat(state.currentBill.tax || "0") * ratio
@@ -357,7 +357,7 @@ export function MobileGridView() {
                   const personTotal = (personTotals[person.id] || 0) + personTax + personTip
 
                   return (
-                    <td key={person.id} className="border-r border-slate-200 px-2 py-2 text-center">
+                    <td key={person.id} className="border-r border-border px-2 py-2 text-center">
                       <div
                         className="inline-block px-2 py-1 rounded text-white text-xs font-mono font-bold"
                         style={{ backgroundColor: person.color }}
@@ -367,7 +367,7 @@ export function MobileGridView() {
                     </td>
                   )
                 })}
-                <td className="sticky right-0 z-30 bg-slate-100 border-l-2 border-slate-300 px-2 py-2 text-right">
+                <td className="sticky right-0 z-30 bg-muted border-l-2 border-border px-2 py-2 text-right">
                   <span className="text-sm font-mono font-bold">
                     {formatCurrency(summary.total)}
                   </span>
@@ -380,7 +380,7 @@ export function MobileGridView() {
 
       {/* Bottom Action Bar */}
       <div
-        className="sticky bottom-0 z-40 bg-white border-t px-4 pt-3 pb-3 shadow-[0_-2px_10px_rgba(0,0,0,0.1)]"
+        className="sticky bottom-0 z-40 bg-card border-t px-4 pt-3 pb-3 shadow-[0_-2px_10px_var(--color-border)]"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
         <div className="flex gap-2">
@@ -414,7 +414,7 @@ export function MobileGridView() {
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto p-0">
           {editingItem && (
             <>
-              <SheetHeader className="p-4 border-b sticky top-0 bg-white z-10">
+              <SheetHeader className="p-4 border-b sticky top-0 bg-card z-10">
                 <SheetTitle>Edit Item</SheetTitle>
               </SheetHeader>
               <div className="p-4 space-y-4">
@@ -476,7 +476,7 @@ export function MobileGridView() {
                 </div>
 
                 {/* Total */}
-                <div className="flex items-center justify-between bg-slate-100 rounded-lg px-4 py-3">
+                <div className="flex items-center justify-between bg-muted rounded-lg px-4 py-3">
                   <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Total</span>
                   <span className="text-xl font-bold">
                     {formatCurrency((parseFloat(editingItem.price || "0") || 0) * (editingItem.quantity || 1))}

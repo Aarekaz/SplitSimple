@@ -33,23 +33,23 @@ const syncStatusConfig: Record<SyncStatus, {
     icon: RotateCw,
     label: "Syncing...",
     description: "Saving changes to cloud",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
     animate: true,
   },
   synced: {
     icon: Check,
     label: "Synced",
     description: "All changes saved to cloud",
-    color: "text-green-600",
-    bgColor: "bg-green-50 dark:bg-green-950/30",
+    color: "text-success",
+    bgColor: "bg-success/10",
   },
   error: {
     icon: AlertCircle,
     label: "Sync failed",
     description: "Failed to save to cloud. Click to retry.",
-    color: "text-red-600",
-    bgColor: "bg-red-50 dark:bg-red-950/30",
+    color: "text-destructive",
+    bgColor: "bg-destructive/10",
   },
 }
 
@@ -103,8 +103,8 @@ export function SyncStatusIndicator({ compact = false, inline = false, variant =
         className={cn(
           "flex items-center gap-2 px-3 py-1.5 text-xs font-semibold transition-colors",
           config.color,
-          state.syncStatus === "error" && "cursor-pointer hover:bg-red-50/60",
-          state.syncStatus !== "error" && "hover:bg-slate-100/60",
+          state.syncStatus === "error" && "cursor-pointer hover:bg-destructive/10",
+          state.syncStatus !== "error" && "hover:bg-muted/60",
           className
         )}
         onClick={state.syncStatus === "error" ? handleRetrySync : undefined}
@@ -118,7 +118,7 @@ export function SyncStatusIndicator({ compact = false, inline = false, variant =
         />
         <span className="whitespace-nowrap">{config.label}</span>
         {showTime && (
-          <span className="text-slate-400 font-medium whitespace-nowrap">
+          <span className="text-muted-foreground font-medium whitespace-nowrap">
             · {timeText}
           </span>
         )}

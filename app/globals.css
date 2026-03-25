@@ -88,10 +88,10 @@
   --sidebar-border: #D4D2CC;
   --sidebar-ring: #7C3AED;
 
-  /* Font - System fonts for reliable deployment */
-  --font-receipt: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
-  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-numbers: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Courier New", monospace;
+  /* Font - Inter for UI, Space Mono for receipt/numbers */
+  --font-receipt: 'Space Mono', ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Courier New", monospace;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-numbers: 'Space Mono', ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Courier New", monospace;
 
   /* ===== Receipt Elevation System ===== */
   --receipt-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
@@ -105,19 +105,16 @@
   --warning-glow: rgba(217, 119, 6, 0.15);
   --error-glow: rgba(220, 38, 38, 0.15);
 
-  /* ===== Smooth easing curves ===== */
+  /* ===== Easing curves (Emil Kowalski defaults) ===== */
   --ease-out-cubic: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out-cubic: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --ease-smooth: cubic-bezier(0.4, 0.0, 0.2, 1);
 
-  /* ===== Transition durations ===== */
+  /* ===== Transition durations (300ms max for UI) ===== */
   --duration-instant: 0.1s;
-  --duration-fast: 0.2s;
-  --duration-normal: 0.3s;
-  --duration-slow: 0.4s;
-  --duration-slower: 0.6s;
+  --duration-fast: 0.15s;
+  --duration-normal: 0.2s;
 
   /* ===== Spacing scale (8px base) ===== */
   --spacing-unit: 8px;
@@ -418,15 +415,7 @@
     @apply bg-primary/10 text-primary;
   }
 
-  /* ===== Drag Handle (receipt style) ===== */
-  .drag-handle {
-    @apply text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing transition-colors;
-  }
-
-  .drag-handle::before {
-    content: '::';
-    @apply font-mono font-bold text-base;
-  }
+  /* Removed: .drag-handle (unused) */
 
   /* ===== Validation States ===== */
   .validation-success {
@@ -446,9 +435,7 @@
     @apply border-t-2 border-border;
   }
 
-  .receipt-line-dashed {
-    @apply border-t-2 border-dashed border-border;
-  }
+  /* Removed: .receipt-line-dashed (unused) */
 
   .receipt-line-double {
     @apply border-t-4 border-double border-border;
@@ -470,14 +457,7 @@
     box-shadow: var(--receipt-shadow);
   }
 
-  .receipt-input {
-    @apply border-2 border-border bg-card px-3 py-2 font-mono tabular-nums transition-[border-color,box-shadow,background-color];
-    font-family: var(--font-numbers);
-  }
-
-  .receipt-input:focus {
-    @apply outline-none ring-2 ring-primary/50 border-primary;
-  }
+  /* Removed: .receipt-input (unused — components use shadcn Input) */
 
   /* ===== Hover States ===== */
   .hover-highlight {
@@ -537,13 +517,14 @@
 
   /* ===== Micro-interactions (Phase 1 #5) ===== */
 
-  /* Button press effect */
+  /* Button press effect — asymmetric timing: fast press, slower release */
   .btn-press {
-    @apply transition-transform duration-100 ease-out;
+    transition: transform 0.2s var(--ease-out-cubic);
   }
 
   .btn-press:active {
     transform: scale(0.97);
+    transition-duration: 0.08s;
   }
 
   /* Number change flash */
@@ -557,7 +538,7 @@
   }
 
   .number-flash {
-    animation: number-flash 0.2s ease-out;
+    animation: number-flash 0.2s var(--ease-out-cubic);
   }
 
   /* Success ripple effect */
@@ -571,7 +552,7 @@
   }
 
   .success-ripple {
-    animation: success-ripple 0.25s ease-out;
+    animation: success-ripple 0.25s var(--ease-out-cubic);
   }
 
   /* Delete slide-out */
@@ -587,7 +568,7 @@
   }
 
   .delete-slide {
-    animation: delete-slide 0.3s ease-out forwards;
+    animation: delete-slide 0.25s var(--ease-out-cubic) forwards;
   }
 
   /* Add slide-in */
@@ -633,11 +614,11 @@
   }
 
   .animate-slide-in-1 {
-    animation: slide-in-up 0.25s ease-out 0.15s both;
+    animation: slide-in-up 0.25s var(--ease-out-cubic) 0.15s both;
   }
 
   .animate-slide-in-2 {
-    animation: slide-in-up 0.25s ease-out 0.3s both;
+    animation: slide-in-up 0.25s var(--ease-out-cubic) 0.3s both;
   }
 
   /* Person cell assignment animations */
@@ -717,17 +698,14 @@
   }
 
   .ledger-row {
-    @apply border-b border-border transition-[transform,box-shadow,background-color,border-color] duration-200;
+    @apply border-b border-border;
     border-left: 3px solid transparent;
-    transform-origin: center;
+    transition: background-color 0.15s var(--ease-out-cubic), border-color 0.15s var(--ease-out-cubic);
   }
 
   .ledger-row:hover {
     @apply bg-muted/30;
-    border-left-color: hsl(var(--primary));
-    transform: scale(1.002);
-    box-shadow: 0 2px 8px -2px rgba(var(--primary), 0.15),
-                0 0 0 1px rgba(var(--primary), 0.05);
+    border-left-color: var(--primary);
   }
 
   .ledger-row-expanded {
@@ -826,10 +804,7 @@
     font-family: var(--font-receipt);
   }
 
-  /* Row expand/collapse button */
-  .ledger-expand-btn {
-    @apply inline-flex items-center justify-center w-6 h-6 rounded hover:bg-muted/60 transition-colors cursor-pointer;
-  }
+  /* Removed: .ledger-expand-btn (unused) */
 
   /* Ledger footer for totals */
   .ledger-footer {
@@ -847,49 +822,7 @@
     box-shadow: var(--receipt-shadow);
   }
 
-  .float-panel {
-    @apply bg-card border-2 border-border p-6;
-    box-shadow: var(--receipt-shadow-lg);
-  }
-
-  /* Glass header updated for receipt style */
-  .glass-header {
-    @apply bg-muted/90 backdrop-blur-sm border-b-2 border-border;
-    box-shadow: var(--receipt-shadow);
-  }
-
-  /* ===== Floating Dock (keep for now, update style) ===== */
-  .floating-dock {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
-    @apply bg-card border-2 border-border;
-    box-shadow: var(--receipt-shadow-lg);
-    border-radius: 12px;
-    padding: 8px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .dock-item {
-    @apply rounded-lg p-2 transition-[transform,background-color,border-color] duration-200 border-2 border-transparent;
-    background: transparent;
-  }
-
-  .dock-item:hover {
-    @apply bg-muted border-primary/30;
-    transform: translateY(-2px);
-  }
-
-  .dock-divider {
-    width: 2px;
-    height: 24px;
-    @apply bg-border;
-    margin: 0 4px;
-  }
+  /* Removed: .float-panel, .glass-header, .floating-dock, .dock-divider (unused) */
 
   /* ===== Animation Classes ===== */
   .animate-receipt-print {
@@ -908,7 +841,7 @@
   }
 
   .success-pulse {
-    animation: success-pulse 0.25s var(--ease-smooth);
+    animation: success-pulse 0.25s var(--ease-out-cubic);
   }
 
   @keyframes success-pulse {
@@ -986,7 +919,7 @@
   /* Custom scrollbar styling to match receipt theme */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #D4D2CC #FFFEF9;
+    scrollbar-color: var(--border) var(--background);
   }
 
   *::-webkit-scrollbar {
@@ -995,171 +928,46 @@
   }
 
   *::-webkit-scrollbar-track {
-    background: #FFFEF9;
+    background: var(--background);
     border-radius: 4px;
   }
 
   *::-webkit-scrollbar-thumb {
-    background: #D4D2CC;
+    background: var(--border);
     border-radius: 4px;
-    border: 2px solid #FFFEF9;
+    border: 2px solid var(--background);
     transition: background 0.2s ease;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: #A8A29E;
+    background: var(--muted-foreground);
   }
 
   *::-webkit-scrollbar-thumb:active {
-    background: #78716C;
+    background: var(--foreground);
   }
 
-  /* Darker scrollbar for dark mode (if ever implemented) */
-  .dark *::-webkit-scrollbar-track {
-    background: #1A1918;
-  }
-
-  .dark *::-webkit-scrollbar-thumb {
-    background: #44403C;
-    border-color: #1A1918;
-  }
-
-  .dark *::-webkit-scrollbar-thumb:hover {
-    background: #57534E;
-  }
-
-  .dark * {
-    scrollbar-color: #44403C #1A1918;
-  }
-
-  /* ===== Pro SaaS Design System ===== */
-  .pro-app-shell {
-    @apply h-dvh w-full overflow-hidden relative;
-    background: #F8FAFC; /* slate-50 */
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-
-  .pro-header {
-    @apply fixed top-0 left-0 right-0 flex items-center justify-between px-6;
-    height: calc(64px + env(safe-area-inset-top));
-    padding-top: env(safe-area-inset-top);
-    z-index: 20;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid #E2E8F0; /* slate-200 */
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-footer {
-    @apply fixed bottom-0 left-0 right-0 flex items-center justify-between px-6;
-    height: calc(56px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-    z-index: 40;
-    background: #FFFFFF;
-    border-top: 1px solid #E2E8F0;
-    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-main {
-    @apply absolute inset-0 overflow-hidden;
-    padding-top: calc(64px + env(safe-area-inset-top));
-    padding-bottom: calc(56px + env(safe-area-inset-bottom));
-    z-index: 10;
-  }
-
-  .pro-grid {
-    display: grid;
-    grid-template-columns:
-      48px
-      minmax(240px, 2fr)
-      100px
-      80px
-      repeat(var(--person-count, 3), minmax(100px, 1fr))
-      100px;
-  }
-
-  .pro-sticky-left {
-    @apply sticky left-0 bg-white z-20;
-    box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-sticky-right {
-    @apply sticky right-0 bg-white z-20;
-    box-shadow: -2px 0 5px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-grid-header {
-    @apply sticky top-0 bg-white border-b border-slate-200;
-    z-index: 30;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-
-  .pro-tile-inactive {
-    @apply flex items-center justify-center transition-colors duration-100;
-    color: #94A3B8; /* slate-400 */
-    background: transparent;
-  }
-
-  .pro-tile-active {
-    @apply flex items-center justify-center rounded-md transition-[transform,filter,background-color] duration-100;
-    color: white;
-  }
-
-  .pro-tile-active:hover {
-    filter: brightness(0.95);
-  }
-
-  .pro-tile-active:active {
-    transform: scale(0.95);
-  }
-
-  .font-space-mono {
-    font-family: 'Space Mono', monospace;
-  }
-
-  .font-inter {
-    font-family: 'Inter', sans-serif;
-  }
-
-  /* Minimal scrollbar for pro design */
-  .pro-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  .pro-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .pro-scrollbar::-webkit-scrollbar-thumb {
-    background: #CBD5E1; /* slate-300 */
-    border-radius: 3px;
-  }
-
-  .pro-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8; /* slate-400 */
-  }
-
-  .pro-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
-  }
+  /* Pro SaaS classes removed — use receipt design tokens instead */
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Keep opacity crossfades as fallback — don't kill all animation */
   * {
-    animation: none !important;
-    transition-property: opacity, color, background-color, border-color, box-shadow !important;
-    transition-duration: 150ms !important;
-    transition-timing-function: var(--ease-out-cubic) !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
 
-  .ledger-row:hover,
-  .receipt-button:hover,
-  .clickable-badge:hover,
-  .dock-item:hover,
+  /* Allow opacity + color transitions, disable transforms */
+  *:not([data-allow-motion]) {
+    transition-property: opacity, color, background-color, border-color, box-shadow !important;
+    transition-duration: 150ms !important;
+    transition-timing-function: var(--ease-out-cubic) !important;
+  }
+
+  /* Disable all transform-based motion */
   .btn-press:active,
+  .clickable-badge:hover,
   .clickable-badge:active,
   button:active,
   a:active,

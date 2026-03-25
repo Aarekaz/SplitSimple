@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { MobileCardView } from "./mobile/MobileCardView"
 import { MobileGridView } from "./mobile/MobileGridView"
 import { ViewToggle } from "./mobile/shared/ViewToggle"
-import { SplitSimpleIcon } from "@/components/ProBillSplitter"
+import { SplitSimpleIcon } from "@/components/SplitSimpleIcon"
 import { ReceiptScanner } from "@/components/ReceiptScanner"
 import { ShareBill } from "@/components/ShareBill"
 import { Input } from "@/components/ui/input"
@@ -57,9 +57,9 @@ export function MobileSpreadsheetView() {
   }
 
   return (
-    <div id="main-content" className="min-h-screen bg-slate-50 flex flex-col">
+    <div id="main-content" className="min-h-screen bg-muted/50 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b">
         <div className="px-4 py-3 flex items-center gap-3">
           <SplitSimpleIcon />
           <div className="flex-1 min-w-0">

@@ -70,7 +70,7 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
         if (onPersonAdded) {
           onPersonAdded()
         }
-      }, 500)
+      }, 250)
     } catch (error) {
       console.error("Failed to add person:", error)
       toast({
