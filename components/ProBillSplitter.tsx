@@ -1116,7 +1116,7 @@ function DesktopBillSplitter() {
                           {/* Sticky Header */}
                           <div className="sticky top-0 bg-card border-b-2 border-border z-30 shadow-[var(--receipt-shadow)] flex text-[10px] font-bold text-muted-foreground uppercase">
                             <div className="w-12 p-3 text-center border-r border-border/50/60 flex items-center justify-center">#</div>
-                            <div className="w-72 p-3 border-r border-border/50/60 flex items-center sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Item Description</div>
+                            <div className="w-72 p-3 border-r border-border/50/60 flex items-center sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_var(--color-border)]">Item Description</div>
                             <div className="w-28 p-3 text-right border-r border-border/50/60 flex items-center justify-end">Price</div>
                             <div className="w-20 p-3 text-center border-r border-border/50/60 flex items-center justify-center">Qty</div>
 
@@ -1156,7 +1156,7 @@ function DesktopBillSplitter() {
                                   >
                                     <Plus size={16} />
                                   </button>
-                            <div className="w-28 p-3 text-right flex items-center justify-end border-l border-border sticky right-0 bg-card z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                            <div className="w-28 p-3 text-right flex items-center justify-end border-l border-border sticky right-0 bg-card z-20 shadow-[-2px_0_5px_-2px_var(--color-border)]">
                               Total
                             </div>
                           </div>
@@ -1200,7 +1200,7 @@ function DesktopBillSplitter() {
                                 </div>
 
                                 {/* Name + Split Method Selector */}
-                                <div className="w-72 border-r border-border/50/60 sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] group-hover:bg-muted/50 transition-colors relative p-0 flex items-center">
+                                <div className="w-72 border-r border-border/50/60 sticky left-0 bg-card z-20 shadow-[2px_0_5px_-2px_var(--color-border)] group-hover:bg-muted/50 transition-colors relative p-0 flex items-center">
                                   <div className="flex-1">
                                     <GridCell
                                       row={rIdx}
@@ -1361,7 +1361,7 @@ function DesktopBillSplitter() {
                                 </div>
 
                                 {/* Row Total */}
-                                <div className="w-28 sticky right-0 bg-card z-20 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)] border-l border-border flex items-center justify-end px-4 group-hover:bg-muted/50 font-mono text-xs font-bold text-foreground tabular-nums">
+                                <div className="w-28 sticky right-0 bg-card z-20 shadow-[-2px_0_5px_-2px_var(--color-border)] border-l border-border flex items-center justify-end px-4 group-hover:bg-muted/50 font-mono text-xs font-bold text-foreground tabular-nums">
                                   ${(item.totalItemPrice || 0).toFixed(2)}
                                 </div>
                                   </div>
@@ -1532,7 +1532,7 @@ function DesktopBillSplitter() {
                                         event.stopPropagation()
                                         setEditingPerson(p)
                                       }}
-                                      className="size-7 rounded-md border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:border-border flex items-center justify-center"
+                                      className="size-8 rounded-md border border-border/70 bg-card text-muted-foreground hover:text-foreground hover:border-border flex items-center justify-center"
                                       aria-label={`Edit ${p.name}`}
                                       title={`Edit ${p.name}`}
                                     >

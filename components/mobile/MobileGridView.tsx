@@ -161,7 +161,7 @@ export function MobileGridView() {
                 <thead className="sticky top-0 z-20 bg-card border-b-2 border-border">
               <tr>
                 {/* Frozen Column Header */}
-                <th className="sticky left-0 z-30 bg-muted border-r border-border px-3 py-2 text-left shadow-[2px_0_4px_rgba(0,0,0,0.1)]">
+                <th className="sticky left-0 z-30 bg-muted border-r border-border px-3 py-2 text-left shadow-[2px_0_4px_var(--color-border)]">
                   <span className="text-xs font-bold uppercase text-muted-foreground">Item</span>
                 </th>
 
@@ -211,7 +211,7 @@ export function MobileGridView() {
                   <tr key={item.id} className="border-b border-border hover:bg-muted/50">
                     {/* Frozen: Item Name */}
                     <td
-                      className="sticky left-0 z-10 bg-card border-r border-border px-3 py-4 min-w-[120px] cursor-pointer hover:bg-muted active:bg-muted transition-colors shadow-[2px_0_4px_rgba(0,0,0,0.05)]"
+                      className="sticky left-0 z-10 bg-card border-r border-border px-3 py-4 min-w-[120px] cursor-pointer hover:bg-muted active:bg-muted transition-colors shadow-[2px_0_4px_var(--color-border)]"
                       onClick={() => setEditingItem(item)}
                     >
                       <div className="text-sm font-medium text-foreground line-clamp-2">
@@ -242,7 +242,7 @@ export function MobileGridView() {
                           className={cn(
                             "border-r border-border px-2 py-4 cursor-pointer transition-[background-color,border-color,transform] duration-150 min-h-[60px]",
                             isAssigned
-                              ? "bg-opacity-10 active:scale-95"
+                              ? "bg-opacity-10 active:scale-[0.97]"
                               : "bg-card hover:bg-muted/50 active:bg-muted"
                           )}
                           style={{
@@ -380,7 +380,7 @@ export function MobileGridView() {
 
       {/* Bottom Action Bar */}
       <div
-        className="sticky bottom-0 z-40 bg-card border-t px-4 pt-3 pb-3 shadow-[0_-2px_10px_rgba(0,0,0,0.1)]"
+        className="sticky bottom-0 z-40 bg-card border-t px-4 pt-3 pb-3 shadow-[0_-2px_10px_var(--color-border)]"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
         <div className="flex gap-2">

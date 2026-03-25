@@ -42,7 +42,7 @@ export function EmptyState({
         </div>
         
         {/* Floating elements for visual interest */}
-        <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center animate-bounce motion-reduce:animate-none delay-100 shadow-md">
+        <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center animate-bounce motion-reduce:animate-none delay-100 shadow-md">
           <Plus className="w-4 h-4 text-primary" />
         </div>
         <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-lg animate-pulse motion-reduce:animate-none delay-300 shadow-md" />
@@ -213,7 +213,7 @@ export function OnboardingFlow({ onQuickStart, onAddPerson }: OnboardingFlowProp
             <Receipt className="w-11 h-11 text-white relative z-10" />
           </div>
           {/* Floating decorations */}
-          <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-br from-success to-success/80 rounded-xl flex items-center justify-center animate-bounce motion-reduce:animate-none shadow-md">
+          <div className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-br from-success to-success/80 rounded-lg flex items-center justify-center animate-bounce motion-reduce:animate-none shadow-md">
             <DollarSign className="w-4 h-4 text-white" />
           </div>
           <div className="absolute -bottom-1 -left-1 w-5 h-5 bg-gradient-to-br from-secondary to-secondary/80 rounded-lg animate-pulse motion-reduce:animate-none delay-500 shadow-md" />

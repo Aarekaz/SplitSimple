@@ -519,7 +519,7 @@ export function LedgerItemsTable() {
                             className={`
                               w-full h-full px-3 py-3 text-right cursor-pointer transition-[background-color,border-color,transform] duration-200 group
                               focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset
-                              active:scale-95 touch-manipulation
+                              active:scale-[0.97] touch-manipulation
                               ${isAssigned
                                 ? 'person-cell-assigned hover:brightness-95 active:brightness-90'
                                 : 'person-cell-unassigned bg-muted/40 hover:bg-muted/60 active:bg-muted/70'
