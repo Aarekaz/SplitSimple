@@ -21,7 +21,8 @@ import {
   Calculator,
   ChevronDown,
   Camera,
-  Pencil
+  Pencil,
+  Info
 } from 'lucide-react'
 import { useBill } from '@/contexts/BillContext'
 import type { Item, Person } from '@/contexts/BillContext'
@@ -37,6 +38,7 @@ import { migrateBillSchema } from '@/lib/validation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
 import { AnimatedNumber } from '@/components/AnimatedNumber'
+import { ToastAction } from '@/components/ui/toast'
 
 import dynamic from 'next/dynamic'
 import {
@@ -247,6 +249,7 @@ function DesktopBillSplitter() {
   const [isRemovePersonDialogOpen, setIsRemovePersonDialogOpen] = useState(false)
   const [pendingRemovePerson, setPendingRemovePerson] = useState<Person | null>(null)
   const [isMacPlatform, setIsMacPlatform] = useState(true)
+  const [onboardingDismissed, setOnboardingDismissed] = useState(true) // default true, read from localStorage on mount
 
   // Detect platform once on client mount to render correct modifier keys in shortcut hints
   useEffect(() => {
@@ -258,6 +261,11 @@ function DesktopBillSplitter() {
 
   const modKey = isMacPlatform ? '⌘' : 'Ctrl'
   const shiftKey = isMacPlatform ? '⇧' : 'Shift'
+
+  useEffect(() => {
+    const dismissed = window.localStorage.getItem('splitsimple_onboarding_v1')
+    if (!dismissed) setOnboardingDismissed(false)
+  }, [])
 
   const focusRingClass =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -500,9 +508,38 @@ function DesktopBillSplitter() {
     dispatch({ type: 'REMOVE_ITEM', payload: id })
     if (item) {
       analytics.trackItemRemoved(item.method)
-      toast({ title: "Item deleted", duration: TIMING.TOAST_SHORT })
+      toast({
+        title: "Item deleted",
+        description: item.name || "Untitled item",
+        duration: 5000,
+        action: (
+          <ToastAction altText="Undo deletion" onClick={() => {
+            dispatch({ type: 'UNDO' })
+            toast({ title: "Item restored", variant: "success", duration: TIMING.TOAST_SHORT })
+          }}>
+            Undo
+          </ToastAction>
+        ),
+      })
     }
   }, [itemsById, dispatch, analytics, toast])
+
+  // Validates that a numeric input contains a valid number on blur.
+  // If invalid, clears the field silently (parseFloat already treats it as 0).
+  const validateNumericOnBlur = useCallback((
+    value: string,
+    dispatchType: 'SET_TAX' | 'SET_TIP' | 'SET_DISCOUNT'
+  ) => {
+    const trimmed = value.trim()
+    if (trimmed && isNaN(parseFloat(trimmed))) {
+      dispatch({ type: dispatchType, payload: '' })
+      toast({
+        title: "Enter a valid number",
+        variant: "destructive",
+        duration: TIMING.TOAST_SHORT,
+      })
+    }
+  }, [dispatch, toast])
 
   const confirmNewBill = useCallback(() => {
     dispatch({ type: 'NEW_BILL' })
@@ -1097,7 +1134,7 @@ function DesktopBillSplitter() {
                   name="bill-title"
                   autoComplete="off"
                 />
-                <div className="text-[10px] font-medium text-muted-foreground mt-0.5">SPLIT SIMPLE</div>
+                <SyncStatusIndicator inline />
               </div>
             </div>
 
@@ -1128,7 +1165,7 @@ function DesktopBillSplitter() {
           </div>
 
           {/* Right cluster: History + Primary actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 bg-muted border border-border/60 rounded-md px-1.5 py-1 shadow-sm">
               <button
                 onClick={handleUndo}
@@ -1168,7 +1205,7 @@ function DesktopBillSplitter() {
                 <FileQuestion size={14} />
                 <span>New</span>
               </button>
-              <div className="h-6 w-px bg-muted-foreground/15/80" />
+              <div className="h-6 w-px bg-border" />
 
             <DropdownMenu
               open={newLoadDropdownOpen}
@@ -1257,7 +1294,7 @@ function DesktopBillSplitter() {
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="h-6 w-px bg-muted-foreground/15/80" />
+            <div className="h-6 w-px bg-border" />
 
             <ReceiptScanner
               onImport={handleScanImport}
@@ -1270,22 +1307,23 @@ function DesktopBillSplitter() {
                   title="Scan receipt"
                 >
                   <Camera size={14} />
-                  <span className="whitespace-nowrap">Scan Receipt</span>
+                  <span className="whitespace-nowrap hidden xl:inline">Scan Receipt</span>
                 </button>
               )}
             />
-            <div className="h-6 w-px bg-muted-foreground/15/80" />
+            <div className="h-6 w-px bg-border" />
 
             <div className="flex flex-col items-start">
               <button
                 onClick={copyBreakdown}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-primary hover:text-primary/90 hover:bg-primary/10 transition-colors",
+                  "flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
                   focusRingClass
                 )}
                 title="Copy summary to clipboard (Cmd+Shift+C)"
               >
-                <ClipboardCopy size={14} /> Copy Summary
+                <ClipboardCopy size={14} />
+                <span className="hidden xl:inline">Copy Summary</span>
               </button>
               {copyError && (
                 <span className="mt-1 text-[10px] text-red-600" role="alert">
@@ -1293,7 +1331,7 @@ function DesktopBillSplitter() {
                 </span>
               )}
             </div>
-            <div className="h-6 w-px bg-muted-foreground/15/80" />
+            <div className="h-6 w-px bg-border" />
             {/* The single orange "money moment" on the page.
                 Uses descendant selectors to recolor the ShareBill trigger button
                 without touching ShareBill itself. */}
@@ -1324,6 +1362,38 @@ function DesktopBillSplitter() {
                           Add items, set prices, and assign people to split each line.
                         </p>
                       </div>
+
+                      {/* Contextual onboarding hint — adapts to current bill state */}
+                      {!onboardingDismissed && (() => {
+                        const hasUnassigned = calculatedItems.some(i =>
+                          (i.name || '').trim() !== '' && i.splitWith.length === 0
+                        )
+                        const hint =
+                          people.length === 0
+                            ? "Start by adding people to your crew — use the sidebar or press " + modKey + shiftKey + "P"
+                            : !hasMeaningfulItems
+                            ? "Type item names and prices in the grid below. Press Tab to move between cells."
+                            : hasUnassigned
+                            ? "Click the colored cells in each row to assign who's splitting that item."
+                            : null
+
+                        if (!hint) return null
+                        return (
+                          <div className="px-5 py-2.5 bg-primary/5 border-b border-border/60 text-sm text-primary flex items-center gap-2.5 font-sans">
+                            <Info size={15} className="shrink-0" />
+                            <span className="flex-1">{hint}</span>
+                            <button
+                              onClick={() => {
+                                setOnboardingDismissed(true)
+                                window.localStorage.setItem('splitsimple_onboarding_v1', '1')
+                              }}
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                            >
+                              Got it
+                            </button>
+                          </div>
+                        )
+                      })()}
 
                       {/* Sticky toolbar */}
                       <div className="sticky top-0 z-30 flex items-center justify-between px-4 py-2 bg-card/95 backdrop-blur border-b border-border/80">
@@ -1589,7 +1659,7 @@ function DesktopBillSplitter() {
                                     <ClipboardCopy size={12} />
                                   </button>
                                   <button
-                                    onClick={() => openDeleteDialog(item)}
+                                    onClick={() => deleteItem(item.id)}
                                     aria-label="Delete row"
                                     className={cn(
                                       "size-8 flex items-center justify-center text-muted-foreground/50 hover:text-red-500 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity",
@@ -1627,7 +1697,7 @@ function DesktopBillSplitter() {
                                   <ContextMenuSeparator />
                                   <ContextMenuItem
                                     variant="destructive"
-                                    onSelect={() => openDeleteDialog(item)}
+                                    onSelect={() => deleteItem(item.id)}
                                   >
                                     <Trash2 size={14} /> Delete item
                                   </ContextMenuItem>
@@ -1790,12 +1860,9 @@ function DesktopBillSplitter() {
                                   </div>
                                   <div className="flex items-center gap-3">
                                     <div className="text-right">
-                                      <AnimatedNumber
-                                        value={stats?.total || 0}
-                                        formatFn={formatCurrencySimple}
-                                        className="text-xs font-semibold text-foreground font-mono tabular-nums"
-                                        duration={250}
-                                      />
+                                      <div className="text-xs font-semibold text-foreground font-mono tabular-nums">
+                                        {formatCurrencySimple(stats?.total || 0)}
+                                      </div>
                                       <div className="text-[10px] text-muted-foreground font-mono tabular-nums">
                                         {percent.toFixed(0)}%
                                       </div>
@@ -1933,6 +2000,7 @@ function DesktopBillSplitter() {
                               dispatch({ type: 'SET_TAX', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("tax", e.target.value, state.currentBill.taxTipAllocation)
                             }}
+                            onBlur={() => validateNumericOnBlur(state.currentBill.tax, 'SET_TAX')}
                             className="w-full h-9 rounded-md border border-border bg-card px-2 text-right font-mono text-foreground tabular-nums focus:border-primary focus:ring-2 focus:ring-primary/20"
                             placeholder="0.00"
                           />
@@ -1950,6 +2018,7 @@ function DesktopBillSplitter() {
                               dispatch({ type: 'SET_TIP', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("tip", e.target.value, state.currentBill.taxTipAllocation)
                             }}
+                            onBlur={() => validateNumericOnBlur(state.currentBill.tip, 'SET_TIP')}
                             className="w-full h-9 rounded-md border border-border bg-card px-2 text-right font-mono text-foreground tabular-nums focus:border-primary focus:ring-2 focus:ring-primary/20"
                             placeholder="0.00"
                           />
@@ -1967,6 +2036,7 @@ function DesktopBillSplitter() {
                               dispatch({ type: 'SET_DISCOUNT', payload: e.target.value })
                               analytics.trackTaxTipDiscountUsed("discount", e.target.value, state.currentBill.taxTipAllocation)
                             }}
+                            onBlur={() => validateNumericOnBlur(state.currentBill.discount, 'SET_DISCOUNT')}
                             className="w-full h-9 rounded-md border border-border bg-card px-2 text-right font-mono text-foreground tabular-nums focus:border-primary focus:ring-2 focus:ring-primary/20"
                             placeholder="0.00"
                           />
@@ -1994,12 +2064,7 @@ function DesktopBillSplitter() {
                         </div>
                         <div className="flex items-baseline justify-between border-t-2 border-foreground pt-3 mt-2">
                           <span className="text-lg font-bold text-foreground">Total</span>
-                          <AnimatedNumber
-                            value={grandTotal}
-                            formatFn={formatCurrencySimple}
-                            className="text-2xl font-bold font-mono tabular-nums text-foreground"
-                            duration={300}
-                          />
+                          <span className="text-2xl font-bold font-mono tabular-nums text-foreground">{formatCurrencySimple(grandTotal)}</span>
                         </div>
                       </div>
                     </div>
