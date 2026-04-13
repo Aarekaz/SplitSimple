@@ -1,97 +1,110 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+/* Fonts are loaded via next/font in app/layout.tsx for zero-CLS, self-hosted delivery. */
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
   /* ===== Receipt Design System ===== */
   /* Background: Warm white like receipt paper */
-  --canvas-bg: #FFFEF9;
+  /* All colors in OKLCH — perceptually uniform, hue-stable across L steps.
+     Comments keep the original hex as a sanity reference. */
+  --canvas-bg: oklch(0.996 0.007 97.349); /* #FFFEF9 */
   --canvas-pattern: none;
 
   /* ===== Thermal Receipt Color System ===== */
-  --background: #FFFEF9; /* Warm white, like receipt paper */
-  --foreground: #1A1918; /* Deep charcoal, like printed ink */
-  --card: #FFFFFF;
-  --card-foreground: #1A1918;
-  --popover: #FFFFFF;
-  --popover-foreground: #1A1918;
+  --background: oklch(0.996 0.007 97.349); /* Warm white, like receipt paper */
+  --foreground: oklch(0.214 0.002 67.693); /* Deep charcoal, like printed ink */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.214 0.002 67.693);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.214 0.002 67.693);
 
   /* Primary: Deep Blue - Trust, Finance, Professional */
-  --primary: #1E40AF; /* Blue-800 */
-  --primary-foreground: #ffffff;
-  --primary-50: #EFF6FF;
-  --primary-100: #DBEAFE;
-  --primary-500: #3B82F6;
-  --primary-600: #2563EB;
-  --primary-700: #1D4ED8;
-  --primary-800: #1E40AF;
-  --primary-900: #1E3A8A;
+  --primary: oklch(0.424 0.181 265.638); /* Blue-800 */
+  --primary-foreground: oklch(1 0 0);
+  --primary-50: oklch(0.97 0.014 254.604);
+  --primary-100: oklch(0.932 0.032 255.585);
+  --primary-500: oklch(0.623 0.188 259.815);
+  --primary-600: oklch(0.546 0.215 262.881);
+  --primary-700: oklch(0.488 0.217 264.376);
+  --primary-800: oklch(0.424 0.181 265.638);
+  --primary-900: oklch(0.379 0.138 265.522);
 
   /* Secondary: Purple - Premium, Modern */
-  --secondary: #7C3AED;
-  --secondary-foreground: #ffffff;
+  --secondary: oklch(0.541 0.247 293.009);
+  --secondary-foreground: oklch(1 0 0);
 
   /* Muted: Faded gray like receipt lines */
-  --muted: #F5F5F4;
-  --muted-foreground: #78716C;
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.553 0.012 58.071);
 
   /* Accent: Purple emphasis */
-  --accent: #7C3AED;
-  --accent-foreground: #ffffff;
+  --accent: oklch(0.541 0.247 293.009);
+  --accent-foreground: oklch(1 0 0);
 
   /* Success: Forest green - only for confirmations */
-  --success: #047857;
-  --success-foreground: #ffffff;
+  --success: oklch(0.508 0.105 165.612);
+  --success-foreground: oklch(1 0 0);
 
   /* Warning: Amber - validation issues */
-  --warning: #D97706;
-  --warning-foreground: #ffffff;
+  --warning: oklch(0.666 0.157 58.318);
+  --warning-foreground: oklch(1 0 0);
 
   /* Destructive: Red - critical errors */
-  --destructive: #DC2626;
-  --destructive-foreground: #ffffff;
+  --destructive: oklch(0.577 0.215 27.325);
+  --destructive-foreground: oklch(1 0 0);
+
+  /* CTA: Orange - the energetic "money moment" accent.
+     Used sparingly on the single most important action on a screen (Share).
+     Foreground is deep charcoal (not white) so white-on-orange's ~3.5:1
+     contrast failure is avoided — dark-on-orange hits ≈8.7:1 (AA pass). */
+  --cta: oklch(0.705 0.187 47.604);
+  --cta-foreground: oklch(0.214 0.002 67.693);
+  --cta-hover: oklch(0.646 0.194 41.116);
 
   /* UI Elements */
-  --border: #D4D2CC; /* Faded gray like receipt lines */
-  --input: #FFFFFF;
-  --ring: #1E40AF;
+  --border: oklch(0.864 0.008 91.494); /* Faded gray like receipt lines */
+  --input: oklch(1 0 0);
+  --ring: oklch(0.424 0.181 265.638);
   --radius: 0.5rem; /* Less rounded for receipt feel */
 
   /* Charts */
-  --chart-1: #1E40AF; /* Blue */
-  --chart-2: #DC2626; /* Red */
-  --chart-3: #047857; /* Green */
-  --chart-4: #D97706; /* Orange */
-  --chart-5: #7C3AED; /* Purple */
+  --chart-1: oklch(0.424 0.181 265.638); /* Blue */
+  --chart-2: oklch(0.577 0.215 27.325);  /* Red */
+  --chart-3: oklch(0.508 0.105 165.612); /* Green */
+  --chart-4: oklch(0.666 0.157 58.318);  /* Amber */
+  --chart-5: oklch(0.541 0.247 293.009); /* Purple */
 
-  /* Person Colors (high contrast, distinct) */
-  --person-1: #1E40AF;  /* Blue */
-  --person-2: #DC2626;  /* Red */
-  --person-3: #047857;  /* Green */
-  --person-4: #D97706;  /* Orange */
-  --person-5: #7C3AED;  /* Purple */
-  --person-6: #DB2777;  /* Pink */
-  --person-7: #0891B2;  /* Cyan */
-  --person-8: #65A30D;  /* Lime */
-  --person-9: #E11D48;  /* Rose */
-  --person-10: #7C2D12; /* Brown */
+  /* Person Colors (high contrast, distinct).
+     Chroma varies by hue intentionally — sRGB can't hit equal absolute
+     chroma at this L across all hues. Each value is at or near its
+     hue's max chroma for the chosen L, which is the correct pattern. */
+  --person-1: oklch(0.424 0.181 265.638);  /* Blue */
+  --person-2: oklch(0.577 0.215 27.325);   /* Red */
+  --person-3: oklch(0.508 0.105 165.612);  /* Emerald */
+  --person-4: oklch(0.666 0.157 58.318);   /* Amber */
+  --person-5: oklch(0.541 0.247 293.009);  /* Violet */
+  --person-6: oklch(0.592 0.218 0.584);    /* Pink */
+  --person-7: oklch(0.609 0.111 221.723);  /* Cyan */
+  --person-8: oklch(0.648 0.175 131.684);  /* Lime */
+  --person-9: oklch(0.586 0.222 17.585);   /* Rose */
+  --person-10: oklch(0.408 0.116 38.172);  /* Deep orange */
 
   /* Sidebar (keeping for compatibility) */
-  --sidebar: #FFFEF9;
-  --sidebar-foreground: #1A1918;
-  --sidebar-primary: #1E40AF;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #7C3AED;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #D4D2CC;
-  --sidebar-ring: #7C3AED;
+  --sidebar: oklch(0.996 0.007 97.349);
+  --sidebar-foreground: oklch(0.214 0.002 67.693);
+  --sidebar-primary: oklch(0.424 0.181 265.638);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.541 0.247 293.009);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.864 0.008 91.494);
+  --sidebar-ring: oklch(0.541 0.247 293.009);
 
-  /* Font - System fonts for reliable deployment */
-  --font-receipt: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro", "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
-  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-numbers: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Courier New", monospace;
+  /* Fonts — loaded via next/font, then fall back to system stacks. */
+  --font-ui: var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-receipt: var(--font-space-mono), ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Courier New", monospace;
+  --font-numbers: var(--font-space-mono), ui-monospace, "SF Mono", Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", "Courier New", monospace;
 
   /* ===== Receipt Elevation System ===== */
   --receipt-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
@@ -130,67 +143,72 @@
 
 .dark {
   /* Canvas for dark mode */
-  --canvas-bg: #0A0908;
+  --canvas-bg: oklch(0.141 0.003 69.386);
   --canvas-pattern: none;
 
-  --background: #0A0908; /* Deep black like thermal print */
-  --foreground: #F5F5F4;
-  --card: #1A1918;
-  --card-foreground: #F5F5F4;
-  --popover: #1A1918;
-  --popover-foreground: #F5F5F4;
+  --background: oklch(0.141 0.003 69.386); /* Deep black like thermal print */
+  --foreground: oklch(0.97 0.001 106.424);
+  --card: oklch(0.214 0.002 67.693);
+  --card-foreground: oklch(0.97 0.001 106.424);
+  --popover: oklch(0.214 0.002 67.693);
+  --popover-foreground: oklch(0.97 0.001 106.424);
 
   /* Primary: Brighter blue for dark mode */
-  --primary: #3B82F6;
-  --primary-foreground: #0A0908;
-  --primary-500: #3B82F6;
-  --primary-600: #2563EB;
+  --primary: oklch(0.623 0.188 259.815);
+  --primary-foreground: oklch(0.141 0.003 69.386);
+  --primary-500: oklch(0.623 0.188 259.815);
+  --primary-600: oklch(0.546 0.215 262.881);
 
   /* Secondary */
-  --secondary: #A78BFA;
-  --secondary-foreground: #0A0908;
+  --secondary: oklch(0.709 0.159 293.541);
+  --secondary-foreground: oklch(0.141 0.003 69.386);
 
   /* Muted */
-  --muted: #27241F;
-  --muted-foreground: #A8A29E;
+  --muted: oklch(0.262 0.01 80.626);
+  --muted-foreground: oklch(0.716 0.009 56.259);
 
   /* Accent */
-  --accent: #A78BFA;
-  --accent-foreground: #0A0908;
+  --accent: oklch(0.709 0.159 293.541);
+  --accent-foreground: oklch(0.141 0.003 69.386);
 
   /* Success */
-  --success: #10B981;
-  --success-foreground: #0A0908;
+  --success: oklch(0.696 0.149 162.48);
+  --success-foreground: oklch(0.141 0.003 69.386);
 
   /* Warning */
-  --warning: #F59E0B;
-  --warning-foreground: #0A0908;
+  --warning: oklch(0.769 0.165 70.08);
+  --warning-foreground: oklch(0.141 0.003 69.386);
 
   /* Destructive */
-  --destructive: #EF4444;
-  --destructive-foreground: #ffffff;
+  --destructive: oklch(0.637 0.208 25.331);
+  --destructive-foreground: oklch(1 0 0);
 
   /* UI Elements */
-  --border: #3F3A33;
-  --input: #1A1918;
-  --ring: #3B82F6;
+  --border: oklch(0.351 0.014 76.41);
+  --input: oklch(0.214 0.002 67.693);
+  --ring: oklch(0.623 0.188 259.815);
 
   /* Charts */
-  --chart-1: #3B82F6;
-  --chart-2: #EF4444;
-  --chart-3: #10B981;
-  --chart-4: #F59E0B;
-  --chart-5: #A78BFA;
+  --chart-1: oklch(0.623 0.188 259.815);
+  --chart-2: oklch(0.637 0.208 25.331);
+  --chart-3: oklch(0.696 0.149 162.48);
+  --chart-4: oklch(0.769 0.165 70.08);
+  --chart-5: oklch(0.709 0.159 293.541);
 
   /* Sidebar */
-  --sidebar: #0A0908;
-  --sidebar-foreground: #F5F5F4;
-  --sidebar-primary: #3B82F6;
-  --sidebar-primary-foreground: #0A0908;
-  --sidebar-accent: #A78BFA;
-  --sidebar-accent-foreground: #0A0908;
-  --sidebar-border: #3F3A33;
-  --sidebar-ring: #A78BFA;
+  --sidebar: oklch(0.141 0.003 69.386);
+  --sidebar-foreground: oklch(0.97 0.001 106.424);
+  --sidebar-primary: oklch(0.623 0.188 259.815);
+  --sidebar-primary-foreground: oklch(0.141 0.003 69.386);
+  --sidebar-accent: oklch(0.709 0.159 293.541);
+  --sidebar-accent-foreground: oklch(0.141 0.003 69.386);
+  --sidebar-border: oklch(0.351 0.014 76.41);
+  --sidebar-ring: oklch(0.709 0.159 293.541);
+
+  /* CTA for dark mode — brighter orange, still dark foreground for contrast */
+  --cta: oklch(0.769 0.165 70.08);
+  --cta-foreground: oklch(0.141 0.003 69.386);
+  --cta-hover: oklch(0.705 0.187 47.604);
 
   /* Glows for dark mode */
   --primary-glow: rgba(59, 130, 246, 0.2);
@@ -220,6 +238,9 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
+  --color-cta-hover: var(--cta-hover);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -983,10 +1004,10 @@
     font-feature-settings: "tnum" 1;
   }
 
-  /* Custom scrollbar styling to match receipt theme */
+  /* Custom scrollbar styling — uses design tokens for dark mode support */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #D4D2CC #FFFEF9;
+    scrollbar-color: var(--border) var(--background);
   }
 
   *::-webkit-scrollbar {
@@ -995,48 +1016,30 @@
   }
 
   *::-webkit-scrollbar-track {
-    background: #FFFEF9;
+    background: var(--background);
     border-radius: 4px;
   }
 
   *::-webkit-scrollbar-thumb {
-    background: #D4D2CC;
+    background: var(--border);
     border-radius: 4px;
-    border: 2px solid #FFFEF9;
+    border: 2px solid var(--background);
     transition: background 0.2s ease;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: #A8A29E;
+    background: var(--muted-foreground);
   }
 
   *::-webkit-scrollbar-thumb:active {
-    background: #78716C;
-  }
-
-  /* Darker scrollbar for dark mode (if ever implemented) */
-  .dark *::-webkit-scrollbar-track {
-    background: #1A1918;
-  }
-
-  .dark *::-webkit-scrollbar-thumb {
-    background: #44403C;
-    border-color: #1A1918;
-  }
-
-  .dark *::-webkit-scrollbar-thumb:hover {
-    background: #57534E;
-  }
-
-  .dark * {
-    scrollbar-color: #44403C #1A1918;
+    background: var(--foreground);
   }
 
   /* ===== Pro SaaS Design System ===== */
   .pro-app-shell {
     @apply h-dvh w-full overflow-hidden relative;
-    background: #F8FAFC; /* slate-50 */
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--muted);
+    font-family: var(--font-ui);
   }
 
   .pro-header {
@@ -1044,9 +1047,9 @@
     height: calc(64px + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);
     z-index: 20;
-    background: rgba(255, 255, 255, 0.8);
+    background: oklch(from var(--card) l c h / 0.8);
     backdrop-filter: blur(8px);
-    border-bottom: 1px solid #E2E8F0; /* slate-200 */
+    border-bottom: 1px solid var(--border);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
@@ -1055,8 +1058,8 @@
     height: calc(56px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     z-index: 40;
-    background: #FFFFFF;
-    border-top: 1px solid #E2E8F0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
     box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
   }
 
@@ -1079,24 +1082,25 @@
   }
 
   .pro-sticky-left {
-    @apply sticky left-0 bg-white z-20;
+    @apply sticky left-0 bg-card z-20;
     box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.05);
   }
 
   .pro-sticky-right {
-    @apply sticky right-0 bg-white z-20;
+    @apply sticky right-0 bg-card z-20;
     box-shadow: -2px 0 5px -2px rgba(0, 0, 0, 0.05);
   }
 
   .pro-grid-header {
-    @apply sticky top-0 bg-white border-b border-slate-200;
+    @apply sticky top-0 border-b border-border;
     z-index: 30;
+    background: oklch(from var(--primary) l c h / 0.06);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
   .pro-tile-inactive {
     @apply flex items-center justify-center transition-colors duration-100;
-    color: #94A3B8; /* slate-400 */
+    color: var(--muted-foreground);
     background: transparent;
   }
 
@@ -1114,11 +1118,11 @@
   }
 
   .font-space-mono {
-    font-family: 'Space Mono', monospace;
+    font-family: var(--font-receipt);
   }
 
   .font-inter {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-ui);
   }
 
   /* Minimal scrollbar for pro design */
@@ -1132,17 +1136,17 @@
   }
 
   .pro-scrollbar::-webkit-scrollbar-thumb {
-    background: #CBD5E1; /* slate-300 */
+    background: var(--border);
     border-radius: 3px;
   }
 
   .pro-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #94A3B8; /* slate-400 */
+    background: var(--muted-foreground);
   }
 
   .pro-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
+    scrollbar-color: var(--border) transparent;
   }
 }
 

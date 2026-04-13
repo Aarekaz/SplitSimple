@@ -55,44 +55,46 @@ export async function getBillFromCloud(billId: string): Promise<{ bill?: Bill; e
 
     if (!response.ok) {
       if (response.status === 404) {
-        return { error: 'Bill not found or expired' }
+        return { error: "We couldn't find that bill. Bills expire after 6 months — ask the owner for a fresh link, or double-check the ID." }
       }
-      
-      let errorMessage = 'Failed to retrieve bill'
-      
+
+      let errorMessage = 'Something went wrong loading this bill. Please try again.'
+
       try {
         const errorData = await response.json()
-        errorMessage = errorData.error || errorMessage
-      } catch (parseError) {
+        if (errorData.error) errorMessage = errorData.error
+      } catch {
         // Handle non-JSON error responses
         if (response.status === 429) {
-          errorMessage = 'Too many requests, please try again later'
+          errorMessage = "You've made too many requests. Wait a moment and try again."
         } else if (response.status >= 500) {
-          errorMessage = 'Server error, please try again later'
-        } else {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`
+          errorMessage = "Our servers are having trouble. Please try again in a minute."
         }
       }
-      
+
       throw new Error(errorMessage)
     }
 
     let data
     try {
       data = await response.json()
-    } catch (parseError) {
-      throw new Error('Invalid response format from server')
+    } catch {
+      throw new Error("We got an unexpected response from the server. Please try again.")
     }
-    
+
     if (!data.bill) {
-      throw new Error('Bill data is missing from response')
+      throw new Error("This bill link is missing its data. Ask the owner to share a new link.")
     }
-    
+
     return { bill: data.bill }
   } catch (error) {
     console.error('Error retrieving bill from cloud:', error)
-    return { 
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    // Network failures (fetch itself throws) land here
+    if (error instanceof TypeError) {
+      return { error: "Couldn't reach the server. Check your connection and try again." }
+    }
+    return {
+      error: error instanceof Error ? error.message : "Something unexpected happened. Please try again."
     }
   }
 }

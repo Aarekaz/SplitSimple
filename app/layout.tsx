@@ -1,11 +1,30 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { Plus_Jakarta_Sans, Space_Mono } from "next/font/google"
 import "./globals.css"
 import { BillProvider } from "@/contexts/BillContext"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@vercel/analytics/react"
 import { PostHogProvider } from "@/components/PostHogProvider"
+
+// Self-hosted, zero-CLS font loading via next/font.
+// Each loader exposes a CSS variable that we attach to <html> and reference
+// from globals.css via the --font-ui / --font-receipt tokens.
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-plus-jakarta",
+  display: "swap",
+})
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-space-mono",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://splitsimple.anuragd.me"),
@@ -66,7 +85,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="antialiased">
+    <html
+      lang="en"
+      className={`antialiased ${plusJakarta.variable} ${spaceMono.variable}`}
+    >
       <body>
         <a
           href="#main-content"
