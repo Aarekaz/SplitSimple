@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ItemRow } from '../ItemRow'
 import { BillProvider } from '@/contexts/BillContext'
-import type { Item, Person } from '@/contexts/BillContext'
+import type { Item, Person } from '@/lib/bill-types'
 
 // Mock the analytics hook
 jest.mock('@/hooks/use-analytics', () => ({

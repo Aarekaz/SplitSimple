@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { Plus, Minus, Check, Trash2, Undo2, Redo2 } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
-import type { Item, Person } from "@/contexts/BillContext"
+import type { Item, Person } from "@/lib/bill-types"
 import { getBillSummary } from "@/lib/calculations"
 import { formatCurrency, cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"

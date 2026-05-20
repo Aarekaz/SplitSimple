@@ -4,7 +4,7 @@ import { memo } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import type { Person } from "@/contexts/BillContext"
+import type { Person } from "@/lib/bill-types"
 import { cn } from "@/lib/utils"
 
 interface PersonChipProps {

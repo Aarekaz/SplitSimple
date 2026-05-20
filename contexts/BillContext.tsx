@@ -3,44 +3,8 @@
 import type React from "react"
 import { createContext, useContext, useReducer, useEffect } from "react"
 import { getBillFromCloud, storeBillInCloud } from "@/lib/sharing"
-import { migrateBillSchema } from "@/lib/validation"
-
-// Types
-export type SyncStatus = "never_synced" | "syncing" | "synced" | "error"
-
-export interface Person {
-  id: string
-  name: string
-  color: string
-  colorIdx?: number  // Index into the COLORS array for Pro design
-}
-
-export interface Item {
-  id: string
-  name: string
-  price: string
-  quantity: number
-  splitWith: string[] // person IDs
-  method: "even" | "shares" | "percent" | "exact"
-  customSplits?: Record<string, number> // person ID -> amount/share/percent
-}
-
-export interface Bill {
-  id: string
-  title: string
-  status: "draft" | "active" | "closed"
-  tax: string
-  tip: string
-  discount: string
-  taxTipAllocation: "proportional" | "even"
-  notes: string
-  people: Person[]
-  items: Item[]
-  createdAt?: string
-  lastModified?: string
-  accessCount?: number
-  lastAccessed?: string
-}
+import { isMigratableBill, isRecord, migrateBillSchema, type MigratableBill } from "@/lib/validation"
+import type { Bill, BillStatus, Item, Person, SyncStatus, TaxTipAllocation } from "@/lib/bill-types"
 
 // State and Actions
 interface BillState {
@@ -54,12 +18,12 @@ interface BillState {
 
 type BillAction =
   | { type: "SET_BILL_TITLE"; payload: string }
-  | { type: "SET_BILL_STATUS"; payload: "draft" | "active" | "closed" }
+  | { type: "SET_BILL_STATUS"; payload: BillStatus }
   | { type: "SET_NOTES"; payload: string }
   | { type: "SET_TAX"; payload: string }
   | { type: "SET_TIP"; payload: string }
   | { type: "SET_DISCOUNT"; payload: string }
-  | { type: "SET_TAX_TIP_ALLOCATION"; payload: "proportional" | "even" }
+  | { type: "SET_TAX_TIP_ALLOCATION"; payload: TaxTipAllocation }
   | { type: "ADD_PERSON"; payload: { name: string; color: string } }
   | { type: "UPDATE_PERSON"; payload: Person }
   | { type: "REMOVE_PERSON"; payload: string }
@@ -97,12 +61,10 @@ const getRandomColor = () => {
   return color
 }
 
-// A simple and compatible UUID generator
 const simpleUUID = () => {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 }
 
-// Initial state
 const createInitialBill = (): Bill => ({
   id: simpleUUID(),
   title: "New Bill",
@@ -323,7 +285,13 @@ function billReducer(state: BillState, action: BillAction): BillState {
 const saveBillToLocalStorage = (bill: Bill) => {
   try {
     const billsData = localStorage.getItem("splitsimple_bills") || "{}"
-    const bills = JSON.parse(billsData)
+    const parsedBills: unknown = JSON.parse(billsData)
+    const bills: Record<string, unknown> = {}
+    if (isRecord(parsedBills)) {
+      for (const [id, storedBill] of Object.entries(parsedBills)) {
+        bills[id] = storedBill
+      }
+    }
     bills[bill.id] = bill
     localStorage.setItem("splitsimple_bills", JSON.stringify(bills))
   } catch (error) {
@@ -331,12 +299,15 @@ const saveBillToLocalStorage = (bill: Bill) => {
   }
 }
 
-const loadBillFromLocalStorage = (billId: string): Bill | null => {
+const loadBillFromLocalStorage = (billId: string): MigratableBill | null => {
   try {
     const billsData = localStorage.getItem("splitsimple_bills")
     if (!billsData) return null
-    const bills = JSON.parse(billsData)
-    return bills[billId] || null
+    const bills: unknown = JSON.parse(billsData)
+    if (!isRecord(bills)) return null
+
+    const bill = bills[billId]
+    return isMigratableBill(bill) ? bill : null
   } catch (error) {
     console.error("Failed to load bill from localStorage:", error)
     return null
@@ -349,11 +320,9 @@ const generateShareUrl = (billId: string): string => {
   return `${baseUrl}/?bill=${billId}`
 }
 
-export { saveBillToLocalStorage, loadBillFromLocalStorage, generateShareUrl }
-
 function addToHistory(state: BillState, newBill: Bill): BillState {
   const newHistory = state.history.slice(0, state.historyIndex + 1)
-  newHistory.push(JSON.parse(JSON.stringify(state.currentBill))) // Deep clone current state
+  newHistory.push(structuredClone(state.currentBill))
 
   // Limit history size
   if (newHistory.length > state.maxHistorySize) {
@@ -471,30 +440,10 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         // Load current bill from localStorage
         const saved = localStorage.getItem("splitSimple_currentBill")
         if (saved) {
-          const bill = JSON.parse(saved)
-          // Migration: Add missing fields to existing bills
-          bill.status = "active"
-          if (!bill.notes) {
-            bill.notes = ""
+          const bill: unknown = JSON.parse(saved)
+          if (isMigratableBill(bill)) {
+            dispatch({ type: "LOAD_BILL", payload: migrateBillSchema(bill) })
           }
-          if (!bill.discount) {
-            bill.discount = ""
-          }
-          // Add quantity field to items that don't have it
-          if (bill.items) {
-            bill.items = bill.items.map((item: any) => ({
-              ...item,
-              quantity: item.quantity || 1
-            }))
-          }
-          // Add colorIdx to people that don't have it
-          if (bill.people) {
-            bill.people = bill.people.map((person: any, idx: number) => ({
-              ...person,
-              colorIdx: person.colorIdx !== undefined ? person.colorIdx : idx % 6
-            }))
-          }
-          dispatch({ type: "LOAD_BILL", payload: bill })
         }
       } catch (error) {
         console.error("Failed to load bill:", error)

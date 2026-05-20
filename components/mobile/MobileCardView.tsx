@@ -27,7 +27,7 @@ import {
   Edit2
 } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
-import type { Item, Person } from "@/contexts/BillContext"
+import type { Item, Person, ReceiptLineItem } from "@/lib/bill-types"
 import { calculateItemSplits, getBillSummary } from "@/lib/calculations"
 import { PersonSelector } from "@/components/PersonSelector"
 import { SplitMethodSelector } from "@/components/SplitMethodSelector"
@@ -37,7 +37,7 @@ import { formatCurrency } from "@/lib/utils"
 import { copyToClipboard, generateSummaryText } from "@/lib/export"
 import { useToast } from "@/hooks/use-toast"
 import { useBillAnalytics } from "@/hooks/use-analytics"
-import { SplitSimpleIcon } from "@/components/ProBillSplitter"
+import { SplitSimpleIcon } from "@/components/SplitSimpleIcon"
 import { BillLookup } from "@/components/BillLookup"
 import { ShareBill } from "@/components/ShareBill"
 import { ReceiptScanner } from "@/components/ReceiptScanner"
@@ -114,7 +114,7 @@ export function MobileCardView() {
     }
   }
 
-  const handleScanImport = (scannedItems: Omit<Item, "id" | "splitWith" | "method">[]) => {
+  const handleScanImport = (scannedItems: ReceiptLineItem[]) => {
     scannedItems.forEach((item) => {
       const newItem: Omit<Item, "id"> = {
         ...item,
