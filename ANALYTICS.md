@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the comprehensive PostHog analytics integration implemented in SplitSimple to answer key business questions about user behavior and feature usage.
+This document describes the PostHog analytics integration used to answer key questions about user behavior and feature usage.
 
 ## Key Business Questions Tracked
 

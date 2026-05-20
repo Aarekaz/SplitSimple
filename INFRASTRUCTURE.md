@@ -1,6 +1,6 @@
 # 🏗️ SplitSimple Infrastructure & Deployment Guide
 
-A comprehensive guide to deploying and managing SplitSimple's infrastructure across different environments.
+Deployment and infrastructure notes for SplitSimple.
 
 ## 📋 Table of Contents
 
