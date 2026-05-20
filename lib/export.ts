@@ -1,4 +1,4 @@
-import type { Bill } from "@/contexts/BillContext"
+import type { Bill } from "@/lib/bill-types"
 import { getBillSummary, getItemBreakdowns } from "./calculations"
 
 // Generate text summary for copying
@@ -81,35 +81,8 @@ export function generateSummaryText(bill: Bill): string {
   return text
 }
 
-// Generate per-item breakdown text
-export function generateItemBreakdownText(bill: Bill): string {
-  const itemBreakdowns = getItemBreakdowns(bill)
-  const currencySymbol = "$"
-
-  let text = `${bill.title} - Item Breakdown\n`
-  text += "=".repeat(`${bill.title} - Item Breakdown`.length) + "\n\n"
-
-  itemBreakdowns.forEach((breakdown) => {
-    const item = bill.items.find(i => i.id === breakdown.itemId)
-    const quantity = item?.quantity || 1
-    const displayName = quantity > 1 ? `${breakdown.itemName} (×${quantity})` : breakdown.itemName
-    text += `${displayName} ${currencySymbol}${breakdown.itemPrice.toFixed(2)} → `
-
-    const splits = Object.entries(breakdown.splits)
-      .map(([personId, amount]) => {
-        const person = bill.people.find((p) => p.id === personId)
-        return person ? `${person.name} ${currencySymbol}${amount.toFixed(2)}` : ""
-      })
-      .filter(Boolean)
-
-    text += splits.join(", ") + "\n"
-  })
-
-  return text
-}
-
 // Generate CSV data
-export function generateCSV(bill: Bill): { itemsCSV: string; totalsCSV: string } {
+function generateCSV(bill: Bill): { itemsCSV: string; totalsCSV: string } {
   const summary = getBillSummary(bill)
   const itemBreakdowns = getItemBreakdowns(bill)
 
@@ -134,11 +107,11 @@ export function generateCSV(bill: Bill): { itemsCSV: string; totalsCSV: string }
   })
 
   // Totals CSV
-      let totalsCSV = "Person,Subtotal,Tax,Tip,Discount,Total\n"
+  let totalsCSV = "Person,Subtotal,Tax,Tip,Discount,Total\n"
   summary.personTotals.forEach((personTotal) => {
     const person = bill.people.find((p) => p.id === personTotal.personId)
     if (person) {
-              totalsCSV += `"${person.name}",${personTotal.subtotal.toFixed(2)},${personTotal.tax.toFixed(2)},${personTotal.tip.toFixed(2)},${personTotal.discount.toFixed(2)},${personTotal.total.toFixed(2)}\n`
+      totalsCSV += `"${person.name}",${personTotal.subtotal.toFixed(2)},${personTotal.tax.toFixed(2)},${personTotal.tip.toFixed(2)},${personTotal.discount.toFixed(2)},${personTotal.total.toFixed(2)}\n`
     }
   })
 

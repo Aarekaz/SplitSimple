@@ -21,7 +21,7 @@ interface EmptyStateProps {
   className?: string
 }
 
-export function EmptyState({
+function EmptyState({
   title,
   description,
   icon,
