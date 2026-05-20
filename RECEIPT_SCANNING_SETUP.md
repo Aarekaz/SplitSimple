@@ -106,24 +106,23 @@ OCR_MODEL=gemini-1.5-pro
 - `claude-3-opus-20240229` (most accurate)
 - `claude-3-5-haiku-20241022` (fastest)
 
-## Fallback Behavior
+## Error Behavior
 
-- If no API key is set, the app will use mock data (development mode)
+- If no API key is set, receipt image scanning returns a configuration error
 - If the API call fails, the app will show an error message to the user
 - The "Paste Text" option always works and doesn't require an API key
 
 ## Testing
 
-1. **Without API key**: The app will use mock data automatically
+1. **Without API key**: Confirm image scanning shows a configuration error
 2. **With API key**: Upload a receipt image to test real OCR functionality
 3. **Switch providers**: Change `OCR_PROVIDER` and restart to test different models
 4. **Error cases**: Try uploading invalid files or very large images to test error handling
 
-## Benefits of AI SDK
+## AI SDK Notes
 
 - **Unified API**: Same code works with all providers
 - **Easy Switching**: Change providers via environment variables
 - **Type Safety**: Structured outputs with Zod schemas
-- **No Parsing**: AI SDK handles JSON parsing automatically
-- **Future-Proof**: Easy to add new providers as they become available
-
+- **Structured output**: Zod schemas validate the receipt items returned by the model
+- **Provider extension**: New providers can be added behind the same OCR interface

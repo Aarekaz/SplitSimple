@@ -14,11 +14,9 @@ const ALLOWED_MIME_TYPES = [
 
 export async function POST(request: NextRequest) {
   try {
-    // Get provider configuration from environment
     const provider = (process.env.OCR_PROVIDER as OCRProvider) || "google"
     const model = process.env.OCR_MODEL
 
-    // Check if API key exists for the provider
     const apiKey = getApiKeyForProvider(provider)
     if (!apiKey) {
       return NextResponse.json(
@@ -32,7 +30,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse multipart form data
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
@@ -47,7 +44,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return NextResponse.json(
         {
@@ -59,7 +55,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         {
@@ -71,7 +66,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Convert file to base64 and handle preview generation
     let imageBase64: string
     let previewBase64: string | undefined
     let mimeType: string
@@ -80,24 +74,21 @@ export async function POST(request: NextRequest) {
       const arrayBuffer = await file.arrayBuffer()
       const buffer: Buffer = Buffer.from(arrayBuffer)
 
-      // Check if it's HEIC/HEIF
       const isHeic = file.type === 'image/heic' ||
                      file.type === 'image/heif' ||
                      file.name.toLowerCase().endsWith('.heic') ||
                      file.name.toLowerCase().endsWith('.heif')
 
       if (isHeic) {
-        // HEIC files: Skip preview generation, but send to AI (they support HEIC natively)
+        // Sharp cannot preview HEIC reliably here; the OCR providers accept it directly.
         console.log('HEIC detected - skipping preview, sending directly to AI OCR...')
         mimeType = file.type || 'image/heic'
         imageBase64 = buffer.toString('base64')
-        previewBase64 = undefined // No preview for HEIC
+        previewBase64 = undefined
       } else {
-        // Non-HEIC files: Process normally with preview
         mimeType = file.type || 'image/jpeg'
         imageBase64 = buffer.toString('base64')
 
-        // Create a smaller preview image (max 1200px width)
         try {
           const previewBuffer = await sharp(buffer)
             .resize(1200, null, {
@@ -111,7 +102,6 @@ export async function POST(request: NextRequest) {
           console.log('Preview image created successfully')
         } catch (previewError) {
           console.error('Preview creation error:', previewError)
-          // If preview creation fails, use original image
           previewBase64 = imageBase64
         }
       }
