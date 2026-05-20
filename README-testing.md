@@ -1,13 +1,12 @@
 # Testing Guide for SplitSimple
 
-This document provides comprehensive information about the testing infrastructure for SplitSimple.
+This document explains the testing setup for SplitSimple.
 
 ## 🧪 Testing Stack
 
 - **Jest**: JavaScript testing framework
 - **React Testing Library**: Testing utilities for React components
-- **MSW (Mock Service Worker)**: API mocking for tests
-- **ts-jest**: TypeScript support for Jest
+- **babel-jest**: Test transform used by the Next.js Jest setup
 
 ## 📁 Test Structure
 
@@ -17,9 +16,6 @@ This document provides comprehensive information about the testing infrastructur
 ├── tests/
 │   ├── utils/
 │   │   └── test-utils.tsx      # Custom render function and utilities
-│   └── mocks/
-│       ├── handlers.ts         # MSW request handlers
-│       └── server.ts           # MSW server setup
 ├── lib/__tests__/              # Unit tests for business logic
 ├── components/__tests__/       # Component tests
 ├── contexts/__tests__/         # Context/state management tests
@@ -204,19 +200,9 @@ expectCurrencyToBe(actualAmount, expectedAmount)
 
 ## 🔍 Mocking
 
-### API Mocking with MSW
+### API Mocking
 
-API calls are automatically mocked using MSW. Mock responses are defined in `tests/mocks/handlers.ts`:
-
-```typescript
-// Override mock response for specific test
-import { mockBillUtils } from '../../tests/mocks/handlers'
-
-beforeEach(() => {
-  mockBillUtils.clear()
-  mockBillUtils.set('test-bill-id', testBill)
-})
-```
+API route tests currently use direct Jest mocks for external services such as Redis.
 
 ### Component Mocking
 
@@ -303,7 +289,6 @@ Add to `.vscode/launch.json`:
 
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
-- [MSW Documentation](https://mswjs.io/docs/)
 - [Testing Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
 
 ## 🤝 Contributing
@@ -328,4 +313,4 @@ When adding new features:
 **Solution**: Check if all required props are provided and providers are wrapped correctly
 
 ### Issue: API tests failing
-**Solution**: Verify MSW handlers are set up correctly and Redis mock is configured
+**Solution**: Verify Redis and other external-service mocks are configured
