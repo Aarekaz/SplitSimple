@@ -6,12 +6,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 const SESSION_COOKIE_NAME = 'admin_session'
 const SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
-export function generateSessionToken(): string {
+function generateSessionToken(): string {
   return crypto.randomBytes(32).toString('hex')
-}
-
-export function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex')
 }
 
 export async function validateAdminPassword(password: string): Promise<boolean> {
@@ -38,7 +34,7 @@ export async function createAdminSession(): Promise<string> {
   return sessionToken
 }
 
-export async function validateAdminSession(): Promise<boolean> {
+async function validateAdminSession(): Promise<boolean> {
   const cookieStore = await cookies()
   const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)
 

@@ -29,17 +29,15 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
   const [error, setError] = useState<string | null>(null)
 
   const validateBillId = (id: string): boolean => {
-    // Bill ID format: {timestamp}-{randomString}
-    // Example: 1763442653885-vlpkbu4
-    // Also accept just timestamp for better UX (we'll show helpful error)
+    // Accept short header IDs only so users get a targeted error.
     const fullPattern = /^\d{13}-[a-z0-9]+$/i
-    const shortPattern = /^#?\d{7,13}$/i  // Accepts with or without # prefix
+    const shortPattern = /^#?\d{7,13}$/i
 
     return fullPattern.test(id.trim()) || shortPattern.test(id.trim())
   }
 
   const handleLoadBill = async () => {
-    let trimmedId = billId.trim().replace(/^#/, '') // Remove # if present
+    let trimmedId = billId.trim().replace(/^#/, '')
 
     if (!trimmedId) {
       setError("Please enter a bill ID")
@@ -51,7 +49,6 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
       return
     }
 
-    // Check if they entered just the short format (numbers only)
     const shortPattern = /^\d{7,13}$/i
     if (shortPattern.test(trimmedId)) {
       setError("Need full bill ID with code (e.g., 1234567890123-abc1234)")
@@ -64,7 +61,6 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
       return
     }
 
-    // Validate full format
     const fullPattern = /^\d{13}-[a-z0-9]+$/i
     if (!fullPattern.test(trimmedId)) {
       setError("Invalid format. Expected: 1234567890123-abc1234")
@@ -83,7 +79,6 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
       const result = await getBillFromCloud(trimmedId)
 
       if (result.bill) {
-        // Migration: Add missing fields
         const migratedBill = migrateBillSchema(result.bill)
 
         dispatch({ type: "LOAD_BILL", payload: migratedBill })
@@ -105,15 +100,6 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
         })
         analytics.trackError("footer_load_bill_failed", result.error || "Bill not found")
       }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Unknown error occurred"
-      setError(errorMsg)
-      toast({
-        title: "Error loading bill",
-        description: errorMsg,
-        variant: "destructive",
-      })
-      analytics.trackError("footer_load_bill_error", errorMsg)
     } finally {
       setIsLoading(false)
     }

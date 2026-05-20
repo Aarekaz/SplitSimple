@@ -3,6 +3,7 @@ import { adminAuthMiddleware } from '@/lib/admin-auth'
 import { executeRedisOperation } from '@/lib/redis-pool'
 import { validateEnvironment } from '@/lib/env-validation'
 import { STORAGE } from '@/lib/constants'
+import { isMigratableBill, isRecord, migrateBillSchema } from '@/lib/validation'
 
 async function getBillHandler(
   req: NextRequest,
@@ -24,25 +25,28 @@ async function getBillHandler(
     const [bill, ttl] = await executeRedisOperation(async (redis) => {
       const data = await redis.get(key)
       const ttlValue = await redis.ttl(key)
-      return [data ? JSON.parse(data) : null, ttlValue]
+      const parsedData: unknown = data ? JSON.parse(data) : null
+      return [parsedData, ttlValue]
     })
 
-    if (!bill) {
+    if (!isMigratableBill(bill)) {
       return NextResponse.json(
         { error: 'Bill not found' },
         { status: 404 }
       )
     }
 
+    const migratedBill = migrateBillSchema(bill)
+
     return NextResponse.json({
       id,
-      bill,
+      bill: migratedBill,
       metadata: {
         ttl,
         expiresAt: ttl > 0 ? new Date(Date.now() + ttl * 1000).toISOString() : 'Never',
-        size: JSON.stringify(bill).length,
-        createdAt: bill.createdAt || null,
-        lastModified: bill.lastModified || null
+        size: JSON.stringify(migratedBill).length,
+        createdAt: migratedBill.createdAt || null,
+        lastModified: migratedBill.lastModified || null
       }
     })
   } catch (error) {
@@ -61,10 +65,20 @@ async function updateBillHandler(
   try {
     const { id } = await params
     const key = `bill:${id}`
-    const updatedBill = await req.json()
+    const body: unknown = await req.json()
+
+    if (!isMigratableBill(body)) {
+      return NextResponse.json(
+        { error: 'Invalid bill data' },
+        { status: 400 }
+      )
+    }
 
     // Add metadata
-    updatedBill.lastModified = new Date().toISOString()
+    const updatedBill = {
+      ...migrateBillSchema(body),
+      lastModified: new Date().toISOString()
+    }
 
     await executeRedisOperation(async (redis) => {
       await redis.setEx(key, STORAGE.BILL_TTL_SECONDS, JSON.stringify(updatedBill))
@@ -115,7 +129,8 @@ async function extendBillHandler(
 ) {
   try {
     const { id } = await params
-    const { days = 30 } = await req.json()
+    const body: unknown = await req.json()
+    const days = isRecord(body) && typeof body.days === 'number' ? body.days : 30
     const key = `bill:${id}`
 
     const billExists = await executeRedisOperation(async (redis) => {

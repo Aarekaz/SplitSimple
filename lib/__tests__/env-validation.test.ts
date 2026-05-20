@@ -56,7 +56,7 @@ describe('env-validation', () => {
 
       expect(result.isValid).toBe(true)
       expect(result.errors).toHaveLength(0)
-      expect(result.warnings).toContain('GOOGLE_GENERATIVE_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY not set - receipt scanning will use mock data (default provider: google)')
+      expect(result.warnings).toContain('GOOGLE_GENERATIVE_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY not set - receipt image scanning is disabled (default provider: google)')
     })
 
     it('fails validation without REDIS_URL', () => {

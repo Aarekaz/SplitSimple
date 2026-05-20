@@ -3,21 +3,9 @@ import { adminAuthMiddleware } from '@/lib/admin-auth'
 import { executeRedisOperation } from '@/lib/redis-pool'
 import { validateEnvironment } from '@/lib/env-validation'
 import { getBillSummary } from '@/lib/calculations'
-import type { Bill } from '@/contexts/BillContext'
+import type { AdminBillMetadata, AdminStats } from '@/lib/bill-types'
 import { STORAGE } from '@/lib/constants'
-
-interface BillMetadata {
-  id: string
-  bill: Bill
-  createdAt: string
-  lastModified: string
-  expiresAt: string
-  accessCount: number
-  size: number
-  shareUrl: string
-  totalAmount: number
-  lastAccessed?: string
-}
+import { isMigratableBill, migrateBillSchema } from '@/lib/validation'
 
 // Helper function to get the correct base URL
 function getBaseUrl(req: NextRequest): string {
@@ -61,35 +49,37 @@ async function getAllBillsHandler(req: NextRequest) {
       const [billData, ttl] = await executeRedisOperation(async (redis) => {
         const data = await redis.get(key)
         const ttlValue = await redis.ttl(key)
-        return [data ? JSON.parse(data) : null, ttlValue]
+        const parsedData: unknown = data ? JSON.parse(data) : null
+        return [parsedData, ttlValue]
       })
 
-      if (billData) {
+      if (isMigratableBill(billData)) {
         const id = key.replace('bill:', '')
-        const billSummary = getBillSummary(billData)
+        const bill = migrateBillSchema(billData)
+        const billSummary = getBillSummary(bill)
         // For bills without timestamps, estimate based on Redis key order or use a reasonable fallback
-        const estimatedCreatedAt = billData.createdAt || 
-          (ttl > 0 ? new Date(Date.now() - (STORAGE.BILL_TTL_SECONDS * 1000 - ttl * 1000)).toISOString() : 
+        const estimatedCreatedAt = bill.createdAt ||
+          (ttl > 0 ? new Date(Date.now() - (STORAGE.BILL_TTL_SECONDS * 1000 - ttl * 1000)).toISOString() :
           new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Default to 1 week ago
-          
-        const metadata: BillMetadata = {
+
+        const metadata: AdminBillMetadata = {
           id,
-          bill: billData,
+          bill,
           createdAt: estimatedCreatedAt,
-          lastModified: billData.lastModified || estimatedCreatedAt,
+          lastModified: bill.lastModified || estimatedCreatedAt,
           expiresAt: ttl > 0 ? new Date(Date.now() + ttl * 1000).toISOString() : 'Never',
-          accessCount: billData.accessCount || 0,
-          size: JSON.stringify(billData).length,
+          accessCount: bill.accessCount || 0,
+          size: JSON.stringify(bill).length,
           shareUrl: `${getBaseUrl(req)}?share=${id}`,
           totalAmount: billSummary.total,
-          lastAccessed: billData.lastAccessed
+          lastAccessed: bill.lastAccessed
         }
         return metadata
       }
       return null
     })
 
-    let bills = (await Promise.all(billsPromises)).filter((b): b is BillMetadata => b !== null)
+    let bills = (await Promise.all(billsPromises)).filter((b): b is AdminBillMetadata => b !== null)
 
     // Filter by search
     if (search) {
@@ -282,7 +272,7 @@ async function getAllBillsHandler(req: NextRequest) {
         : sorted[mid]
     }
     
-    const stats = {
+    const stats: AdminStats = {
       // Core metrics
       totalBills,
       activeBills,

@@ -77,51 +77,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { formatCurrency } from '@/lib/utils'
-
-interface BillMetadata {
-  id: string
-  bill: any
-  createdAt: string
-  lastModified: string
-  expiresAt: string
-  accessCount: number
-  size: number
-  shareUrl: string
-  totalAmount: number
-  lastAccessed?: string
-}
-
-interface AdminStats {
-  totalBills: number
-  activeBills: number
-  draftBills: number
-  closedBills: number
-  totalItems: number
-  totalPeople: number
-  totalStorageSize: number
-  averageBillSize: number
-  // Phase 1 enhancements
-  totalMoneyProcessed: number
-  averageBillValue: number
-  largestBill: number
-  billsCreatedToday: number
-  billsCreatedThisWeek: number
-  billsCreatedThisMonth: number
-  completionRate: number
-  shareRate: number
-  averageItemsPerBill: number
-  averagePeoplePerBill: number
-  popularSplitMethods: Array<{method: string, count: number, percentage: number}>
-  totalTaxCollected: number
-  totalTipsProcessed: number
-  totalDiscountsGiven: number
-  weeklyGrowth: number
-  billsWithTax: number
-  billsWithTips: number
-  billsWithDiscounts: number
-  medianBillValue: number
-  sharedBills: number
-}
+import type { AdminBillMetadata, AdminStats, Item, Person } from '@/lib/bill-types'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -129,7 +85,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [password, setPassword] = useState('')
-  const [bills, setBills] = useState<BillMetadata[]>([])
+  const [bills, setBills] = useState<AdminBillMetadata[]>([])
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -137,7 +93,7 @@ export default function AdminPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [selectedBill, setSelectedBill] = useState<BillMetadata | null>(null)
+  const [selectedBill, setSelectedBill] = useState<AdminBillMetadata | null>(null)
   const [showBillDialog, setShowBillDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [billToDelete, setBillToDelete] = useState<string | null>(null)
@@ -1086,7 +1042,7 @@ export default function AdminPage() {
 
                 <TabsContent value="people">
                   <div className="space-y-2">
-                    {selectedBill.bill.people?.map((person: any) => (
+                    {selectedBill.bill.people?.map((person: Person) => (
                       <div
                         key={person.id}
                         className="flex items-center gap-2 p-2 rounded border"
@@ -1104,7 +1060,7 @@ export default function AdminPage() {
 
                 <TabsContent value="items">
                   <div className="space-y-2">
-                    {selectedBill.bill.items?.map((item: any) => (
+                    {selectedBill.bill.items?.map((item: Item) => (
                       <div key={item.id} className="p-3 border rounded space-y-2">
                         <div className="flex justify-between">
                           <span className="font-medium">{item.name}</span>

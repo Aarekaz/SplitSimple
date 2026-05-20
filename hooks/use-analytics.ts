@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useCallback } from "react"
-import { useAnalytics, getBillAnalytics, type AnalyticsEvents } from "@/lib/analytics"
-import { useBill, type SyncStatus } from "@/contexts/BillContext"
-import type { SplitMethod } from "@/components/SplitMethodSelector"
+import { useAnalytics, getBillAnalytics, type AnalyticsContext, type AnalyticsEvents } from "@/lib/analytics"
+import { useBill } from "@/contexts/BillContext"
+import type { SyncStatus } from "@/lib/bill-types"
+import type { SplitMethod } from "@/lib/bill-types"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export function useBillAnalytics() {
@@ -113,7 +114,7 @@ export function useBillAnalytics() {
   }, [state.currentBill.id, state.currentBill.items.length, analytics])
 
   // Track feature usage
-  const trackFeatureUsed = useCallback((featureName: string, context?: Record<string, any>) => {
+  const trackFeatureUsed = useCallback((featureName: string, context?: AnalyticsContext) => {
     analytics.trackFeatureUsage(featureName, state.currentBill.id, context)
   }, [state.currentBill.id, analytics])
 
@@ -189,7 +190,7 @@ export function useBillAnalytics() {
   }, [state.currentBill.id, analytics])
 
   // Track errors
-  const trackError = useCallback((errorType: string, errorMessage: string, context?: Record<string, any>) => {
+  const trackError = useCallback((errorType: string, errorMessage: string, context?: AnalyticsContext) => {
     analytics.trackError(errorType, errorMessage, state.currentBill.id, context)
   }, [state.currentBill.id, analytics])
 

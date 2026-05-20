@@ -1,10 +1,11 @@
 "use client"
 
 import { usePostHog } from "posthog-js/react"
-import type { PostHog } from "posthog-js"
+import type { PostHog, Properties as PostHogProperties } from "posthog-js"
 import { useEffect } from "react"
-import type { Bill, Person, Item, SyncStatus } from "@/contexts/BillContext"
-import type { SplitMethod } from "@/components/SplitMethodSelector"
+import type { Bill, SyncStatus, SplitMethod } from "@/lib/bill-types"
+
+export type AnalyticsContext = PostHogProperties
 
 export interface AnalyticsEvents {
   // App lifecycle
@@ -97,7 +98,7 @@ export interface AnalyticsEvents {
   "feature_used": {
     feature_name: string
     bill_id: string
-    context?: Record<string, any>
+    context?: AnalyticsContext
   }
 
   "share_bill_clicked": {
@@ -148,11 +149,11 @@ export interface AnalyticsEvents {
     error_type: string
     error_message: string
     bill_id?: string
-    context?: Record<string, any>
+    context?: AnalyticsContext
   }
 }
 
-export interface UserFlowTracking {
+interface UserFlowTracking {
   sessionId: string
   billCreatedAt: number | null
   lastActivity: number
@@ -290,7 +291,7 @@ class AnalyticsManager {
     })
   }
 
-  trackFeatureUsage(feature_name: string, bill_id: string, context?: Record<string, any>) {
+  trackFeatureUsage(feature_name: string, bill_id: string, context?: AnalyticsContext) {
     this.track("feature_used", {
       feature_name,
       bill_id,
@@ -298,7 +299,7 @@ class AnalyticsManager {
     })
   }
 
-  trackError(error_type: string, error_message: string, bill_id?: string, context?: Record<string, any>) {
+  trackError(error_type: string, error_message: string, bill_id?: string, context?: AnalyticsContext) {
     this.track("error_occurred", {
       error_type,
       error_message,
@@ -307,7 +308,6 @@ class AnalyticsManager {
     })
   }
 
-  // Method to track any event type
   trackEvent<T extends keyof AnalyticsEvents>(
     eventName: T,
     properties: AnalyticsEvents[T]
@@ -326,8 +326,7 @@ class AnalyticsManager {
   }
 }
 
-// Global analytics instance
-export const analytics = new AnalyticsManager()
+const analytics = new AnalyticsManager()
 
 // React hook for analytics
 export function useAnalytics() {
@@ -362,20 +361,4 @@ export function getBillAnalytics(bill: Bill) {
     has_tip: bill.tip !== "",
     has_discount: bill.discount !== "",
   }
-}
-
-export function trackSplitMethodPopularity(
-  method: SplitMethod,
-  billId: string,
-  peopleCount: number,
-  assignedPeopleCount: number
-) {
-  analytics.trackEvent("split_method_changed", {
-    bill_id: billId,
-    item_id: "new_item",
-    old_method: "even" as SplitMethod, // Default assumption
-    new_method: method,
-    people_count: peopleCount,
-    assigned_people_count: assignedPeopleCount,
-  })
 }
