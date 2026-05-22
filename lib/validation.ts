@@ -2,6 +2,8 @@
  * Input validation utilities for SplitSimple
  */
 
+import type { Bill, Item, Person } from "@/lib/bill-types"
+
 export interface ValidationResult {
   isValid: boolean
   value: string | number
@@ -175,8 +177,98 @@ export function sanitizeInput(input: string): string {
  * Migrate bill schema to add missing fields for backward compatibility
  * This ensures old shared bills work with the current schema
  */
-export function migrateBillSchema<T extends Record<string, any>>(bill: T): T {
-  const migrated: any = { ...bill }
+type LegacyItem = Omit<Item, "quantity"> & Partial<Pick<Item, "quantity">>
+type LegacyPerson = Person
+export type MigratableBill = Omit<Bill, "status" | "tax" | "tip" | "notes" | "discount" | "taxTipAllocation" | "items" | "people"> &
+  Partial<Pick<Bill, "status" | "tax" | "tip" | "notes" | "discount" | "taxTipAllocation">> & {
+    items: LegacyItem[]
+    people: LegacyPerson[]
+  }
+
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every(item => typeof item === "string")
+
+const isNumberRecord = (value: unknown): value is Record<string, number> =>
+  isRecord(value) && Object.values(value).every(item => typeof item === "number")
+
+const isBillStatus = (value: unknown): value is Bill["status"] =>
+  value === "draft" || value === "active" || value === "closed"
+
+const isTaxTipAllocation = (value: unknown): value is Bill["taxTipAllocation"] =>
+  value === "proportional" || value === "even"
+
+const isSplitMethod = (value: unknown): value is Item["method"] =>
+  value === "even" || value === "shares" || value === "percent" || value === "exact"
+
+const isLegacyItem = (value: unknown): value is LegacyItem => {
+  if (!isRecord(value)) return false
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.price === "string" &&
+    (typeof value.quantity === "number" || value.quantity === undefined) &&
+    isStringArray(value.splitWith) &&
+    isSplitMethod(value.method) &&
+    (value.customSplits === undefined || isNumberRecord(value.customSplits))
+  )
+}
+
+const isLegacyPerson = (value: unknown): value is LegacyPerson => {
+  if (!isRecord(value)) return false
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.color === "string" &&
+    (typeof value.colorIdx === "number" || value.colorIdx === undefined)
+  )
+}
+
+export function isMigratableBill(value: unknown): value is MigratableBill {
+  if (!isRecord(value)) return false
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.title === "string" &&
+    (isBillStatus(value.status) || value.status === undefined) &&
+    (typeof value.tax === "string" || value.tax === undefined) &&
+    (typeof value.tip === "string" || value.tip === undefined) &&
+    (typeof value.discount === "string" || value.discount === undefined) &&
+    (isTaxTipAllocation(value.taxTipAllocation) || value.taxTipAllocation === undefined) &&
+    (typeof value.notes === "string" || value.notes === undefined) &&
+    Array.isArray(value.people) &&
+    value.people.every(isLegacyPerson) &&
+    Array.isArray(value.items) &&
+    value.items.every(isLegacyItem) &&
+    (typeof value.createdAt === "string" || value.createdAt === undefined) &&
+    (typeof value.lastModified === "string" || value.lastModified === undefined) &&
+    (typeof value.accessCount === "number" || value.accessCount === undefined) &&
+    (typeof value.lastAccessed === "string" || value.lastAccessed === undefined)
+  )
+}
+
+export function migrateBillSchema<T extends MigratableBill>(bill: T): T & Bill {
+  const migrated: T & Bill = {
+    ...bill,
+    status: "active",
+    tax: bill.tax || "",
+    tip: bill.tip || "",
+    notes: bill.notes || "",
+    discount: bill.discount || "",
+    taxTipAllocation: bill.taxTipAllocation || "proportional",
+    items: bill.items.map(item => ({
+      ...item,
+      quantity: item.quantity || 1
+    })),
+    people: bill.people.map((person, idx) => ({
+      ...person,
+      colorIdx: person.colorIdx !== undefined ? person.colorIdx : idx % 6
+    })),
+  }
 
   // Force status to active now that manual status changes are removed
   migrated.status = "active"
@@ -192,12 +284,5 @@ export function migrateBillSchema<T extends Record<string, any>>(bill: T): T {
   }
 
   // Add quantity field to items that don't have it
-  if (migrated.items && Array.isArray(migrated.items)) {
-    migrated.items = migrated.items.map((item: any) => ({
-      ...item,
-      quantity: item.quantity || 1
-    }))
-  }
-
-  return migrated as T
+  return migrated
 }

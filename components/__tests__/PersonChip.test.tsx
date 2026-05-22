@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { PersonChip } from '../PersonChip'
-import type { Person } from '@/contexts/BillContext'
+import type { Person } from '@/lib/bill-types'
 
 const mockPerson: Person = {
   id: '1',

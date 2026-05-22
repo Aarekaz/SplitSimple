@@ -11,7 +11,6 @@ A modern, collaborative bill-splitting app with real-time sync and universal sha
 *   **No Accounts Required**: Anonymous, temporary bill storage (auto-deletes after ~6 months)
 
 ### 💰 **Smart Bill Management**
-*   **Intelligent Status System**: Draft → Active → Closed workflow with contextual actions
 *   **Flexible Splitting**: Split items evenly, by shares, percentage, or exact amounts
 *   **Tax & Tip Allocation**: Distribute proportionally or evenly among participants
 *   **Accurate Calculations**: Precision math to avoid "penny problems"
@@ -62,7 +61,7 @@ A modern, collaborative bill-splitting app with real-time sync and universal sha
 *   `pnpm test:watch` - Run tests in watch mode
 *   `pnpm test:coverage` - Run tests with coverage report
 *   `pnpm lint` - Check code style
-*   `pnpm type-check` - Run TypeScript checks
+*   `pnpm typecheck` - Run TypeScript checks
 
 ### Deployment
 Deploy to Vercel with Redis KV for full sharing functionality:
@@ -95,22 +94,21 @@ Deploy to Vercel with Redis KV for full sharing functionality:
 ### Key Features Implementation
 *   **Mathematical Precision** - Cent-based calculations to avoid floating-point errors
 *   **XSS Prevention** - Input sanitization and validation
-*   **Drag & Drop** - Smooth item reordering with @dnd-kit
+*   **Keyboard Reordering** - Move items through the app's undoable bill state
 *   **Responsive Design** - Mobile-first approach with adaptive layouts
 
 ## 🧪 Testing & Quality Assurance
 
 ### Testing Stack
-*   **Jest** - Test framework with 70% coverage targets
+*   **Jest** - Test framework and coverage reports
 *   **React Testing Library** - Component testing utilities
-*   **MSW** - API mocking for integration tests
 *   **GitHub Actions** - Automated CI/CD pipeline
 
 ### Test Coverage
 *   **98% calculations.ts** - Business logic validation
 *   **96% validation.ts** - Input sanitization and security
 *   **95% BillContext.tsx** - State management integrity
-*   **79 passing tests** - Comprehensive test suite
+*   **Comprehensive test suite** - Component, context, API route, and utility coverage
 
 ### Running Tests
 ```sh

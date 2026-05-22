@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PersonSelector } from "./PersonSelector"
 import { SplitMethodInput } from "./SplitMethodInput"
-import type { Item, Person } from "@/contexts/BillContext"
+import type { Item, Person } from "@/lib/bill-types"
 import { calculateItemSplits, evaluatePrice } from "@/lib/calculations"
 import { validateCurrencyInput, validateItemName } from "@/lib/validation"
 

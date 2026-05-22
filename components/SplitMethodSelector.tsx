@@ -1,44 +1,8 @@
 "use client"
 
-import { Scale, Percent, Calculator, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useBillAnalytics } from "@/hooks/use-analytics"
-
-export type SplitMethod = "even" | "shares" | "percent" | "exact"
-
-interface SplitMethodOption {
-  value: SplitMethod
-  label: string
-  description: string
-  icon: React.ComponentType<{ className?: string }>
-}
-
-const splitMethodOptions: SplitMethodOption[] = [
-  {
-    value: "even",
-    label: "Even Split",
-    description: "Split equally among selected people",
-    icon: Users,
-  },
-  {
-    value: "shares",
-    label: "By Shares",
-    description: "Split based on custom shares",
-    icon: Scale,
-  },
-  {
-    value: "percent",
-    label: "By Percent",
-    description: "Split by percentage amounts",
-    icon: Percent,
-  },
-  {
-    value: "exact",
-    label: "Exact Amount",
-    description: "Specify exact dollar amounts",
-    icon: Calculator,
-  },
-]
+import { splitMethodOptions, type SplitMethod } from "@/components/split-method-options"
 
 interface SplitMethodSelectorProps {
   value: SplitMethod

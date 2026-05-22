@@ -3,7 +3,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createOpenAI } from "@ai-sdk/openai"
 import { createAnthropic } from "@ai-sdk/anthropic"
 import { z } from "zod"
-import { OCRResult } from "./mock-ocr"
+import type { OCRResult } from "@/lib/bill-types"
 
 // Define the schema for receipt items using Zod
 const ReceiptItemSchema = z.object({
@@ -69,9 +69,6 @@ function getApiKey(provider: OCRProvider): string | undefined {
   }
 }
 
-/**
- * Scan receipt image using AI SDK (supports multiple providers)
- */
 export async function scanReceiptImage(
   imageBase64: string,
   mimeType: string,
@@ -86,7 +83,6 @@ export async function scanReceiptImage(
       throw new Error(`API key not configured for provider: ${provider}`)
     }
 
-    // Create provider instance with API key
     let model
     switch (provider) {
       case "google": {
@@ -108,7 +104,6 @@ export async function scanReceiptImage(
         throw new Error(`Unsupported provider: ${provider}`)
     }
 
-    // Use AI SDK's generateObject with messages for multimodal input
     const { object } = await generateObject({
       model,
       messages: [
@@ -126,20 +121,16 @@ export async function scanReceiptImage(
       schema: ReceiptItemsSchema,
     })
 
-    // The AI SDK returns validated, typed data - no parsing needed!
     const items = object.items.map((item) => {
-      // Sanitize name
       let name = item.name
         .trim()
-        .replace(/^\.+|\.+$/g, '') // Remove leading/trailing dots
-        .replace(/\s+/g, ' ') // Normalize whitespace
+        .replace(/^\.+|\.+$/g, '')
+        .replace(/\s+/g, ' ')
         .trim()
 
-      // Ensure price has 2 decimal places
       const priceNum = parseFloat(item.price)
       const price = isNaN(priceNum) ? "0.00" : priceNum.toFixed(2)
 
-      // Ensure quantity is valid
       const quantity = item.quantity || 1
 
       return {
@@ -159,56 +150,5 @@ export async function scanReceiptImage(
         ? `OCR API error: ${error.message}`
         : "Failed to process receipt with OCR API"
     )
-  }
-}
-
-/**
- * Convert File to base64 string (for client-side use)
- */
-export async function fileToBase64(file: File): Promise<{ data: string; mimeType: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      const result = reader.result as string
-      // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
-      const base64Index = result.indexOf(',')
-      const base64 = base64Index !== -1 ? result.substring(base64Index + 1) : result
-
-      resolve({
-        data: base64,
-        mimeType: file.type || 'image/jpeg'
-      })
-    }
-
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'))
-    }
-
-    reader.readAsDataURL(file)
-  })
-}
-
-/**
- * Get available providers and their supported models
- */
-export function getAvailableProviders(): Record<OCRProvider, string[]> {
-  return {
-    google: [
-      "gemini-2.5-flash",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-1.5-pro",
-    ],
-    openai: [
-      "gpt-4o",
-      "gpt-4o-mini",
-      "gpt-4-turbo"
-    ],
-    anthropic: [
-      "claude-sonnet-4-20250514",
-      "claude-3-opus-20240229",
-      "claude-3-5-haiku-20241022"
-    ]
   }
 }

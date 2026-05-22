@@ -1,0 +1,7 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreDependencies": ["eslint", "eslint-config-next", "ts-node"],
+  "ignoreIssues": {
+    "components/ui/**": ["exports"]
+  }
+}

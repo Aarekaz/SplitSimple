@@ -1,10 +1,11 @@
 "use client"
 
 import { PostHogProvider as PHProvider } from "posthog-js/react"
+import type { PostHog } from "posthog-js"
 import { useEffect, useState } from "react"
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  const [client, setClient] = useState<any>(null)
+  const [client, setClient] = useState<PostHog | null>(null)
 
   useEffect(() => {
     let cancelled = false

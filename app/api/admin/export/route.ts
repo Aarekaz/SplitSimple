@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminAuthMiddleware } from '@/lib/admin-auth'
 import { executeRedisOperation } from '@/lib/redis-pool'
 import { validateEnvironment } from '@/lib/env-validation'
-import type { Bill } from '@/contexts/BillContext'
+import { isMigratableBill, migrateBillSchema } from '@/lib/validation'
+import type { Bill } from '@/lib/bill-types'
 
-function convertToCSV(bills: any[]): string {
+interface BillExportMetadata {
+  id: string
+  bill: Bill
+  createdAt: string
+  lastModified: string
+  expiresAt: string
+}
+
+function convertToCSV(bills: BillExportMetadata[]): string {
   if (bills.length === 0) return ''
 
   const headers = [
@@ -66,16 +75,18 @@ async function exportBillsHandler(req: NextRequest) {
       const [billData, ttl] = await executeRedisOperation(async (redis) => {
         const data = await redis.get(key)
         const ttlValue = await redis.ttl(key)
-        return [data ? JSON.parse(data) : null, ttlValue]
+        const parsedData: unknown = data ? JSON.parse(data) : null
+        return [parsedData, ttlValue]
       })
 
-      if (billData) {
+      if (isMigratableBill(billData)) {
         const id = key.replace('bill:', '')
+        const bill = migrateBillSchema(billData)
         return {
           id,
-          bill: billData,
-          createdAt: billData.createdAt || new Date().toISOString(),
-          lastModified: billData.lastModified || new Date().toISOString(),
+          bill,
+          createdAt: bill.createdAt || new Date().toISOString(),
+          lastModified: bill.lastModified || new Date().toISOString(),
           expiresAt: ttl > 0 ? new Date(Date.now() + ttl * 1000).toISOString() : 'Never'
         }
       }

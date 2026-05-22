@@ -21,23 +21,6 @@ export const TIMING = {
   TOAST_LONG: 5000,
 } as const
 
-// Animation thresholds
-export const ANIMATION = {
-  // Skip animation if change is more than this percentage
-  SKIP_PERCENT_THRESHOLD: 0.5,
-  // Skip animation if difference is more than this amount
-  SKIP_DIFFERENCE_THRESHOLD: 100,
-  // Trigger pulse if change is more than this percentage
-  PULSE_PERCENT_THRESHOLD: 0.1,
-} as const
-
-// UI limits
-export const LIMITS = {
-  PERSON_NAME_MAX_LENGTH: 50,
-  SEARCH_MIN_ITEMS: 3,
-  PEOPLE_SCROLL_INDICATOR_THRESHOLD: 5,
-} as const
-
 // Redis/Storage constants
 export const STORAGE = {
   BILL_TTL_SECONDS: 15552000, // ~6 months (6 * 30 days)

@@ -17,16 +17,14 @@ import {
   FileQuestion,
   Users,
   Scale,
-  Percent,
-  Calculator,
   ChevronDown,
   Camera,
   Pencil,
   Info
 } from 'lucide-react'
 import { useBill } from '@/contexts/BillContext'
-import type { Item, Person } from '@/contexts/BillContext'
-import { cn } from '@/lib/utils'
+import type { Item, Person, ReceiptLineItem } from '@/lib/bill-types'
+import { cn, formatCurrencyWithCents as formatCurrencySimple } from '@/lib/utils'
 import { generateSummaryText, copyToClipboard } from '@/lib/export'
 import { useToast } from '@/hooks/use-toast'
 import { ShareBill } from '@/components/ShareBill'
@@ -38,7 +36,9 @@ import { migrateBillSchema } from '@/lib/validation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
 import { AnimatedNumber } from '@/components/AnimatedNumber'
+import { SplitSimpleIcon } from '@/components/SplitSimpleIcon'
 import { ToastAction } from '@/components/ui/toast'
+import { getSplitMethodOption, splitMethodOptions } from '@/components/split-method-options'
 
 import dynamic from 'next/dynamic'
 import {
@@ -71,7 +71,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-export type SplitMethod = "even" | "shares" | "percent" | "exact"
+import type { SplitMethod } from '@/lib/bill-types'
 
 // --- DESIGN TOKENS ---
 const COLORS = [
@@ -82,28 +82,6 @@ const COLORS = [
   { id: 'blue', bg: 'bg-blue-100', solid: 'bg-blue-500', text: 'text-blue-700', textSolid: 'text-white', hex: '#3B82F6' },
   { id: 'amber', bg: 'bg-amber-100', solid: 'bg-amber-500', text: 'text-amber-700', textSolid: 'text-white', hex: '#F59E0B' },
 ]
-
-export const SplitSimpleIcon = () => (
-  <div className="w-8 h-8 rounded-lg shadow-md flex items-center justify-center bg-card">
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-6 h-6"
-      aria-hidden="true"
-    >
-      <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1Z" fill="#16a34a" />
-      <path d="M16 8h-6a2 2 0 1 0 0 4h6" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 17.5v-11" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  </div>
-)
-
-const formatCurrencySimple = (amount: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
-}
 
 const ReceiptScanner = dynamic(
   () => import('@/components/ReceiptScanner').then((mod) => mod.ReceiptScanner),
@@ -213,14 +191,6 @@ GridCell.displayName = 'GridCell'
 
 
 
-
-// --- Split Method Options (constant) ---
-const splitMethodOptions = [
-  { value: 'even' as SplitMethod, label: 'Even Split', icon: Users },
-  { value: 'shares' as SplitMethod, label: 'By Shares', icon: Scale },
-  { value: 'percent' as SplitMethod, label: 'By Percent', icon: Percent },
-  { value: 'exact' as SplitMethod, label: 'Exact Amount', icon: Calculator },
-]
 
 function DesktopBillSplitter() {
   const { state, dispatch, canUndo, canRedo } = useBill()
@@ -578,7 +548,7 @@ function DesktopBillSplitter() {
     toast({ title: "Item duplicated" })
   }, [dispatch, analytics, toast])
 
-  const handleScanImport = useCallback((scannedItems: Omit<Item, 'id' | 'splitWith' | 'method'>[]) => {
+  const handleScanImport = useCallback((scannedItems: ReceiptLineItem[]) => {
     scannedItems.forEach(item => {
       const newItem: Omit<Item, 'id'> = {
         ...item,
@@ -658,11 +628,6 @@ function DesktopBillSplitter() {
   }
 
   // --- Split Method Management ---
-  const getSplitMethodIcon = (method: SplitMethod) => {
-    const option = splitMethodOptions.find(o => o.value === method)
-    return option?.icon || Users
-  }
-
   const changeSplitMethod = useCallback((itemId: string, newMethod: SplitMethod) => {
     const item = itemsById.get(itemId)
     if (!item) return
@@ -672,7 +637,7 @@ function DesktopBillSplitter() {
     analytics.trackSplitMethodChanged(itemId, oldMethod, newMethod, item.splitWith.length)
     toast({
       title: "Split method changed",
-      description: `Changed to ${splitMethodOptions.find(o => o.value === newMethod)?.label}`,
+      description: `Changed to ${getSplitMethodOption(newMethod).label}`,
       duration: TIMING.TOAST_SHORT
     })
   }, [itemsById, updateItem, analytics, toast])
@@ -685,7 +650,6 @@ function DesktopBillSplitter() {
       return
     }
 
-    // Create unique request ID to prevent race conditions
     const requestId = `${Date.now()}-${Math.random()}`
     loadBillRequestRef.current = requestId
 
@@ -696,7 +660,7 @@ function DesktopBillSplitter() {
     try {
       const result = await getBillFromCloud(trimmedId)
 
-      // Check if this request is still current
+      // Ignore stale responses when a newer load request has started.
       if (loadBillRequestRef.current !== requestId) {
         return
       }
@@ -717,18 +681,7 @@ function DesktopBillSplitter() {
       analytics.trackSharedBillLoaded("cloud")
       setBillId('') // Clear input after successful load
       setLoadBillError(null)
-    } catch (error) {
-      // Only show error if this request is still current
-      if (loadBillRequestRef.current === requestId) {
-        setLoadBillError(
-          error instanceof Error
-            ? error.message
-            : "Something went wrong. Check your connection and try again."
-        )
-        analytics.trackError("load_bill_failed", error instanceof Error ? error.message : "Unknown error")
-      }
     } finally {
-      // Only clear loading state if this request is still current
       if (loadBillRequestRef.current === requestId) {
         setIsLoadingBill(false)
       }
@@ -784,9 +737,7 @@ function DesktopBillSplitter() {
     setEditing(true)
   }, [people, items, toggleAssignment])
 
-  // --- Global Keyboard Shortcuts & Grid Navigation ---
   const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
-    // Check if we're in an input field - comprehensive check
     const target = e.target as HTMLElement
     const activeElement = document.activeElement as HTMLElement
 
@@ -1540,7 +1491,7 @@ function DesktopBillSplitter() {
                                           className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-all flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                                           title="Change split method"
                                         >
-                                          {React.createElement(getSplitMethodIcon(item.method), { size: 12 })}
+                                          {React.createElement(getSplitMethodOption(item.method).icon, { size: 12 })}
                                           <ChevronDown size={10} />
                                         </button>
                                       </DropdownMenuTrigger>

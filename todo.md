@@ -51,9 +51,9 @@
   - [x] Memoize event handlers
 
 ## 🔮 **Next Steps for Future Improvements**
-- [ ] Add comprehensive error boundaries
+- [ ] Add error boundaries around critical flows
 - [ ] Implement user notifications for critical failures
 - [ ] Add loading states for async operations
 - [ ] Consider implementing virtual scrolling for large item lists
-- [ ] Add comprehensive accessibility testing
+- [ ] Add accessibility testing for core flows
 - [ ] Implement progressive web app features

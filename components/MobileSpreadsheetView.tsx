@@ -4,12 +4,12 @@ import { useState, useEffect } from "react"
 import { MobileCardView } from "./mobile/MobileCardView"
 import { MobileGridView } from "./mobile/MobileGridView"
 import { ViewToggle } from "./mobile/shared/ViewToggle"
-import { SplitSimpleIcon } from "@/components/ProBillSplitter"
+import { SplitSimpleIcon } from "@/components/SplitSimpleIcon"
 import { ReceiptScanner } from "@/components/ReceiptScanner"
 import { ShareBill } from "@/components/ShareBill"
 import { Input } from "@/components/ui/input"
 import { useBill } from "@/contexts/BillContext"
-import type { Item } from "@/contexts/BillContext"
+import type { Item, ReceiptLineItem } from "@/lib/bill-types"
 import { useToast } from "@/hooks/use-toast"
 import { useBillAnalytics } from "@/hooks/use-analytics"
 import { cn } from "@/lib/utils"
@@ -43,7 +43,7 @@ export function MobileSpreadsheetView() {
   }, [viewMode, analytics])
 
   // Receipt scanner handler
-  const handleScanImport = (scannedItems: Omit<Item, "id" | "splitWith" | "method">[]) => {
+  const handleScanImport = (scannedItems: ReceiptLineItem[]) => {
     scannedItems.forEach((item) => {
       const newItem: Omit<Item, "id"> = {
         ...item,

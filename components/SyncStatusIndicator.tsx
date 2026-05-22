@@ -1,7 +1,7 @@
 "use client"
 
 import { useBill } from "@/contexts/BillContext"
-import type { SyncStatus } from "@/contexts/BillContext"
+import type { SyncStatus } from "@/lib/bill-types"
 import { Cloud, CloudOff, RotateCw, Check, AlertCircle, Wifi, WifiOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"

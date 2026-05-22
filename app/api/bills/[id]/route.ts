@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import type { Bill } from "@/contexts/BillContext"
+import type { Bill } from "@/lib/bill-types"
 import { executeRedisOperation } from "@/lib/redis-pool"
 import { validateEnvironment } from "@/lib/env-validation"
 import { STORAGE } from "@/lib/constants"
+import { isMigratableBill, isRecord, migrateBillSchema } from "@/lib/validation"
 
 // GET /api/bills/[id] - Retrieve a shared bill
 export async function GET(
@@ -35,7 +36,12 @@ export async function GET(
       
       // Increment access count if bill exists
       if (data) {
-        const bill = JSON.parse(data)
+        const parsedBill: unknown = JSON.parse(data)
+        if (!isMigratableBill(parsedBill)) {
+          return data
+        }
+
+        const bill = migrateBillSchema(parsedBill)
         const updatedBill = {
           ...bill,
           accessCount: (bill.accessCount || 0) + 1,
@@ -63,7 +69,15 @@ export async function GET(
     }
 
     // Parse the JSON data
-    const bill: Bill = JSON.parse(billData)
+    const parsedBill: unknown = JSON.parse(billData)
+    if (!isMigratableBill(parsedBill)) {
+      return NextResponse.json(
+        { error: "Invalid bill data" },
+        { status: 500 }
+      )
+    }
+
+    const bill: Bill = migrateBillSchema(parsedBill)
 
     return NextResponse.json({ bill })
     
@@ -101,7 +115,7 @@ export async function POST(
       )
     }
 
-    let body: any
+    let body: unknown
     try {
       body = await request.json()
     } catch (parseError) {
@@ -112,9 +126,9 @@ export async function POST(
       )
     }
 
-    const bill: Bill = body?.bill
+    const bill = isRecord(body) ? body.bill : undefined
 
-    if (!bill || typeof bill !== 'object') {
+    if (!isMigratableBill(bill)) {
       return NextResponse.json(
         { error: "Invalid bill data" },
         { status: 400 }
@@ -123,11 +137,12 @@ export async function POST(
 
     // Add metadata if not present
     const now = new Date().toISOString()
+    const migratedBill = migrateBillSchema(bill)
     const billWithMetadata = {
-      ...bill,
-      createdAt: bill.createdAt || now,
-      lastModified: bill.lastModified || now,
-      accessCount: bill.accessCount || 0
+      ...migratedBill,
+      createdAt: migratedBill.createdAt || now,
+      lastModified: migratedBill.lastModified || now,
+      accessCount: migratedBill.accessCount || 0
     }
 
     // Use connection pool for Redis operation

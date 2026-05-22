@@ -38,9 +38,10 @@ REDIS_URL="redis://..."
 NEXT_PUBLIC_POSTHOG_KEY="optional analytics"
 NEXT_PUBLIC_POSTHOG_HOST="https://app.posthog.com"
 OCR_PROVIDER="google" # or openai/anthropic
+GOOGLE_GENERATIVE_AI_API_KEY="optional receipt image scanning"
 ```
 
-If OCR keys are missing the app falls back to mock data.
+If OCR keys are missing, receipt image scanning returns a configuration error. Paste-text receipt import still works without OCR keys.
 
 ## Deploy
 
@@ -54,7 +55,7 @@ If OCR keys are missing the app falls back to mock data.
 - `contexts/` – `BillContext` reducer/history, sync helpers
 - `lib/` – calculations, validation, sharing/export helpers
 - `app/api/` – Next.js route handlers for sharing
-- `tests/` – Jest helpers + MSW mocks
+- `tests/` – Jest helpers and shared test utilities
 
 ## CI
 

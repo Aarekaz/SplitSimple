@@ -81,18 +81,12 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   disconnect: jest.fn(),
 }))
 
+if (typeof global.structuredClone === 'undefined') {
+  global.structuredClone = <T>(value: T): T => JSON.parse(JSON.stringify(value))
+}
+
 // Note: window.location is already mocked by jsdom
 // Additional location properties can be mocked in individual tests if needed
-
-// Setup MSW - temporarily disabled due to environment issues
-// TODO: Fix MSW setup for proper API mocking
-// if (typeof window !== 'undefined') {
-//   const { server } = require('./tests/mocks/server')
-//   
-//   beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-//   afterEach(() => server.resetHandlers())
-//   afterAll(() => server.close())
-// }
 
 // Clear all mocks after each test
 afterEach(() => {

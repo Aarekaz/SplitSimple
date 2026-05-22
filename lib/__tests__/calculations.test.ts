@@ -5,7 +5,7 @@ import {
   getBillSummary,
   getItemBreakdowns 
 } from '../calculations'
-import type { Bill, Person, Item } from '@/contexts/BillContext'
+import type { Bill, Person, Item } from '@/lib/bill-types'
 import { createMockPerson, createMockItem, createMockBill, expectCurrencyToBe } from '../../tests/utils/test-utils'
 
 describe('calculations', () => {

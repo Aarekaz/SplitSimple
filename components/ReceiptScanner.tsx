@@ -22,8 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
-import { scanReceiptImage, parseReceiptText, OCRResult } from "@/lib/mock-ocr"
-import { Item } from "@/contexts/BillContext"
+import { scanReceiptImage, parseReceiptText } from "@/lib/receipt-scanner-client"
+import type { OCRApiError, OCRResult, ReceiptLineItem } from "@/lib/bill-types"
 import { useToast } from "@/hooks/use-toast"
 
 type ScannerState = 'idle' | 'uploading' | 'processing' | 'reviewing'
@@ -33,14 +33,8 @@ interface ScanError {
   description: string
 }
 
-interface OCRClientError extends Error {
-  code?: string
-  status?: number
-  retryAfter?: number
-}
-
 interface ReceiptScannerProps {
-  onImport: (items: Omit<Item, 'id' | 'splitWith' | 'method'>[]) => void
+  onImport: (items: ReceiptLineItem[]) => void
   trigger?: React.ReactNode
 }
 
@@ -119,7 +113,7 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
     } catch (error) {
       console.error('Receipt scanning error:', error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
-      const errorCode = (error as OCRClientError).code
+      const errorCode = (error as OCRApiError).code
 
       // Provide more specific error messages
       let title = "Scan Failed"

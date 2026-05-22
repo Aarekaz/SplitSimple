@@ -54,31 +54,22 @@ export const AddPersonForm = forwardRef<HTMLInputElement, AddPersonFormProps>(fu
     // Clear any existing errors
     setValidationError("")
 
-    try {
-      dispatch({
-        type: "ADD_PERSON",
-        payload: { name: trimmedName, color: "" },
-      })
-      // Track person addition
-      analytics.trackPersonAdded("manual")
-      
-      // Show success animation
-      setShowSuccess(true)
-      setTimeout(() => {
-        setShowSuccess(false)
-        setNewPersonName("")
-        if (onPersonAdded) {
-          onPersonAdded()
-        }
-      }, 500)
-    } catch (error) {
-      console.error("Failed to add person:", error)
-      toast({
-        title: "Error",
-        description: "Failed to add person. Please try again.",
-        variant: "destructive",
-      })
-    }
+    dispatch({
+      type: "ADD_PERSON",
+      payload: { name: trimmedName, color: "" },
+    })
+    // Track person addition
+    analytics.trackPersonAdded("manual")
+
+    // Show success animation
+    setShowSuccess(true)
+    setTimeout(() => {
+      setShowSuccess(false)
+      setNewPersonName("")
+      if (onPersonAdded) {
+        onPersonAdded()
+      }
+    }, 500)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

@@ -1,4 +1,4 @@
-import type { Bill, Person, Item } from "@/contexts/BillContext"
+import type { Bill, Person, Item } from "@/lib/bill-types"
 import { Parser } from 'expr-eval'
 
 export interface PersonTotal {

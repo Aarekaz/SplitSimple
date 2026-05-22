@@ -122,10 +122,5 @@ class RedisPool {
 // Export singleton instance methods
 const redisPool = RedisPool.getInstance()
 
-export const getRedisClient = () => redisPool.getClient()
 export const executeRedisOperation = <T>(operation: (client: RedisClientType) => Promise<T>) => 
   redisPool.execute(operation)
-export const disconnectRedis = () => redisPool.disconnect()
-export const redisHealthCheck = () => redisPool.healthCheck()
-
-export default redisPool

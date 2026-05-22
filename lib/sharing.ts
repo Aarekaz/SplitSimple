@@ -1,7 +1,7 @@
-import type { Bill } from "@/contexts/BillContext"
+import type { Bill, CloudBillResult, CloudStoreResult } from "@/lib/bill-types"
 
 // Store bill in Redis via API
-export async function storeBillInCloud(bill: Bill): Promise<{ success: boolean; error?: string }> {
+export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
   try {
     const response = await fetch(`/api/bills/${bill.id}`, {
       method: 'POST',
@@ -17,7 +17,7 @@ export async function storeBillInCloud(bill: Bill): Promise<{ success: boolean; 
       try {
         const errorData = await response.json()
         errorMessage = errorData.error || errorMessage
-      } catch (parseError) {
+      } catch {
         // Handle non-JSON error responses
         if (response.status === 413) {
           errorMessage = 'Bill is too large to store'
@@ -44,7 +44,7 @@ export async function storeBillInCloud(bill: Bill): Promise<{ success: boolean; 
 }
 
 // Retrieve bill from Redis via API
-export async function getBillFromCloud(billId: string): Promise<{ bill?: Bill; error?: string }> {
+export async function getBillFromCloud(billId: string): Promise<CloudBillResult> {
   try {
     const response = await fetch(`/api/bills/${billId}`, {
       method: 'GET',

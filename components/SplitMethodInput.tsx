@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
 import { validateCurrencyInput, validatePercentage, validateShares } from "@/lib/validation"
-import type { Person, Item } from "@/contexts/BillContext"
+import type { Person, Item } from "@/lib/bill-types"
 
 interface SplitMethodInputProps {
   item: Item
