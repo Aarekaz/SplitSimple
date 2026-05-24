@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminAuthMiddleware } from '@/lib/admin-auth'
-import { executeRedisOperation } from '@/lib/redis-pool'
-import { validateEnvironment } from '@/lib/env-validation'
+import { getBillStore } from '@/lib/bill-store'
 import { getBillSummary } from '@/lib/calculations'
 import type { AdminBillMetadata, AdminStats } from '@/lib/bill-types'
-import { STORAGE } from '@/lib/constants'
-import { isMigratableBill, migrateBillSchema } from '@/lib/validation'
 
 // Helper function to get the correct base URL
 function getBaseUrl(req: NextRequest): string {
@@ -22,15 +19,6 @@ function getBaseUrl(req: NextRequest): string {
 
 async function getAllBillsHandler(req: NextRequest) {
   try {
-    // Validate environment before proceeding
-    const envValidation = validateEnvironment()
-    if (!envValidation.isValid) {
-      console.error('Environment validation failed:', envValidation.errors)
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      )
-    }
     const searchParams = req.nextUrl.searchParams
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -39,47 +27,24 @@ async function getAllBillsHandler(req: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'lastModified'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
 
-    // Get all keys matching the bill pattern
-    const keys = await executeRedisOperation(async (redis) => {
-      return redis.keys('bill:*')
-    })
+    const store = await getBillStore()
+    const billRecords = await store.listBills()
+    let bills: AdminBillMetadata[] = billRecords.map((record) => {
+      const billSummary = getBillSummary(record.bill)
 
-    // Fetch all bills with metadata
-    const billsPromises = keys.map(async (key) => {
-      const [billData, ttl] = await executeRedisOperation(async (redis) => {
-        const data = await redis.get(key)
-        const ttlValue = await redis.ttl(key)
-        const parsedData: unknown = data ? JSON.parse(data) : null
-        return [parsedData, ttlValue]
-      })
-
-      if (isMigratableBill(billData)) {
-        const id = key.replace('bill:', '')
-        const bill = migrateBillSchema(billData)
-        const billSummary = getBillSummary(bill)
-        // For bills without timestamps, estimate based on Redis key order or use a reasonable fallback
-        const estimatedCreatedAt = bill.createdAt ||
-          (ttl > 0 ? new Date(Date.now() - (STORAGE.BILL_TTL_SECONDS * 1000 - ttl * 1000)).toISOString() :
-          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Default to 1 week ago
-
-        const metadata: AdminBillMetadata = {
-          id,
-          bill,
-          createdAt: estimatedCreatedAt,
-          lastModified: bill.lastModified || estimatedCreatedAt,
-          expiresAt: ttl > 0 ? new Date(Date.now() + ttl * 1000).toISOString() : 'Never',
-          accessCount: bill.accessCount || 0,
-          size: JSON.stringify(bill).length,
-          shareUrl: `${getBaseUrl(req)}?share=${id}`,
-          totalAmount: billSummary.total,
-          lastAccessed: bill.lastAccessed
-        }
-        return metadata
+      return {
+        id: record.id,
+        bill: record.bill,
+        createdAt: record.createdAt,
+        lastModified: record.lastModified,
+        expiresAt: record.expiresAt,
+        accessCount: record.accessCount,
+        size: record.size,
+        shareUrl: `${getBaseUrl(req)}?share=${record.id}`,
+        totalAmount: billSummary.total,
+        lastAccessed: record.lastAccessed,
       }
-      return null
     })
-
-    let bills = (await Promise.all(billsPromises)).filter((b): b is AdminBillMetadata => b !== null)
 
     // Filter by search
     if (search) {

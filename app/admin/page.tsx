@@ -79,6 +79,14 @@ import { useToast } from '@/hooks/use-toast'
 import { formatCurrency } from '@/lib/utils'
 import type { AdminBillMetadata, AdminStats, Item, Person } from '@/lib/bill-types'
 
+interface AdminBillsResponse {
+  bills: AdminBillMetadata[]
+  stats: AdminStats
+  pagination: {
+    totalPages: number
+  }
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -202,7 +210,7 @@ export default function AdminPage() {
       })
 
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json() as AdminBillsResponse
         setBills(data.bills)
         setStats(data.stats)
         setTotalPages(data.pagination.totalPages)

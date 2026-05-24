@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateAdminPassword, createAdminSession } from '@/lib/admin-auth'
+import { isRecord } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   try {
-    const { password } = await req.json()
+    const body: unknown = await req.json()
+    const password = isRecord(body) && typeof body.password === 'string' ? body.password : ''
 
     if (!password) {
       return NextResponse.json(

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminAuthMiddleware } from '@/lib/admin-auth'
-import { executeRedisOperation } from '@/lib/redis-pool'
-import { validateEnvironment } from '@/lib/env-validation'
-import { STORAGE } from '@/lib/constants'
+import { getBillStore } from '@/lib/bill-store'
 import { isMigratableBill, isRecord, migrateBillSchema } from '@/lib/validation'
 
 async function getBillHandler(
@@ -10,43 +8,26 @@ async function getBillHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate environment before proceeding
-    const envValidation = validateEnvironment()
-    if (!envValidation.isValid) {
-      console.error('Environment validation failed:', envValidation.errors)
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      )
-    }
     const { id } = await params
-    const key = `bill:${id}`
+    const store = await getBillStore()
+    const billRecord = await store.getBill(id)
 
-    const [bill, ttl] = await executeRedisOperation(async (redis) => {
-      const data = await redis.get(key)
-      const ttlValue = await redis.ttl(key)
-      const parsedData: unknown = data ? JSON.parse(data) : null
-      return [parsedData, ttlValue]
-    })
-
-    if (!isMigratableBill(bill)) {
+    if (!billRecord) {
       return NextResponse.json(
         { error: 'Bill not found' },
         { status: 404 }
       )
     }
 
-    const migratedBill = migrateBillSchema(bill)
-
     return NextResponse.json({
       id,
-      bill: migratedBill,
+      bill: billRecord.bill,
       metadata: {
-        ttl,
-        expiresAt: ttl > 0 ? new Date(Date.now() + ttl * 1000).toISOString() : 'Never',
-        size: JSON.stringify(migratedBill).length,
-        createdAt: migratedBill.createdAt || null,
-        lastModified: migratedBill.lastModified || null
+        ttl: billRecord.ttl,
+        expiresAt: billRecord.expiresAt,
+        size: billRecord.size,
+        createdAt: billRecord.createdAt,
+        lastModified: billRecord.lastModified
       }
     })
   } catch (error) {
@@ -64,7 +45,6 @@ async function updateBillHandler(
 ) {
   try {
     const { id } = await params
-    const key = `bill:${id}`
     const body: unknown = await req.json()
 
     if (!isMigratableBill(body)) {
@@ -80,9 +60,8 @@ async function updateBillHandler(
       lastModified: new Date().toISOString()
     }
 
-    await executeRedisOperation(async (redis) => {
-      await redis.setEx(key, STORAGE.BILL_TTL_SECONDS, JSON.stringify(updatedBill))
-    })
+    const store = await getBillStore()
+    await store.saveBill(id, updatedBill)
 
     return NextResponse.json({
       success: true,
@@ -104,11 +83,8 @@ async function deleteBillHandler(
 ) {
   try {
     const { id } = await params
-    const key = `bill:${id}`
-
-    await executeRedisOperation(async (redis) => {
-      await redis.del(key)
-    })
+    const store = await getBillStore()
+    await store.deleteBill(id)
 
     return NextResponse.json({
       success: true,
@@ -131,12 +107,8 @@ async function extendBillHandler(
     const { id } = await params
     const body: unknown = await req.json()
     const days = isRecord(body) && typeof body.days === 'number' ? body.days : 30
-    const key = `bill:${id}`
-
-    const billExists = await executeRedisOperation(async (redis) => {
-      const data = await redis.get(key)
-      return !!data
-    })
+    const store = await getBillStore()
+    const billExists = await store.extendBill(id, days)
 
     if (!billExists) {
       return NextResponse.json(
@@ -144,10 +116,6 @@ async function extendBillHandler(
         { status: 404 }
       )
     }
-
-    await executeRedisOperation(async (redis) => {
-      await redis.expire(key, days * 24 * 60 * 60)
-    })
 
     return NextResponse.json({
       success: true,

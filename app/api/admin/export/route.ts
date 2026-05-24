@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminAuthMiddleware } from '@/lib/admin-auth'
-import { executeRedisOperation } from '@/lib/redis-pool'
-import { validateEnvironment } from '@/lib/env-validation'
-import { isMigratableBill, migrateBillSchema } from '@/lib/validation'
+import { getBillStore } from '@/lib/bill-store'
 import type { Bill } from '@/lib/bill-types'
 
 interface BillExportMetadata {
@@ -54,46 +52,17 @@ function convertToCSV(bills: BillExportMetadata[]): string {
 
 async function exportBillsHandler(req: NextRequest) {
   try {
-    // Validate environment before proceeding
-    const envValidation = validateEnvironment()
-    if (!envValidation.isValid) {
-      console.error('Environment validation failed:', envValidation.errors)
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      )
-    }
     const searchParams = req.nextUrl.searchParams
     const format = searchParams.get('format') || 'json'
 
-    // Get all bills
-    const keys = await executeRedisOperation(async (redis) => {
-      return redis.keys('bill:*')
-    })
-
-    const billsPromises = keys.map(async (key) => {
-      const [billData, ttl] = await executeRedisOperation(async (redis) => {
-        const data = await redis.get(key)
-        const ttlValue = await redis.ttl(key)
-        const parsedData: unknown = data ? JSON.parse(data) : null
-        return [parsedData, ttlValue]
-      })
-
-      if (isMigratableBill(billData)) {
-        const id = key.replace('bill:', '')
-        const bill = migrateBillSchema(billData)
-        return {
-          id,
-          bill,
-          createdAt: bill.createdAt || new Date().toISOString(),
-          lastModified: bill.lastModified || new Date().toISOString(),
-          expiresAt: ttl > 0 ? new Date(Date.now() + ttl * 1000).toISOString() : 'Never'
-        }
-      }
-      return null
-    })
-
-    const bills = (await Promise.all(billsPromises)).filter(b => b !== null)
+    const store = await getBillStore()
+    const bills = (await store.listBills()).map((record) => ({
+      id: record.id,
+      bill: record.bill,
+      createdAt: record.createdAt,
+      lastModified: record.lastModified,
+      expiresAt: record.expiresAt,
+    }))
 
     if (format === 'csv') {
       const csv = convertToCSV(bills)

@@ -1,5 +1,13 @@
 import type { OCRApiError, OCRResult, ReceiptLineItem } from "@/lib/bill-types"
 
+interface ReceiptScanResponse {
+  success?: unknown
+  items?: unknown
+  preview?: unknown
+  error?: unknown
+  code?: unknown
+}
+
 function createApiError(message: string, code?: string, status?: number, retryAfter?: number): OCRApiError {
   const error = new Error(message) as OCRApiError
   error.code = code
@@ -17,19 +25,19 @@ export async function scanReceiptImage(file: File): Promise<OCRResult> {
     body: formData,
   })
 
-  const data = await response.json()
+  const data = await response.json() as ReceiptScanResponse
 
   if (response.ok && data.success && Array.isArray(data.items)) {
     return {
-      items: data.items,
-      preview: data.preview,
+      items: data.items as ReceiptLineItem[],
+      preview: typeof data.preview === "string" ? data.preview : undefined,
     }
   }
 
   const retryAfter = response.headers.get("Retry-After")
   throw createApiError(
-    data.error || "Receipt scan request failed",
-    data.code,
+    typeof data.error === "string" ? data.error : "Receipt scan request failed",
+    typeof data.code === "string" ? data.code : undefined,
     response.status,
     retryAfter ? Number(retryAfter) : undefined
   )
