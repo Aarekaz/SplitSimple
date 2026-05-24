@@ -1,3 +1,5 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare"
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -18,5 +20,7 @@ const nextConfig = {
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 };
+
+initOpenNextCloudflareForDev()
 
 export default nextConfig;

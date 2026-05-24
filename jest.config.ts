@@ -23,6 +23,7 @@ const config: Config = {
   // Ignore API route tests for now - they need special Node.js setup
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
+    '<rootDir>/.open-next/',
     '<rootDir>/node_modules/',
     '<rootDir>/app/api/',
     '<rootDir>/.conductor/',
@@ -31,6 +32,7 @@ const config: Config = {
   // Prevent haste-map collisions from nested package.json files
   modulePathIgnorePatterns: [
     '<rootDir>/.next/',
+    '<rootDir>/.open-next/',
     '<rootDir>/.conductor/',
   ],
   
@@ -45,6 +47,7 @@ const config: Config = {
     '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/.next/**',
+    '!**/.open-next/**',
     '!**/.conductor/**',
     '!**/coverage/**',
     '!jest.config.ts',
