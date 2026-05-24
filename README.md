@@ -40,10 +40,10 @@ A modern, collaborative bill-splitting app with real-time sync and universal sha
     pnpm install
     ```
 
-2.  **Set up Redis (for sharing features):**
+2.  **Prepare the local D1 database (for sharing features):**
     ```sh
-    # Create .env.local with your Redis URL
-    echo 'REDIS_URL="your-redis-url-here"' > .env.local
+    cp .dev.vars.example .dev.vars
+    pnpm db:migrations:apply:local
     ```
 
 3.  **Run the development server:**
@@ -56,6 +56,10 @@ A modern, collaborative bill-splitting app with real-time sync and universal sha
 ### Development Commands
 *   `pnpm dev` - Start development server
 *   `pnpm build` - Build for production
+*   `pnpm preview` - Build and preview in the Cloudflare Workers runtime
+*   `pnpm deploy` - Build and deploy to Cloudflare Workers
+*   `pnpm db:migrations:apply:local` - Apply D1 migrations locally
+*   `pnpm db:migrations:apply:remote` - Apply D1 migrations to the remote D1 database
 *   `pnpm start` - Start production server
 *   `pnpm test` - Run all tests
 *   `pnpm test:watch` - Run tests in watch mode
@@ -64,10 +68,12 @@ A modern, collaborative bill-splitting app with real-time sync and universal sha
 *   `pnpm typecheck` - Run TypeScript checks
 
 ### Deployment
-Deploy to Vercel with Redis KV for full sharing functionality:
-1. Connect your GitHub repo to Vercel
-2. Add a Redis database from Vercel's marketplace
-3. Deploy - sharing and collaboration work automatically!
+Deploy to Cloudflare Workers with D1 for full sharing functionality:
+1. Run `pnpm wrangler login`
+2. Create the database with `pnpm wrangler d1 create splitsimple`
+3. Copy the returned `database_id` into `wrangler.jsonc`
+4. Run `pnpm db:migrations:apply:remote`
+5. Deploy with `pnpm deploy`
 
 ## 🎯 Perfect For
 
@@ -79,10 +85,10 @@ Deploy to Vercel with Redis KV for full sharing functionality:
 ## 🏗️ Architecture
 
 ### Core Technologies
-*   **Next.js 15** - React framework with App Router
+*   **Next.js 16** - React framework with App Router
 *   **TypeScript** - Type-safe development with strict mode
 *   **Tailwind CSS v4** - Modern utility-first styling
-*   **Redis** - Cloud storage for bill sharing
+*   **Cloudflare D1** - SQLite-backed cloud storage for bill sharing
 *   **shadcn/ui** - High-quality component library
 
 ### State Management
@@ -125,4 +131,4 @@ pnpm test:coverage
 pnpm test calculations
 ```
 
-Built with **Next.js**, **TypeScript**, **Tailwind CSS**, and **Redis** for a fast, reliable experience.
+Built with **Next.js**, **TypeScript**, **Tailwind CSS**, and **Cloudflare D1** for a fast, reliable experience.

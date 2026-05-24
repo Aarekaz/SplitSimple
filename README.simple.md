@@ -1,12 +1,12 @@
 # SplitSimple — Quick Start
 
-SplitSimple is a modern billsplitting tool built with Next.js, TypeScript, Tailwind, and Redis. It keeps everyone in sync while you divide receipts line-by-line.
+SplitSimple is a modern billsplitting tool built with Next.js, TypeScript, Tailwind, and Cloudflare D1. It keeps everyone in sync while you divide receipts line-by-line.
 
 ## Features
 
 - Per-item splitting (even, shares, percent, exact) with penny-safe math
 - Tax/tip/discount allocation (proportional or even)
-- Auto-save to local storage + optional cloud share links (Redis)
+- Auto-save to local storage + optional cloud share links (D1)
 - Undo/redo history, keyboard shortcuts, and CSV/export summaries
 - Responsive UI with a dedicated mobile workflow
 
@@ -14,12 +14,14 @@ SplitSimple is a modern billsplitting tool built with Next.js, TypeScript, Tailw
 
 - Node.js 18+
 - pnpm 9+
-- Redis URL (for sharing) stored in `.env.local` as `REDIS_URL`
+- Cloudflare D1 local binding configured by `wrangler.jsonc`
 
 ## Develop
 
 ```bash
 pnpm install
+cp .dev.vars.example .dev.vars
+pnpm db:migrations:apply:local
 pnpm dev
 # open http://localhost:3000
 ```
@@ -29,12 +31,14 @@ Helpful scripts:
 - `pnpm lint` – ESLint/Next checks
 - `pnpm typecheck` – TypeScript
 - `pnpm test` – Jest suite (`pnpm test:coverage` for coverage)
+- `pnpm preview` – Build and preview in the Cloudflare Workers runtime
+- `pnpm deploy` – Build and deploy to Cloudflare Workers
+- `pnpm db:migrations:apply:remote` – Apply D1 migrations to production
 - `pnpm dev:clean` – Clear `.next` cache before starting dev
 
 ## Environment
 
 ```ini
-REDIS_URL="redis://..."
 NEXT_PUBLIC_POSTHOG_KEY="optional analytics"
 NEXT_PUBLIC_POSTHOG_HOST="https://app.posthog.com"
 OCR_PROVIDER="google" # or openai/anthropic
@@ -45,9 +49,11 @@ If OCR keys are missing, receipt image scanning returns a configuration error. P
 
 ## Deploy
 
-1. Provision Redis (Vercel KV or any managed Redis)
-2. Set env vars above
-3. `pnpm build && pnpm start` (or deploy via Vercel/GitHub Actions)
+1. `pnpm wrangler login`
+2. `pnpm wrangler d1 create splitsimple`
+3. Copy the returned `database_id` into `wrangler.jsonc`
+4. `pnpm db:migrations:apply:remote`
+5. `pnpm deploy`
 
 ## Project Structure
 
@@ -59,7 +65,7 @@ If OCR keys are missing, receipt image scanning returns a configuration error. P
 
 ## CI
 
-`.github/workflows/test.yml` runs lint, typecheck, unit tests, and Codecov upload; integration tests spin up Redis and run targeted suites.
+`.github/workflows/test.yml` runs lint, typecheck, unit tests, and Codecov upload.
 
 ## License
 
