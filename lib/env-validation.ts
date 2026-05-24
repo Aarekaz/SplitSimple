@@ -1,5 +1,4 @@
 interface EnvironmentConfig {
-  REDIS_URL?: string
   NODE_ENV: string
   NEXT_PUBLIC_POSTHOG_KEY?: string
   NEXT_PUBLIC_POSTHOG_HOST?: string
@@ -22,7 +21,6 @@ export function validateEnvironment(): ValidationResult {
   const warnings: string[] = []
 
   const env: EnvironmentConfig = {
-    REDIS_URL: process.env.REDIS_URL,
     NODE_ENV: process.env.NODE_ENV || 'development',
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
@@ -32,16 +30,6 @@ export function validateEnvironment(): ValidationResult {
     GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-  }
-
-  if (!env.REDIS_URL) {
-    errors.push('REDIS_URL environment variable is required for sharing functionality')
-  } else {
-    try {
-      new URL(env.REDIS_URL)
-    } catch {
-      errors.push('REDIS_URL must be a valid URL')
-    }
   }
 
   if (!env.NEXT_PUBLIC_POSTHOG_KEY) {

@@ -21,8 +21,7 @@ export const TIMING = {
   TOAST_LONG: 5000,
 } as const
 
-// Redis/Storage constants
+// Shared bill storage constants
 export const STORAGE = {
   BILL_TTL_SECONDS: 15552000, // ~6 months (6 * 30 days)
-  BILL_KEY_PREFIX: 'bill:',
 } as const

@@ -26,7 +26,6 @@ describe('env-validation', () => {
     console.warn = originalConsoleWarn
 
     // Reset environment variables
-    delete process.env.REDIS_URL
     delete process.env.NEXT_PUBLIC_POSTHOG_KEY
     delete process.env.NEXT_PUBLIC_POSTHOG_HOST
     delete process.env.GOOGLE_GENERATIVE_AI_API_KEY
@@ -47,7 +46,6 @@ describe('env-validation', () => {
       delete process.env.OPENAI_API_KEY
       delete process.env.ANTHROPIC_API_KEY
 
-      process.env.REDIS_URL = 'redis://localhost:6379'
       process.env.NEXT_PUBLIC_POSTHOG_KEY = 'test-key'
       process.env.NEXT_PUBLIC_POSTHOG_HOST = 'https://app.posthog.com'
       Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true })
@@ -59,25 +57,7 @@ describe('env-validation', () => {
       expect(result.warnings).toContain('GOOGLE_GENERATIVE_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY not set - receipt image scanning is disabled (default provider: google)')
     })
 
-    it('fails validation without REDIS_URL', () => {
-      const result = validateEnvironment()
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toContain('REDIS_URL environment variable is required for sharing functionality')
-    })
-
-    it('fails validation with invalid REDIS_URL', () => {
-      process.env.REDIS_URL = 'invalid-url'
-
-      const result = validateEnvironment()
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toContain('REDIS_URL must be a valid URL')
-    })
-
     it('warns about missing PostHog configuration', () => {
-      process.env.REDIS_URL = 'redis://localhost:6379'
-
       const result = validateEnvironment()
 
       expect(result.isValid).toBe(true)
@@ -86,7 +66,6 @@ describe('env-validation', () => {
     })
 
     it('warns about non-standard NODE_ENV', () => {
-      process.env.REDIS_URL = 'redis://localhost:6379'
       Object.defineProperty(process.env, 'NODE_ENV', { value: 'staging', writable: true })
 
       const result = validateEnvironment()
@@ -97,7 +76,6 @@ describe('env-validation', () => {
 
     it('handles missing NODE_ENV gracefully', () => {
       Object.defineProperty(process.env, 'NODE_ENV', { value: undefined, writable: true })
-      process.env.REDIS_URL = 'redis://localhost:6379'
 
       const result = validateEnvironment()
 
@@ -124,14 +102,14 @@ describe('env-validation', () => {
     it('logs errors for invalid environment', () => {
       const result = {
         isValid: false,
-        errors: ['REDIS_URL is required', 'Invalid configuration'],
+        errors: ['D1 binding is required', 'Invalid configuration'],
         warnings: [],
       }
 
       logValidationResults(result)
 
       expect(mockConsoleError).toHaveBeenCalledWith('❌ Environment validation failed:')
-      expect(mockConsoleError).toHaveBeenCalledWith('  - REDIS_URL is required')
+      expect(mockConsoleError).toHaveBeenCalledWith('  - D1 binding is required')
       expect(mockConsoleError).toHaveBeenCalledWith('  - Invalid configuration')
       expect(mockConsoleLog).not.toHaveBeenCalled()
     })
