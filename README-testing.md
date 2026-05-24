@@ -150,7 +150,7 @@ import { createMockBill } from '../../../../tests/utils/test-utils'
 describe('/api/bills/[id]', () => {
   it('should retrieve bill successfully', async () => {
     const testBill = createMockBill()
-    mockRedisClient.get.mockResolvedValue(JSON.stringify(testBill))
+    mockStore.getBill.mockResolvedValue({ bill: testBill })
 
     const request = new NextRequest('http://localhost:3000/api/bills/test-id')
     const response = await GET(request, { params: Promise.resolve({ id: 'test-id' }) })
@@ -202,7 +202,7 @@ expectCurrencyToBe(actualAmount, expectedAmount)
 
 ### API Mocking
 
-API route tests currently use direct Jest mocks for external services such as Redis.
+API route tests currently use direct Jest mocks for external services such as the D1 bill store.
 
 ### Component Mocking
 
@@ -229,7 +229,7 @@ The CI pipeline includes:
 1. **Linting** with ESLint
 2. **Type checking** with TypeScript
 3. **Unit tests** with coverage reporting
-4. **Integration tests** with Redis service
+4. **Integration tests** with Cloudflare binding simulations
 5. **Security scanning** with Snyk
 6. **Coverage reporting** to Codecov
 
@@ -313,4 +313,4 @@ When adding new features:
 **Solution**: Check if all required props are provided and providers are wrapped correctly
 
 ### Issue: API tests failing
-**Solution**: Verify Redis and other external-service mocks are configured
+**Solution**: Verify D1 bill-store and other external-service mocks are configured
