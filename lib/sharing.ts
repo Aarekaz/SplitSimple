@@ -1,6 +1,7 @@
 import type { Bill, CloudBillResult, CloudStoreResult } from "@/lib/bill-types"
+import { isMigratableBill, isRecord, migrateBillSchema } from "@/lib/validation"
 
-// Store bill in Redis via API
+// Store bill in D1 via API
 export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
   try {
     const response = await fetch(`/api/bills/${bill.id}`, {
@@ -15,8 +16,10 @@ export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
       let errorMessage = 'Failed to store bill'
       
       try {
-        const errorData = await response.json()
-        errorMessage = errorData.error || errorMessage
+        const errorData: unknown = await response.json()
+        if (isRecord(errorData) && typeof errorData.error === 'string') {
+          errorMessage = errorData.error
+        }
       } catch {
         // Handle non-JSON error responses
         if (response.status === 413) {
@@ -43,7 +46,7 @@ export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
   }
 }
 
-// Retrieve bill from Redis via API
+// Retrieve bill from D1 via API
 export async function getBillFromCloud(billId: string): Promise<CloudBillResult> {
   try {
     const response = await fetch(`/api/bills/${billId}`, {
@@ -61,8 +64,10 @@ export async function getBillFromCloud(billId: string): Promise<CloudBillResult>
       let errorMessage = 'Something went wrong loading this bill. Please try again.'
 
       try {
-        const errorData = await response.json()
-        if (errorData.error) errorMessage = errorData.error
+        const errorData: unknown = await response.json()
+        if (isRecord(errorData) && typeof errorData.error === 'string') {
+          errorMessage = errorData.error
+        }
       } catch {
         // Handle non-JSON error responses
         if (response.status === 429) {
@@ -75,18 +80,19 @@ export async function getBillFromCloud(billId: string): Promise<CloudBillResult>
       throw new Error(errorMessage)
     }
 
-    let data
+    let data: unknown
     try {
       data = await response.json()
     } catch {
       throw new Error("We got an unexpected response from the server. Please try again.")
     }
 
-    if (!data.bill) {
+    const bill = isRecord(data) ? data.bill : undefined
+    if (!isMigratableBill(bill)) {
       throw new Error("This bill link is missing its data. Ask the owner to share a new link.")
     }
 
-    return { bill: data.bill }
+    return { bill: migrateBillSchema(bill) }
   } catch (error) {
     console.error('Error retrieving bill from cloud:', error)
     // Network failures (fetch itself throws) land here

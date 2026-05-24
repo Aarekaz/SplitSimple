@@ -382,7 +382,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         const sharedBillId = urlParams.get("bill") || urlParams.get("share")
 
         if (sharedBillId) {
-          // First try to load from Redis (cloud)
+          // First try to load from D1 (cloud)
           const cloudResult = await getBillFromCloud(sharedBillId)
           if (cloudResult.bill) {
             // Migration: Add missing fields to existing shared bills

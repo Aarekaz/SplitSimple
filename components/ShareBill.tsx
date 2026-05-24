@@ -51,7 +51,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
       const url = generateCloudShareUrl(state.currentBill.id)
       setShareUrl(url)
 
-      // Store bill in Redis when dialog opens
+      // Store bill in D1 when dialog opens
       setIsStoring(true)
       setStoreError(null)
       const result = await storeBillInCloud(state.currentBill)

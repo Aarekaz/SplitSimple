@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import type { Bill } from "@/lib/bill-types"
-import { executeRedisOperation } from "@/lib/redis-pool"
-import { validateEnvironment } from "@/lib/env-validation"
-import { STORAGE } from "@/lib/constants"
+import { getBillStore } from "@/lib/bill-store"
 import { isMigratableBill, isRecord, migrateBillSchema } from "@/lib/validation"
 
 // GET /api/bills/[id] - Retrieve a shared bill
@@ -11,16 +9,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate environment before proceeding
-    const envValidation = validateEnvironment()
-    if (!envValidation.isValid) {
-      console.error("Environment validation failed:", envValidation.errors)
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      )
-    }
-
     const { id: billId } = await params
     
     if (!billId || typeof billId !== 'string') {
@@ -30,56 +18,17 @@ export async function GET(
       )
     }
 
-    // Use connection pool for Redis operation
-    const billData = await executeRedisOperation(async (client) => {
-      const data = await client.get(`bill:${billId}`)
-      
-      // Increment access count if bill exists
-      if (data) {
-        const parsedBill: unknown = JSON.parse(data)
-        if (!isMigratableBill(parsedBill)) {
-          return data
-        }
+    const store = await getBillStore()
+    const billRecord = await store.getBill(billId, { incrementAccess: true })
 
-        const bill = migrateBillSchema(parsedBill)
-        const updatedBill = {
-          ...bill,
-          accessCount: (bill.accessCount || 0) + 1,
-          lastAccessed: new Date().toISOString()
-        }
-        
-        // Update the bill with incremented access count
-        await client.setEx(
-          `bill:${billId}`,
-          STORAGE.BILL_TTL_SECONDS,
-          JSON.stringify(updatedBill)
-        )
-        
-        return JSON.stringify(updatedBill)
-      }
-      
-      return data
-    })
-
-    if (!billData) {
+    if (!billRecord) {
       return NextResponse.json(
         { error: "Bill not found or expired" },
         { status: 404 }
       )
     }
 
-    // Parse the JSON data
-    const parsedBill: unknown = JSON.parse(billData)
-    if (!isMigratableBill(parsedBill)) {
-      return NextResponse.json(
-        { error: "Invalid bill data" },
-        { status: 500 }
-      )
-    }
-
-    const bill: Bill = migrateBillSchema(parsedBill)
-
-    return NextResponse.json({ bill })
+    return NextResponse.json({ bill: billRecord.bill })
     
   } catch (error) {
     console.error("Error retrieving bill:", error)
@@ -96,16 +45,6 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate environment before proceeding
-    const envValidation = validateEnvironment()
-    if (!envValidation.isValid) {
-      console.error("Environment validation failed:", envValidation.errors)
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      )
-    }
-
     const { id: billId } = await params
     
     if (!billId || typeof billId !== 'string') {
@@ -145,14 +84,8 @@ export async function POST(
       accessCount: migratedBill.accessCount || 0
     }
 
-    // Use connection pool for Redis operation
-    await executeRedisOperation(async (client) => {
-      await client.setEx(
-        `bill:${billId}`,
-        STORAGE.BILL_TTL_SECONDS,
-        JSON.stringify(billWithMetadata)
-      )
-    })
+    const store = await getBillStore()
+    await store.saveBill(billId, billWithMetadata)
 
     return NextResponse.json({ 
       success: true,
