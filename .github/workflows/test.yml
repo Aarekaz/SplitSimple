@@ -95,7 +95,7 @@ jobs:
     - name: Run integration tests
       env:
         NODE_ENV: test
-      run: pnpm test -- --testPathPatterns=integration --passWithNoTests
+      run: pnpm test --testPathPatterns=integration --passWithNoTests
 
     - name: Build application
       run: pnpm build
