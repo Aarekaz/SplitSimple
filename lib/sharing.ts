@@ -1,7 +1,7 @@
 import type { Bill, CloudBillResult, CloudStoreResult } from "@/lib/bill-types"
 import { isMigratableBill, isRecord, migrateBillSchema } from "@/lib/validation"
 
-// Store bill in D1 via API
+// Store bill via the app's API proxy
 export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
   try {
     const response = await fetch(`/api/bills/${bill.id}`, {
@@ -46,7 +46,7 @@ export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
   }
 }
 
-// Retrieve bill from D1 via API
+// Retrieve bill via the app's API proxy
 export async function getBillFromCloud(billId: string): Promise<CloudBillResult> {
   try {
     const response = await fetch(`/api/bills/${billId}`, {

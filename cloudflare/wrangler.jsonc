@@ -1,0 +1,17 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "splitsimple-backend",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-05-26",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "splitsimple",
+      "database_id": "47dbfbfa-0051-43b7-a7ea-51821d30b03a",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

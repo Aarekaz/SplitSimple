@@ -21,13 +21,12 @@ export default defineConfig([
   },
   globalIgnores([
     ".next/**",
-    ".open-next/**",
     ".wrangler/**",
+    "cloudflare/.wrangler/**",
     "out/**",
     "build/**",
     "coverage/**",
     ".conductor/**",
     "next-env.d.ts",
-    "cloudflare-env.d.ts",
   ]),
 ])

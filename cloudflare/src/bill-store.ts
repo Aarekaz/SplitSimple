@@ -1,6 +1,6 @@
-import type { Bill } from "@/lib/bill-types"
-import { STORAGE } from "@/lib/constants"
-import { isMigratableBill, migrateBillSchema } from "@/lib/validation"
+import type { Bill } from "../../lib/bill-types"
+import { STORAGE } from "../../lib/constants"
+import { isMigratableBill, migrateBillSchema } from "../../lib/validation"
 
 export interface BillRecord {
   id: string
@@ -233,16 +233,4 @@ export class D1BillStore {
   async deleteExpiredBills(): Promise<void> {
     await this.db.prepare("DELETE FROM bills WHERE expires_at <= ?").bind(nowIso()).run()
   }
-}
-
-export async function getBillStore(): Promise<D1BillStore> {
-  const { getCloudflareContext } = await import("@opennextjs/cloudflare")
-  const { env } = await getCloudflareContext({ async: true })
-  const db = (env as { DB?: D1DatabaseLike }).DB
-
-  if (!db) {
-    throw new Error("Cloudflare D1 binding DB is not configured")
-  }
-
-  return new D1BillStore(db)
 }

@@ -1,91 +1,66 @@
 # SplitSimple Infrastructure
 
-SplitSimple now runs its share-link backend on Cloudflare Workers with Cloudflare D1. The app keeps local browser autosave for drafts, while shared bills are persisted in D1 through the existing `/api/bills/:id` route contract.
+SplitSimple uses a split deployment:
 
-## Architecture
+- Vercel hosts the Next.js app
+- Cloudflare hosts the shared-bill backend
+- Cloudflare D1 stores shared bills
+- Browser local storage stores draft edits
+
+## Request Flow
 
 ```mermaid
 graph TB
-    A[User Browser] --> B[Cloudflare Worker]
-    B --> C[Next.js App via OpenNext]
+    A[User Browser] --> B[Vercel Next.js App]
+    B --> C[Cloudflare Worker Backend]
     C --> D[Cloudflare D1]
-    C --> E[PostHog Analytics]
-    A --> F[LocalStorage]
+    A --> E[LocalStorage]
 ```
 
-## Core Pieces
+## Runtime Boundaries
 
-| Component | Technology | Purpose |
+| Layer | Runs on | Responsibility |
 | --- | --- | --- |
-| Frontend | Next.js 16 + React 19.2 | Bill splitting UI |
-| Runtime | Cloudflare Workers via OpenNext | Next.js app and API routes |
-| Database | Cloudflare D1 | Shared bill storage |
-| Local state | LocalStorage | Draft persistence on device |
-| Analytics | PostHog | Product analytics |
+| Frontend | Vercel | UI, auth, local editing, API proxying |
+| Backend | Cloudflare Workers | Shared bill API and admin bill management |
+| Database | Cloudflare D1 | Persistent shared bills |
 
 ## Local Development
 
+Run the frontend and backend separately:
+
 ```bash
-pnpm install
-cp .dev.vars.example .dev.vars
-pnpm db:migrations:apply:local
 pnpm dev
+pnpm backend:dev
 ```
 
-`pnpm dev` uses the normal Next.js development server. The `initOpenNextCloudflareForDev()` call in `next.config.mjs` exposes local Cloudflare binding simulations to server code.
-
-Production builds currently use `next build --webpack`. Next.js 16 defaults to Turbopack, but the Cloudflare OpenNext bundle path currently handles this app cleanly with Webpack.
-
-For a closer production match, use:
+Apply backend schema changes with:
 
 ```bash
-pnpm preview
+pnpm backend:db:migrations:apply:local
 ```
 
-## D1 Setup
+## Environment
 
-Create the production database:
+Frontend:
 
-```bash
-pnpm wrangler login
-pnpm wrangler d1 create splitsimple
-```
+- `ADMIN_PASSWORD`
+- `CLOUDFLARE_BACKEND_URL`
+- `BACKEND_SHARED_SECRET`
 
-Copy the returned `database_id` into `wrangler.jsonc`, replacing `REPLACE_WITH_D1_DATABASE_ID`.
+Backend:
 
-Apply the schema:
-
-```bash
-pnpm db:migrations:apply:remote
-```
+- `BACKEND_SHARED_SECRET`
+- D1 binding `DB`
 
 ## Deployment
 
-```bash
-pnpm deploy
-```
+1. Deploy the Cloudflare backend and apply migrations.
+2. Set the backend URL and shared secret in Vercel.
+3. Deploy the Next.js app on Vercel.
 
-The deploy command builds the Next.js app with `@opennextjs/cloudflare` and deploys the Worker using `wrangler.jsonc`.
+## Notes
 
-## Data Model
-
-`migrations/0001_create_bills.sql` creates a single `bills` table. The canonical bill is stored as JSON so the app can evolve the bill schema without a migration for every UI-level field. Query-facing metadata is duplicated into columns:
-
-- `id`
-- `title`
-- `status`
-- `created_at`
-- `last_modified`
-- `expires_at`
-- `access_count`
-- `last_accessed`
-- `size_bytes`
-
-D1 does not provide Redis-style TTL, so expiration is enforced by filtering `expires_at` in the bill store. Reads that increment access also refresh the six-month expiry window, matching the previous sliding-expiration behavior.
-
-## Operational Notes
-
-- Remote D1 migrations should be applied before deploying code that depends on them.
-- `pnpm preview` is the best local smoke test because it runs in the Workers runtime.
-- `ADMIN_PASSWORD_HASH` remains optional for admin routes, depending on how the admin panel is used.
-- OCR provider keys are optional; paste-text receipt import still works without them.
+- Shared bills are no longer stored in Redis.
+- The browser never talks to D1 directly.
+- The Vercel app calls the backend through its own API routes, which keeps the Cloudflare URL and secret out of client code.

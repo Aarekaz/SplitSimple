@@ -1,5 +1,9 @@
+import { getPostHogKey } from "@/lib/posthog-config"
+
 interface EnvironmentConfig {
   NODE_ENV: string
+  CLOUDFLARE_BACKEND_URL?: string
+  BACKEND_SHARED_SECRET?: string
   NEXT_PUBLIC_POSTHOG_KEY?: string
   NEXT_PUBLIC_POSTHOG_HOST?: string
   OCR_PROVIDER?: string
@@ -22,7 +26,9 @@ export function validateEnvironment(): ValidationResult {
 
   const env: EnvironmentConfig = {
     NODE_ENV: process.env.NODE_ENV || 'development',
-    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    CLOUDFLARE_BACKEND_URL: process.env.CLOUDFLARE_BACKEND_URL,
+    BACKEND_SHARED_SECRET: process.env.BACKEND_SHARED_SECRET,
+    NEXT_PUBLIC_POSTHOG_KEY: getPostHogKey() ?? undefined,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     OCR_PROVIDER: process.env.OCR_PROVIDER,
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -38,6 +44,14 @@ export function validateEnvironment(): ValidationResult {
 
   if (!env.NEXT_PUBLIC_POSTHOG_HOST) {
     warnings.push('NEXT_PUBLIC_POSTHOG_HOST is not set - using default PostHog host')
+  }
+
+  if (!env.CLOUDFLARE_BACKEND_URL) {
+    warnings.push('CLOUDFLARE_BACKEND_URL is not set - bill sharing will be unavailable')
+  }
+
+  if (!env.BACKEND_SHARED_SECRET) {
+    warnings.push('BACKEND_SHARED_SECRET is not set - backend proxy authentication will be unavailable')
   }
 
   // Image OCR is optional; paste-text import still works without provider keys.

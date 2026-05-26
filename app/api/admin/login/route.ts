@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const sessionToken = await createAdminSession()
+    await createAdminSession()
 
     return NextResponse.json(
       { success: true, message: 'Logged in successfully' },

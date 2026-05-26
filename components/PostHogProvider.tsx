@@ -3,6 +3,7 @@
 import { PostHogProvider as PHProvider } from "posthog-js/react"
 import type { PostHog } from "posthog-js"
 import { useEffect, useState } from "react"
+import { getPostHogKey } from "@/lib/posthog-config"
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   const [client, setClient] = useState<PostHog | null>(null)
@@ -13,10 +14,15 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     let idleTimeoutId: ReturnType<typeof setTimeout> | null = null
 
     const init = async () => {
+      const posthogKey = getPostHogKey()
+      if (!posthogKey) {
+        return
+      }
+
       const { default: posthog } = await import("posthog-js")
       if (cancelled) return
 
-      posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      posthog.init(posthogKey, {
         api_host: "/ingest",
         ui_host: "https://us.posthog.com",
         defaults: "2025-05-24",
@@ -27,7 +33,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         capture_pageleave: true,
         session_recording: {
           maskAllInputs: true, // Mask sensitive input data
-          maskTextSelector: ".receipt-title", // Mask bill titles for privacy
+          maskTextSelector: ".text-receipt-title, .receipt-content h1, .pro-bill-title", // Mask bill titles for privacy
         },
         loaded: () => {
           // PostHog loaded successfully

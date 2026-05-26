@@ -14,6 +14,11 @@ export function useBillAnalytics() {
 
   // Initialize app analytics on mount
   useEffect(() => {
+    const initializedKey = "splitsimple_posthog_app_initialized"
+    if (typeof window !== "undefined" && window.sessionStorage.getItem(initializedKey) === "1") {
+      return
+    }
+
     const getBrowserInfo = () => {
       const userAgent = navigator.userAgent.toLowerCase()
       if (userAgent.includes('chrome')) return 'chrome'
@@ -32,7 +37,13 @@ export function useBillAnalytics() {
       browser: getBrowserInfo(),
       has_existing_bill: hasExistingBill,
     })
-  }, []) // Only run once on mount
+
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(initializedKey, "1")
+    }
+  // This event is intentionally emitted once per browser session on initial mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Track bill creation
   const trackBillCreated = useCallback((fromSharedLink: boolean = false) => {

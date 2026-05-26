@@ -202,7 +202,7 @@ expectCurrencyToBe(actualAmount, expectedAmount)
 
 ### API Mocking
 
-API route tests currently use direct Jest mocks for external services such as the D1 bill store.
+API route tests mock the Vercel-side backend proxy or route-specific helpers instead of reaching Cloudflare directly.
 
 ### Component Mocking
 
@@ -229,7 +229,7 @@ The CI pipeline includes:
 1. **Linting** with ESLint
 2. **Type checking** with TypeScript
 3. **Unit tests** with coverage reporting
-4. **Integration tests** with Cloudflare binding simulations
+4. **Integration tests** for the backend worker
 5. **Security scanning** with Snyk
 6. **Coverage reporting** to Codecov
 
@@ -313,4 +313,4 @@ When adding new features:
 **Solution**: Check if all required props are provided and providers are wrapped correctly
 
 ### Issue: API tests failing
-**Solution**: Verify D1 bill-store and other external-service mocks are configured
+**Solution**: Verify the backend proxy mock and route-specific helpers are configured
