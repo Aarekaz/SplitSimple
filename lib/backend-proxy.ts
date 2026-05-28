@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const BACKEND_URL = process.env.CLOUDFLARE_BACKEND_URL
-const BACKEND_SHARED_SECRET = process.env.BACKEND_SHARED_SECRET
-
 function getBackendUrl(path: string, request: NextRequest): URL | null {
-  if (!BACKEND_URL) return null
+  const backendUrl = process.env.CLOUDFLARE_BACKEND_URL
+  if (!backendUrl) return null
 
-  const url = new URL(path, BACKEND_URL)
+  const url = new URL(path, backendUrl)
   url.search = request.nextUrl.search
   return url
+}
+
+function getProxyResponseHeaders(headers: Headers): Headers {
+  const proxyHeaders = new Headers(headers)
+
+  // Node fetch can transparently decode compressed upstream bodies while retaining
+  // the original content-encoding headers. Forwarding those headers causes browsers
+  // to attempt a second decode and reject the response.
+  proxyHeaders.delete("content-encoding")
+  proxyHeaders.delete("content-length")
+  proxyHeaders.delete("transfer-encoding")
+
+  return proxyHeaders
 }
 
 export async function proxyToBackend(
@@ -29,8 +40,9 @@ export async function proxyToBackend(
 
   if (contentType) headers.set("content-type", contentType)
   if (accept) headers.set("accept", accept)
-  if (BACKEND_SHARED_SECRET) {
-    headers.set("x-splitsimple-backend-secret", BACKEND_SHARED_SECRET)
+  const backendSharedSecret = process.env.BACKEND_SHARED_SECRET
+  if (backendSharedSecret) {
+    headers.set("x-splitsimple-backend-secret", backendSharedSecret)
   }
   headers.set("x-splitsimple-public-url", request.nextUrl.origin)
 
@@ -47,6 +59,6 @@ export async function proxyToBackend(
 
   return new NextResponse(backendResponse.body, {
     status: backendResponse.status,
-    headers: backendResponse.headers,
+    headers: getProxyResponseHeaders(backendResponse.headers),
   })
 }
