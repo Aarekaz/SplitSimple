@@ -31,7 +31,7 @@ import { ShareBill } from '@/components/ShareBill'
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator'
 import { useBillAnalytics } from '@/hooks/use-analytics'
 import { TIMING } from '@/lib/constants'
-import { getBillFromCloud } from '@/lib/sharing'
+import { extractBillIdFromInput, getBillFromCloud } from '@/lib/sharing'
 import { migrateBillSchema } from '@/lib/validation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
@@ -644,7 +644,7 @@ function DesktopBillSplitter() {
 
   // --- Bill ID Loading ---
   const handleLoadBill = useCallback(async () => {
-    const trimmedId = billId.trim()
+    const trimmedId = extractBillIdFromInput(billId)
     if (!trimmedId) {
       setLoadBillError("Paste a bill ID or link to load.")
       return

@@ -1,7 +1,16 @@
 import React from 'react'
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { BillProvider, useBill } from '../BillContext'
+import { getBillFromCloud } from '../../lib/sharing'
 import { createMockPerson, createMockItem, createMockBill } from '../../tests/utils/test-utils'
+
+jest.mock('../../lib/sharing', () => {
+  const actual = jest.requireActual('../../lib/sharing')
+  return {
+    ...actual,
+    getBillFromCloud: jest.fn(),
+  }
+})
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <BillProvider>{children}</BillProvider>
@@ -11,6 +20,7 @@ describe('BillContext', () => {
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear()
+    window.history.replaceState({}, '', '/')
   })
 
   describe('initial state', () => {
@@ -456,6 +466,47 @@ describe('BillContext', () => {
       expect(result.current.state.currentBill.people).toHaveLength(1)
       expect(result.current.state.currentBill.items).toHaveLength(1)
       expect(result.current.state.history).toEqual([])
+    })
+
+    it('should load a shared bill from the URL on mount', async () => {
+      const sharedBill = createMockBill({
+        id: '1780007206455-yojajgt',
+        title: 'Shared Bill',
+        items: [createMockItem({ name: 'Shared item' })],
+      })
+
+      jest.mocked(getBillFromCloud).mockResolvedValue({ bill: sharedBill })
+      window.history.replaceState({}, '', `/?bill=${sharedBill.id}`)
+
+      const { result } = renderHook(() => useBill(), { wrapper })
+
+      await waitFor(() => {
+        expect(result.current.state.currentBill.id).toBe(sharedBill.id)
+      })
+      expect(result.current.state.currentBill.title).toBe('Shared Bill')
+      expect(getBillFromCloud).toHaveBeenCalledWith(sharedBill.id)
+    })
+
+    it('should load a shared bill when the URL changes after mount', async () => {
+      const sharedBill = createMockBill({
+        id: '1780007206455-yojajgt',
+        title: 'Loaded After Navigation',
+        items: [createMockItem({ name: 'Loaded later' })],
+      })
+
+      jest.mocked(getBillFromCloud).mockResolvedValue({ bill: sharedBill })
+
+      const { result } = renderHook(() => useBill(), { wrapper })
+
+      act(() => {
+        window.history.pushState({}, '', `/?bill=${sharedBill.id}`)
+      })
+
+      await waitFor(() => {
+        expect(result.current.state.currentBill.id).toBe(sharedBill.id)
+      })
+      expect(result.current.state.currentBill.title).toBe('Loaded After Navigation')
+      expect(getBillFromCloud).toHaveBeenCalledWith(sharedBill.id)
     })
   })
 })

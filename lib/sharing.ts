@@ -1,6 +1,38 @@
 import type { Bill, CloudBillResult, CloudStoreResult } from "@/lib/bill-types"
 import { isMigratableBill, isRecord, migrateBillSchema } from "@/lib/validation"
 
+const FULL_BILL_ID_PATTERN = /^\d{13}-[a-z0-9]+$/i
+
+export function extractBillIdFromInput(input: string): string {
+  const trimmed = input.trim().replace(/^#/, "")
+  if (!trimmed) return ""
+
+  if (FULL_BILL_ID_PATTERN.test(trimmed)) {
+    return trimmed
+  }
+
+  const queryStart = trimmed.indexOf("?")
+  if (queryStart >= 0) {
+    const params = new URLSearchParams(trimmed.slice(queryStart + 1))
+    const sharedId = params.get("bill") || params.get("share")
+    if (sharedId) {
+      return sharedId.trim()
+    }
+  }
+
+  try {
+    const url = new URL(trimmed)
+    const sharedId = url.searchParams.get("bill") || url.searchParams.get("share")
+    if (sharedId) {
+      return sharedId.trim()
+    }
+  } catch {
+    // Fall through to raw input so callers can show the right validation error.
+  }
+
+  return trimmed
+}
+
 // Store bill via the app's API proxy
 export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
   try {

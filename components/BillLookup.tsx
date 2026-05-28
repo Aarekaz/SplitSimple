@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Label } from "@/components/ui/label"
 import { Search, Loader2 } from "lucide-react"
-import { getBillFromCloud } from "@/lib/sharing"
+import { extractBillIdFromInput, getBillFromCloud } from "@/lib/sharing"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { migrateBillSchema } from "@/lib/validation"
@@ -37,7 +37,7 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
   }
 
   const handleLoadBill = async () => {
-    let trimmedId = billId.trim().replace(/^#/, '')
+    const trimmedId = extractBillIdFromInput(billId)
 
     if (!trimmedId) {
       setError("Please enter a bill ID")

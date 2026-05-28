@@ -314,6 +314,13 @@ const loadBillFromLocalStorage = (billId: string): MigratableBill | null => {
   }
 }
 
+const getSharedBillIdFromLocation = (): string | null => {
+  if (typeof window === "undefined") return null
+
+  const params = new URLSearchParams(window.location.search)
+  return params.get("bill") || params.get("share")
+}
+
 const generateShareUrl = (billId: string): string => {
   // Ensure we always use the root path for sharing
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
@@ -373,84 +380,109 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Check for shared bill on mount and load data from localStorage
+  // Load a shared bill on first mount and whenever the URL query changes in-place.
   useEffect(() => {
-    const loadBill = async () => {
+    const loadBillFromLocation = async (loadLocalFallback: boolean) => {
+      const sharedBillId = getSharedBillIdFromLocation()
+      if (!sharedBillId) {
+        if (!loadLocalFallback) return
+
+        try {
+          const saved = localStorage.getItem("splitSimple_currentBill")
+          if (saved) {
+            const bill: unknown = JSON.parse(saved)
+            if (isMigratableBill(bill)) {
+              dispatch({ type: "LOAD_BILL", payload: migrateBillSchema(bill) })
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load bill:", error)
+        }
+        return
+      }
+
       try {
-        // Check for shared bill in URL - support both ?bill= and ?share= parameters
-        const urlParams = new URLSearchParams(window.location.search)
-        const sharedBillId = urlParams.get("bill") || urlParams.get("share")
+        const cloudResult = await getBillFromCloud(sharedBillId)
+        if (cloudResult.bill) {
+          const migratedBill = migrateBillSchema(cloudResult.bill)
+          dispatch({ type: "LOAD_BILL", payload: migratedBill })
 
-        if (sharedBillId) {
-          // First try to load from D1 (cloud)
-          const cloudResult = await getBillFromCloud(sharedBillId)
-          if (cloudResult.bill) {
-            // Migration: Add missing fields to existing shared bills
-            const migratedBill = migrateBillSchema(cloudResult.bill)
-            dispatch({ type: "LOAD_BILL", payload: migratedBill })
-
-            // Dispatch success event for toast notification
-            if (typeof window !== 'undefined') {
-              const event = new CustomEvent('bill-loaded-success', {
-                detail: {
-                  title: cloudResult.bill.title,
-                  people: cloudResult.bill.people.length,
-                  items: cloudResult.bill.items.length
-                }
-              })
-              window.dispatchEvent(event)
-            }
-            return
-          }
-
-          // Fallback to localStorage for backwards compatibility
-          const localSharedBill = loadBillFromLocalStorage(sharedBillId)
-          if (localSharedBill) {
-            // Migration: Add missing fields to existing local shared bills
-            const migratedBill = migrateBillSchema(localSharedBill)
-            dispatch({ type: "LOAD_BILL", payload: migratedBill })
-
-            // Dispatch success event for toast notification
-            if (typeof window !== 'undefined') {
-              const event = new CustomEvent('bill-loaded-success', {
-                detail: {
-                  title: localSharedBill.title,
-                  people: localSharedBill.people.length,
-                  items: localSharedBill.items.length
-                }
-              })
-              window.dispatchEvent(event)
-            }
-            return
-          }
-
-          // If shared bill not found, dispatch error event
-          console.error(`[BillContext] Shared bill ${sharedBillId} not found in cloud or local storage`)
-          if (typeof window !== 'undefined') {
-            const event = new CustomEvent('bill-load-failed', {
+          if (typeof window !== "undefined") {
+            const event = new CustomEvent("bill-loaded-success", {
               detail: {
-                billId: sharedBillId,
-                error: cloudResult.error || 'Bill not found or expired'
-              }
+                title: cloudResult.bill.title,
+                people: cloudResult.bill.people.length,
+                items: cloudResult.bill.items.length,
+              },
             })
             window.dispatchEvent(event)
           }
+          return
         }
-        
-        // Load current bill from localStorage
-        const saved = localStorage.getItem("splitSimple_currentBill")
-        if (saved) {
-          const bill: unknown = JSON.parse(saved)
-          if (isMigratableBill(bill)) {
-            dispatch({ type: "LOAD_BILL", payload: migrateBillSchema(bill) })
+
+        const localSharedBill = loadBillFromLocalStorage(sharedBillId)
+        if (localSharedBill) {
+          const migratedBill = migrateBillSchema(localSharedBill)
+          dispatch({ type: "LOAD_BILL", payload: migratedBill })
+
+          if (typeof window !== "undefined") {
+            const event = new CustomEvent("bill-loaded-success", {
+              detail: {
+                title: localSharedBill.title,
+                people: localSharedBill.people.length,
+                items: localSharedBill.items.length,
+              },
+            })
+            window.dispatchEvent(event)
           }
+          return
+        }
+
+        console.error(`[BillContext] Shared bill ${sharedBillId} not found in cloud or local storage`)
+        if (typeof window !== "undefined") {
+          const event = new CustomEvent("bill-load-failed", {
+            detail: {
+              billId: sharedBillId,
+              error: cloudResult.error || "Bill not found or expired",
+            },
+          })
+          window.dispatchEvent(event)
         }
       } catch (error) {
-        console.error("Failed to load bill:", error)
+        console.error("Failed to load shared bill:", error)
       }
     }
 
-    loadBill()
+    const handleLocationChange = () => {
+      void loadBillFromLocation(false)
+    }
+
+    const originalPushState = window.history.pushState
+    const originalReplaceState = window.history.replaceState
+
+    window.history.pushState = function (...args) {
+      const result = originalPushState.apply(this, args)
+      window.dispatchEvent(new Event("splitsimple-location-change"))
+      return result
+    }
+
+    window.history.replaceState = function (...args) {
+      const result = originalReplaceState.apply(this, args)
+      window.dispatchEvent(new Event("splitsimple-location-change"))
+      return result
+    }
+
+    window.addEventListener("popstate", handleLocationChange)
+    window.addEventListener("splitsimple-location-change", handleLocationChange)
+
+    void loadBillFromLocation(true)
+
+    return () => {
+      window.history.pushState = originalPushState
+      window.history.replaceState = originalReplaceState
+      window.removeEventListener("popstate", handleLocationChange)
+      window.removeEventListener("splitsimple-location-change", handleLocationChange)
+    }
   }, [])
 
   // Debounced auto-save to localStorage whenever state changes (500ms delay)
