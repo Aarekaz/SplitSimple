@@ -458,7 +458,13 @@ describe('BillContext', () => {
       })
       
       act(() => {
-        result.current.dispatch({ type: 'LOAD_BILL', payload: testBill })
+        result.current.dispatch({
+          type: 'LOAD_BILL',
+          payload: {
+            bill: testBill,
+            source: 'draft',
+          },
+        })
       })
       
       expect(result.current.state.currentBill.title).toBe('Loaded Bill')

@@ -4,7 +4,7 @@ import type React from "react"
 import { createContext, useContext, useReducer, useEffect, useRef } from "react"
 import { getBillFromCloud, getSharedBillIdFromSearch, storeBillInCloud } from "@/lib/sharing"
 import { isMigratableBill, isRecord, migrateBillSchema, type MigratableBill } from "@/lib/validation"
-import type { Bill, BillStatus, Item, Person, SyncStatus, TaxTipAllocation } from "@/lib/bill-types"
+import type { Bill, BillSource, BillStatus, Item, Person, SyncStatus, TaxTipAllocation } from "@/lib/bill-types"
 
 // State and Actions
 interface BillState {
@@ -12,6 +12,8 @@ interface BillState {
   history: Bill[]
   historyIndex: number
   maxHistorySize: number
+  billSource: BillSource
+  sharedOriginBillId: string | null
   syncStatus: SyncStatus
   lastSyncTime: number | null
 }
@@ -31,7 +33,14 @@ type BillAction =
   | { type: "UPDATE_ITEM"; payload: Item }
   | { type: "REMOVE_ITEM"; payload: string }
   | { type: "REORDER_ITEMS"; payload: { startIndex: number; endIndex: number } }
-  | { type: "LOAD_BILL"; payload: Bill }
+  | {
+      type: "LOAD_BILL"
+      payload: {
+        bill: Bill
+        source: "draft" | "shared"
+        sharedOriginBillId?: string | null
+      }
+    }
   | { type: "NEW_BILL" }
   | { type: "UNDO" }
   | { type: "REDO" }
@@ -90,50 +99,100 @@ const initialState: BillState = {
   history: [],
   historyIndex: -1,
   maxHistorySize: 50,
+  billSource: "draft",
+  sharedOriginBillId: null,
   syncStatus: "never_synced",
   lastSyncTime: null,
 }
 
+const EDITABLE_BILL_ACTIONS = new Set<BillAction["type"]>([
+  "SET_BILL_TITLE",
+  "SET_BILL_STATUS",
+  "SET_NOTES",
+  "SET_TAX",
+  "SET_TIP",
+  "SET_DISCOUNT",
+  "SET_TAX_TIP_ALLOCATION",
+  "ADD_PERSON",
+  "UPDATE_PERSON",
+  "REMOVE_PERSON",
+  "ADD_ITEM",
+  "UPDATE_ITEM",
+  "REMOVE_ITEM",
+  "REORDER_ITEMS",
+])
+
+const createSharedBillCopy = (state: BillState): BillState => {
+  const sharedOriginBillId = state.sharedOriginBillId ?? state.currentBill.id
+  const currentBill = {
+    ...structuredClone(state.currentBill),
+    id: simpleUUID(),
+  }
+
+  return {
+    ...state,
+    currentBill,
+    billSource: "shared_copy",
+    sharedOriginBillId,
+    syncStatus: "never_synced",
+    lastSyncTime: null,
+  }
+}
+
+const getEditableState = (state: BillState, actionType: BillAction["type"]): BillState => {
+  if (state.billSource !== "shared") {
+    return state
+  }
+
+  if (!EDITABLE_BILL_ACTIONS.has(actionType)) {
+    return state
+  }
+
+  return createSharedBillCopy(state)
+}
+
 // Reducer
 function billReducer(state: BillState, action: BillAction): BillState {
+  const editableState = getEditableState(state, action.type)
+
   switch (action.type) {
     case "SET_BILL_TITLE": {
-      const newBill = { ...state.currentBill, title: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, title: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_BILL_STATUS": {
-      const newBill = { ...state.currentBill, status: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, status: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_NOTES": {
-      const newBill = { ...state.currentBill, notes: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, notes: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_TAX": {
-      const newBill = { ...state.currentBill, tax: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, tax: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_TIP": {
-      const newBill = { ...state.currentBill, tip: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, tip: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_DISCOUNT": {
-      const newBill = { ...state.currentBill, discount: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, discount: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_TAX_TIP_ALLOCATION": {
-      const newBill = { ...state.currentBill, taxTipAllocation: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, taxTipAllocation: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "ADD_PERSON": {
-      const usedColors = new Set(state.currentBill.people.map((p) => p.color))
+      const usedColors = new Set(editableState.currentBill.people.map((p) => p.color))
       let newColor = ""
 
       if (action.payload.color) {
@@ -147,33 +206,33 @@ function billReducer(state: BillState, action: BillAction): BillState {
         id: simpleUUID(),
         name: action.payload.name,
         color: newColor,
-        colorIdx: state.currentBill.people.length % 6, // Assign color index for Pro design (0-5)
+        colorIdx: editableState.currentBill.people.length % 6, // Assign color index for Pro design (0-5)
       }
       const newBill = {
-        ...state.currentBill,
-        people: [...state.currentBill.people, newPerson],
+        ...editableState.currentBill,
+        people: [...editableState.currentBill.people, newPerson],
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "UPDATE_PERSON": {
       const newBill = {
-        ...state.currentBill,
-        people: state.currentBill.people.map((p) => (p.id === action.payload.id ? action.payload : p)),
+        ...editableState.currentBill,
+        people: editableState.currentBill.people.map((p) => (p.id === action.payload.id ? action.payload : p)),
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "REMOVE_PERSON": {
       const newBill = {
-        ...state.currentBill,
-        people: state.currentBill.people.filter((p) => p.id !== action.payload),
-        items: state.currentBill.items.map((item) => ({
+        ...editableState.currentBill,
+        people: editableState.currentBill.people.filter((p) => p.id !== action.payload),
+        items: editableState.currentBill.items.map((item) => ({
           ...item,
           splitWith: item.splitWith.filter((id) => id !== action.payload),
         })),
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "ADD_ITEM": {
@@ -182,46 +241,53 @@ function billReducer(state: BillState, action: BillAction): BillState {
         id: simpleUUID(),
       }
       const newBill = {
-        ...state.currentBill,
-        items: [...state.currentBill.items, newItem],
+        ...editableState.currentBill,
+        items: [...editableState.currentBill.items, newItem],
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "UPDATE_ITEM": {
       const newBill = {
-        ...state.currentBill,
-        items: state.currentBill.items.map((item) => (item.id === action.payload.id ? action.payload : item)),
+        ...editableState.currentBill,
+        items: editableState.currentBill.items.map((item) => (item.id === action.payload.id ? action.payload : item)),
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "REMOVE_ITEM": {
       const newBill = {
-        ...state.currentBill,
-        items: state.currentBill.items.filter((item) => item.id !== action.payload),
+        ...editableState.currentBill,
+        items: editableState.currentBill.items.filter((item) => item.id !== action.payload),
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "REORDER_ITEMS": {
       const { startIndex, endIndex } = action.payload
-      const newItems = Array.from(state.currentBill.items)
+      const newItems = Array.from(editableState.currentBill.items)
       const [removed] = newItems.splice(startIndex, 1)
       newItems.splice(endIndex, 0, removed)
       const newBill = {
-        ...state.currentBill,
+        ...editableState.currentBill,
         items: newItems,
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "LOAD_BILL": {
       return {
         ...initialState,
-        currentBill: action.payload,
+        currentBill: action.payload.bill,
         history: [],
         historyIndex: -1,
+        billSource: action.payload.source,
+        sharedOriginBillId:
+          action.payload.source === "shared"
+            ? action.payload.sharedOriginBillId ?? action.payload.bill.id
+            : action.payload.sharedOriginBillId ?? null,
+        syncStatus: action.payload.source === "shared" ? "synced" : "never_synced",
+        lastSyncTime: action.payload.source === "shared" ? Date.now() : null,
       }
     }
 
@@ -232,6 +298,10 @@ function billReducer(state: BillState, action: BillAction): BillState {
         currentBill: newBill,
         history: [],
         historyIndex: -1,
+        billSource: "draft",
+        sharedOriginBillId: null,
+        syncStatus: "never_synced",
+        lastSyncTime: null,
       }
     }
 
@@ -402,7 +472,13 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           if (saved) {
             const bill: unknown = JSON.parse(saved)
             if (isMigratableBill(bill)) {
-              dispatch({ type: "LOAD_BILL", payload: migrateBillSchema(bill) })
+              dispatch({
+                type: "LOAD_BILL",
+                payload: {
+                  bill: migrateBillSchema(bill),
+                  source: "draft",
+                },
+              })
             }
           }
         } catch (error) {
@@ -417,7 +493,14 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
         if (cloudResult.bill) {
           const migratedBill = migrateBillSchema(cloudResult.bill)
-          dispatch({ type: "LOAD_BILL", payload: migratedBill })
+          dispatch({
+            type: "LOAD_BILL",
+            payload: {
+              bill: migratedBill,
+              source: "shared",
+              sharedOriginBillId: sharedBillId,
+            },
+          })
 
           if (typeof window !== "undefined") {
             const event = new CustomEvent("bill-loaded-success", {
@@ -437,7 +520,14 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
         if (localSharedBill) {
           const migratedBill = migrateBillSchema(localSharedBill)
-          dispatch({ type: "LOAD_BILL", payload: migratedBill })
+          dispatch({
+            type: "LOAD_BILL",
+            payload: {
+              bill: migratedBill,
+              source: "shared",
+              sharedOriginBillId: sharedBillId,
+            },
+          })
 
           if (typeof window !== "undefined") {
             const event = new CustomEvent("bill-loaded-success", {

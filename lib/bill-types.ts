@@ -1,4 +1,5 @@
 export type SyncStatus = "never_synced" | "syncing" | "synced" | "error"
+export type BillSource = "draft" | "shared" | "shared_copy"
 
 export type SplitMethod = "even" | "shares" | "percent" | "exact"
 

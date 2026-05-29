@@ -81,7 +81,14 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
       if (result.bill) {
         const migratedBill = migrateBillSchema(result.bill)
 
-        dispatch({ type: "LOAD_BILL", payload: migratedBill })
+        dispatch({
+          type: "LOAD_BILL",
+          payload: {
+            bill: migratedBill,
+            source: "shared",
+            sharedOriginBillId: trimmedId,
+          },
+        })
         setBillId("")
         setIsOpen(false)
 
