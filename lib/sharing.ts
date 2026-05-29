@@ -1,7 +1,55 @@
 import type { Bill, CloudBillResult, CloudStoreResult } from "@/lib/bill-types"
+import { normalizeBillForPersistence } from "@/lib/persisted-bill"
 import { isMigratableBill, isRecord, migrateBillSchema } from "@/lib/validation"
 
 const FULL_BILL_ID_PATTERN = /^\d{13}-[a-z0-9]+$/i
+const SHARED_BILL_PATH_PATTERN = /^\/b\/([^/?#]+)\/?$/
+
+function normalizeSearchInput(search: string): string {
+  return search.startsWith("?") ? search.slice(1) : search
+}
+
+function normalizeSearchOutput(search: string): string {
+  if (!search) return ""
+  return search.startsWith("?") ? search : `?${search}`
+}
+
+export function getSharedBillIdFromSearch(search: string): string | null {
+  const params = new URLSearchParams(normalizeSearchInput(search))
+  return params.get("bill") || params.get("share")
+}
+
+export function getSharedBillIdFromPathname(pathname: string): string | null {
+  const match = pathname.match(SHARED_BILL_PATH_PATTERN)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+export function getSharedBillIdFromLocationParts(pathname: string, search: string): string | null {
+  return getSharedBillIdFromPathname(pathname) || getSharedBillIdFromSearch(search)
+}
+
+export function stripSharedBillParams(search: string): string {
+  const params = new URLSearchParams(normalizeSearchInput(search))
+  params.delete("bill")
+  params.delete("share")
+
+  const nextSearch = params.toString()
+  return nextSearch ? `?${nextSearch}` : ""
+}
+
+export function buildSharedBillPath(billId: string): string {
+  return `/b/${encodeURIComponent(billId)}`
+}
+
+export function buildAppUrl(pathname: string, search = "", hash = ""): string {
+  return `${pathname}${normalizeSearchOutput(search)}${hash}`
+}
+
+export function stripSharedBillLocation(pathname: string, search: string, hash = ""): string {
+  const nextPathname = getSharedBillIdFromPathname(pathname) ? "/" : pathname
+  const nextSearch = stripSharedBillParams(search)
+  return buildAppUrl(nextPathname, nextSearch, hash)
+}
 
 export function extractBillIdFromInput(input: string): string {
   const trimmed = input.trim().replace(/^#/, "")
@@ -13,18 +61,27 @@ export function extractBillIdFromInput(input: string): string {
 
   const queryStart = trimmed.indexOf("?")
   if (queryStart >= 0) {
-    const params = new URLSearchParams(trimmed.slice(queryStart + 1))
-    const sharedId = params.get("bill") || params.get("share")
+    const sharedId = getSharedBillIdFromSearch(trimmed.slice(queryStart))
     if (sharedId) {
       return sharedId.trim()
     }
   }
 
+  const pathnameBillId = getSharedBillIdFromPathname(trimmed)
+  if (pathnameBillId) {
+    return pathnameBillId
+  }
+
   try {
     const url = new URL(trimmed)
-    const sharedId = url.searchParams.get("bill") || url.searchParams.get("share")
+    const sharedId = getSharedBillIdFromSearch(url.search)
     if (sharedId) {
       return sharedId.trim()
+    }
+
+    const pathId = getSharedBillIdFromPathname(url.pathname)
+    if (pathId) {
+      return pathId.trim()
     }
   } catch {
     // Fall through to raw input so callers can show the right validation error.
@@ -41,7 +98,7 @@ export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ bill }),
+      body: JSON.stringify({ bill: normalizeBillForPersistence(bill) }),
     })
 
     if (!response.ok) {
@@ -139,7 +196,6 @@ export async function getBillFromCloud(billId: string): Promise<CloudBillResult>
 
 // Generate shareable URL
 export function generateCloudShareUrl(billId: string): string {
-  // Ensure we always use the root path for sharing
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-  return `${baseUrl}/?bill=${billId}`
+  return `${baseUrl}${buildSharedBillPath(billId)}`
 }

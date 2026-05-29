@@ -8,17 +8,20 @@ describe("proxyToBackend", () => {
   const originalFetch = global.fetch
   const originalBackendUrl = process.env.CLOUDFLARE_BACKEND_URL
   const originalBackendSecret = process.env.BACKEND_SHARED_SECRET
+  let consoleErrorSpy: jest.SpyInstance
 
   beforeEach(() => {
     process.env.CLOUDFLARE_BACKEND_URL = "https://splitsimple-backend.aarekaz.workers.dev"
     process.env.BACKEND_SHARED_SECRET = "test-secret"
     global.fetch = jest.fn()
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {})
   })
 
   afterEach(() => {
     global.fetch = originalFetch
     process.env.CLOUDFLARE_BACKEND_URL = originalBackendUrl
     process.env.BACKEND_SHARED_SECRET = originalBackendSecret
+    consoleErrorSpy.mockRestore()
     jest.clearAllMocks()
   })
 
@@ -57,5 +60,15 @@ describe("proxyToBackend", () => {
     expect(String(url)).toBe("https://splitsimple-backend.aarekaz.workers.dev/api/bills/bill-123?view=full")
     expect(init.headers.get("x-splitsimple-backend-secret")).toBe("test-secret")
     expect(init.headers.get("x-splitsimple-public-url")).toBe("https://splitsimple.anuragd.me")
+  })
+
+  it("returns a readable 502 when the backend fetch fails", async () => {
+    ;(global.fetch as jest.Mock).mockRejectedValue(new TypeError("fetch failed"))
+
+    const request = new NextRequest("https://splitsimple.anuragd.me/api/bills/bill-123")
+    const response = await proxyToBackend(request, "/api/bills/bill-123")
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toEqual({ error: "Backend service is unavailable" })
   })
 })

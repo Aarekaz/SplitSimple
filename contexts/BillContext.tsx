@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useEffect } from "react"
-import { getBillFromCloud, storeBillInCloud } from "@/lib/sharing"
+import { createContext, useCallback, useContext, useReducer, useEffect, useRef } from "react"
+import { getBillFromCloud, getSharedBillIdFromLocationParts, storeBillInCloud, stripSharedBillLocation } from "@/lib/sharing"
+import { normalizeBillForPersistence } from "@/lib/persisted-bill"
 import { isMigratableBill, isRecord, migrateBillSchema, type MigratableBill } from "@/lib/validation"
-import type { Bill, BillStatus, Item, Person, SyncStatus, TaxTipAllocation } from "@/lib/bill-types"
+import type { Bill, BillSource, BillStatus, Item, Person, SyncStatus, TaxTipAllocation } from "@/lib/bill-types"
 
 // State and Actions
 interface BillState {
@@ -12,6 +13,8 @@ interface BillState {
   history: Bill[]
   historyIndex: number
   maxHistorySize: number
+  billSource: BillSource
+  sharedOriginBillId: string | null
   syncStatus: SyncStatus
   lastSyncTime: number | null
 }
@@ -31,7 +34,14 @@ type BillAction =
   | { type: "UPDATE_ITEM"; payload: Item }
   | { type: "REMOVE_ITEM"; payload: string }
   | { type: "REORDER_ITEMS"; payload: { startIndex: number; endIndex: number } }
-  | { type: "LOAD_BILL"; payload: Bill }
+  | {
+      type: "LOAD_BILL"
+      payload: {
+        bill: Bill
+        source: "draft" | "shared"
+        sharedOriginBillId?: string | null
+      }
+    }
   | { type: "NEW_BILL" }
   | { type: "UNDO" }
   | { type: "REDO" }
@@ -90,50 +100,100 @@ const initialState: BillState = {
   history: [],
   historyIndex: -1,
   maxHistorySize: 50,
+  billSource: "draft",
+  sharedOriginBillId: null,
   syncStatus: "never_synced",
   lastSyncTime: null,
 }
 
+const EDITABLE_BILL_ACTIONS = new Set<BillAction["type"]>([
+  "SET_BILL_TITLE",
+  "SET_BILL_STATUS",
+  "SET_NOTES",
+  "SET_TAX",
+  "SET_TIP",
+  "SET_DISCOUNT",
+  "SET_TAX_TIP_ALLOCATION",
+  "ADD_PERSON",
+  "UPDATE_PERSON",
+  "REMOVE_PERSON",
+  "ADD_ITEM",
+  "UPDATE_ITEM",
+  "REMOVE_ITEM",
+  "REORDER_ITEMS",
+])
+
+const createSharedBillCopy = (state: BillState): BillState => {
+  const sharedOriginBillId = state.sharedOriginBillId ?? state.currentBill.id
+  const currentBill = {
+    ...structuredClone(state.currentBill),
+    id: simpleUUID(),
+  }
+
+  return {
+    ...state,
+    currentBill,
+    billSource: "shared_copy",
+    sharedOriginBillId,
+    syncStatus: "never_synced",
+    lastSyncTime: null,
+  }
+}
+
+const getEditableState = (state: BillState, actionType: BillAction["type"]): BillState => {
+  if (state.billSource !== "shared") {
+    return state
+  }
+
+  if (!EDITABLE_BILL_ACTIONS.has(actionType)) {
+    return state
+  }
+
+  return createSharedBillCopy(state)
+}
+
 // Reducer
 function billReducer(state: BillState, action: BillAction): BillState {
+  const editableState = getEditableState(state, action.type)
+
   switch (action.type) {
     case "SET_BILL_TITLE": {
-      const newBill = { ...state.currentBill, title: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, title: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_BILL_STATUS": {
-      const newBill = { ...state.currentBill, status: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, status: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_NOTES": {
-      const newBill = { ...state.currentBill, notes: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, notes: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_TAX": {
-      const newBill = { ...state.currentBill, tax: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, tax: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_TIP": {
-      const newBill = { ...state.currentBill, tip: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, tip: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_DISCOUNT": {
-      const newBill = { ...state.currentBill, discount: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, discount: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "SET_TAX_TIP_ALLOCATION": {
-      const newBill = { ...state.currentBill, taxTipAllocation: action.payload }
-      return addToHistory(state, newBill)
+      const newBill = { ...editableState.currentBill, taxTipAllocation: action.payload }
+      return addToHistory(editableState, newBill)
     }
 
     case "ADD_PERSON": {
-      const usedColors = new Set(state.currentBill.people.map((p) => p.color))
+      const usedColors = new Set(editableState.currentBill.people.map((p) => p.color))
       let newColor = ""
 
       if (action.payload.color) {
@@ -147,33 +207,33 @@ function billReducer(state: BillState, action: BillAction): BillState {
         id: simpleUUID(),
         name: action.payload.name,
         color: newColor,
-        colorIdx: state.currentBill.people.length % 6, // Assign color index for Pro design (0-5)
+        colorIdx: editableState.currentBill.people.length % 6, // Assign color index for Pro design (0-5)
       }
       const newBill = {
-        ...state.currentBill,
-        people: [...state.currentBill.people, newPerson],
+        ...editableState.currentBill,
+        people: [...editableState.currentBill.people, newPerson],
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "UPDATE_PERSON": {
       const newBill = {
-        ...state.currentBill,
-        people: state.currentBill.people.map((p) => (p.id === action.payload.id ? action.payload : p)),
+        ...editableState.currentBill,
+        people: editableState.currentBill.people.map((p) => (p.id === action.payload.id ? action.payload : p)),
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "REMOVE_PERSON": {
       const newBill = {
-        ...state.currentBill,
-        people: state.currentBill.people.filter((p) => p.id !== action.payload),
-        items: state.currentBill.items.map((item) => ({
+        ...editableState.currentBill,
+        people: editableState.currentBill.people.filter((p) => p.id !== action.payload),
+        items: editableState.currentBill.items.map((item) => ({
           ...item,
           splitWith: item.splitWith.filter((id) => id !== action.payload),
         })),
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "ADD_ITEM": {
@@ -182,46 +242,53 @@ function billReducer(state: BillState, action: BillAction): BillState {
         id: simpleUUID(),
       }
       const newBill = {
-        ...state.currentBill,
-        items: [...state.currentBill.items, newItem],
+        ...editableState.currentBill,
+        items: [...editableState.currentBill.items, newItem],
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "UPDATE_ITEM": {
       const newBill = {
-        ...state.currentBill,
-        items: state.currentBill.items.map((item) => (item.id === action.payload.id ? action.payload : item)),
+        ...editableState.currentBill,
+        items: editableState.currentBill.items.map((item) => (item.id === action.payload.id ? action.payload : item)),
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "REMOVE_ITEM": {
       const newBill = {
-        ...state.currentBill,
-        items: state.currentBill.items.filter((item) => item.id !== action.payload),
+        ...editableState.currentBill,
+        items: editableState.currentBill.items.filter((item) => item.id !== action.payload),
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "REORDER_ITEMS": {
       const { startIndex, endIndex } = action.payload
-      const newItems = Array.from(state.currentBill.items)
+      const newItems = Array.from(editableState.currentBill.items)
       const [removed] = newItems.splice(startIndex, 1)
       newItems.splice(endIndex, 0, removed)
       const newBill = {
-        ...state.currentBill,
+        ...editableState.currentBill,
         items: newItems,
       }
-      return addToHistory(state, newBill)
+      return addToHistory(editableState, newBill)
     }
 
     case "LOAD_BILL": {
       return {
         ...initialState,
-        currentBill: action.payload,
+        currentBill: action.payload.bill,
         history: [],
         historyIndex: -1,
+        billSource: action.payload.source,
+        sharedOriginBillId:
+          action.payload.source === "shared"
+            ? action.payload.sharedOriginBillId ?? action.payload.bill.id
+            : action.payload.sharedOriginBillId ?? null,
+        syncStatus: action.payload.source === "shared" ? "synced" : "never_synced",
+        lastSyncTime: action.payload.source === "shared" ? Date.now() : null,
       }
     }
 
@@ -232,6 +299,10 @@ function billReducer(state: BillState, action: BillAction): BillState {
         currentBill: newBill,
         history: [],
         historyIndex: -1,
+        billSource: "draft",
+        sharedOriginBillId: null,
+        syncStatus: "never_synced",
+        lastSyncTime: null,
       }
     }
 
@@ -284,6 +355,7 @@ function billReducer(state: BillState, action: BillAction): BillState {
 // Sharing functionality
 const saveBillToLocalStorage = (bill: Bill) => {
   try {
+    const normalizedBill = normalizeBillForPersistence(bill)
     const billsData = localStorage.getItem("splitsimple_bills") || "{}"
     const parsedBills: unknown = JSON.parse(billsData)
     const bills: Record<string, unknown> = {}
@@ -292,7 +364,7 @@ const saveBillToLocalStorage = (bill: Bill) => {
         bills[id] = storedBill
       }
     }
-    bills[bill.id] = bill
+    bills[normalizedBill.id] = normalizedBill
     localStorage.setItem("splitsimple_bills", JSON.stringify(bills))
   } catch (error) {
     console.error("Failed to save bill to localStorage:", error)
@@ -317,14 +389,14 @@ const loadBillFromLocalStorage = (billId: string): MigratableBill | null => {
 const getSharedBillIdFromLocation = (): string | null => {
   if (typeof window === "undefined") return null
 
-  const params = new URLSearchParams(window.location.search)
-  return params.get("bill") || params.get("share")
+  return getSharedBillIdFromLocationParts(window.location.pathname, window.location.search)
 }
 
-const generateShareUrl = (billId: string): string => {
-  // Ensure we always use the root path for sharing
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-  return `${baseUrl}/?bill=${billId}`
+const clearSharedBillParamsFromLocation = () => {
+  if (typeof window === "undefined") return
+
+  const nextUrl = stripSharedBillLocation(window.location.pathname, window.location.search, window.location.hash)
+  window.history.replaceState(window.history.state, "", nextUrl)
 }
 
 function addToHistory(state: BillState, newBill: Bill): BillState {
@@ -356,27 +428,41 @@ const BillContext = createContext<{
 
 // Provider
 export function BillProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(billReducer, initialState)
+  const [state, rawDispatch] = useReducer(billReducer, initialState)
+  const sharedBillIdRef = useRef<string | null>(null)
+  const sharedBillLoadRequestRef = useRef(0)
 
   const canUndo = state.historyIndex >= 0
   const canRedo = state.historyIndex < state.history.length - 1
 
+  const dispatch = useCallback((action: BillAction) => {
+    const shouldClearSharedUrl =
+      state.billSource === "shared" && (EDITABLE_BILL_ACTIONS.has(action.type) || action.type === "NEW_BILL")
+
+    if (shouldClearSharedUrl) {
+      clearSharedBillParamsFromLocation()
+    }
+
+    rawDispatch(action)
+  }, [state.billSource])
+
   // Auto-sync to cloud functionality
   const syncToCloud = async () => {
+    if (state.billSource === "shared") return
     if (state.syncStatus === "syncing") return // Avoid duplicate sync calls
     
-    dispatch({ type: "SYNC_TO_CLOUD" })
+    rawDispatch({ type: "SYNC_TO_CLOUD" })
     
     try {
       const result = await storeBillInCloud(state.currentBill)
       if (result.success) {
-        dispatch({ type: "SET_SYNC_STATUS", payload: "synced" })
+        rawDispatch({ type: "SET_SYNC_STATUS", payload: "synced" })
       } else {
-        dispatch({ type: "SET_SYNC_STATUS", payload: "error" })
+        rawDispatch({ type: "SET_SYNC_STATUS", payload: "error" })
       }
     } catch (error) {
       console.error("Sync to cloud failed:", error)
-      dispatch({ type: "SET_SYNC_STATUS", payload: "error" })
+      rawDispatch({ type: "SET_SYNC_STATUS", payload: "error" })
     }
   }
 
@@ -384,6 +470,15 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadBillFromLocation = async (loadLocalFallback: boolean) => {
       const sharedBillId = getSharedBillIdFromLocation()
+      const previousSharedBillId = sharedBillIdRef.current
+      sharedBillIdRef.current = sharedBillId
+
+      if (sharedBillId === previousSharedBillId && sharedBillId !== null) {
+        return
+      }
+
+      const requestId = ++sharedBillLoadRequestRef.current
+
       if (!sharedBillId) {
         if (!loadLocalFallback) return
 
@@ -392,7 +487,13 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           if (saved) {
             const bill: unknown = JSON.parse(saved)
             if (isMigratableBill(bill)) {
-              dispatch({ type: "LOAD_BILL", payload: migrateBillSchema(bill) })
+              rawDispatch({
+                type: "LOAD_BILL",
+                payload: {
+                  bill: migrateBillSchema(bill),
+                  source: "draft",
+                },
+              })
             }
           }
         } catch (error) {
@@ -403,9 +504,18 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const cloudResult = await getBillFromCloud(sharedBillId)
+        if (sharedBillLoadRequestRef.current !== requestId) return
+
         if (cloudResult.bill) {
           const migratedBill = migrateBillSchema(cloudResult.bill)
-          dispatch({ type: "LOAD_BILL", payload: migratedBill })
+          rawDispatch({
+            type: "LOAD_BILL",
+            payload: {
+              bill: migratedBill,
+              source: "shared",
+              sharedOriginBillId: sharedBillId,
+            },
+          })
 
           if (typeof window !== "undefined") {
             const event = new CustomEvent("bill-loaded-success", {
@@ -421,9 +531,18 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         }
 
         const localSharedBill = loadBillFromLocalStorage(sharedBillId)
+        if (sharedBillLoadRequestRef.current !== requestId) return
+
         if (localSharedBill) {
           const migratedBill = migrateBillSchema(localSharedBill)
-          dispatch({ type: "LOAD_BILL", payload: migratedBill })
+          rawDispatch({
+            type: "LOAD_BILL",
+            payload: {
+              bill: migratedBill,
+              source: "shared",
+              sharedOriginBillId: sharedBillId,
+            },
+          })
 
           if (typeof window !== "undefined") {
             const event = new CustomEvent("bill-loaded-success", {
@@ -485,23 +604,35 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Debounced auto-save to localStorage whenever state changes (500ms delay)
+  // Debounced persistence whenever the active bill changes (500ms delay)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      try {
-        // Save current bill to main storage
-        localStorage.setItem("splitSimple_currentBill", JSON.stringify(state.currentBill))
+      const hasSharedBillInLocation = getSharedBillIdFromLocation() !== null
 
-        // Also save to shared bills storage for sharing
+      try {
+        if (hasSharedBillInLocation && state.billSource === "draft") {
+          return
+        }
+
         saveBillToLocalStorage(state.currentBill)
+
+        if (state.billSource === "shared") {
+          return
+        }
+
+        localStorage.setItem("splitSimple_currentBill", JSON.stringify(normalizeBillForPersistence(state.currentBill)))
       } catch (error) {
         console.error("Failed to save bill to localStorage:", error)
+
+        if (state.billSource === "shared" || (hasSharedBillInLocation && state.billSource === "draft")) {
+          return
+        }
 
         // Try to save with a smaller payload if the bill is too large
         try {
           const minimalBill = {
-            ...state.currentBill,
-            items: state.currentBill.items.map(item => ({
+            ...normalizeBillForPersistence(state.currentBill),
+            items: normalizeBillForPersistence(state.currentBill).items.map(item => ({
               id: item.id,
               name: item.name,
               price: item.price,
@@ -520,13 +651,14 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [state.currentBill])
+  }, [state.billSource, state.currentBill])
 
   // Debounced auto-sync to cloud when bill changes
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined
+    const hasSharedBillInLocation = getSharedBillIdFromLocation() !== null
     
-    if (state.syncStatus === "never_synced") {
+    if (!hasSharedBillInLocation && state.billSource !== "shared" && state.syncStatus === "never_synced") {
       timeoutId = setTimeout(() => {
         syncToCloud()
       }, 2000) // 2-second debounce
@@ -537,7 +669,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(timeoutId)
       }
     }
-  }, [state.currentBill, state.syncStatus])
+  }, [state.billSource, state.currentBill, state.syncStatus])
 
   return <BillContext.Provider value={{ state, dispatch, canUndo, canRedo, syncToCloud }}>{children}</BillContext.Provider>
 }

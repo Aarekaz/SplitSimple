@@ -28,10 +28,11 @@ import { cn, formatCurrencyWithCents as formatCurrencySimple } from '@/lib/utils
 import { generateSummaryText, copyToClipboard } from '@/lib/export'
 import { useToast } from '@/hooks/use-toast'
 import { ShareBill } from '@/components/ShareBill'
+import { BillSourceIndicator } from '@/components/BillSourceIndicator'
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator'
 import { useBillAnalytics } from '@/hooks/use-analytics'
 import { TIMING } from '@/lib/constants'
-import { extractBillIdFromInput, getBillFromCloud } from '@/lib/sharing'
+import { buildAppUrl, buildSharedBillPath, extractBillIdFromInput, getBillFromCloud, stripSharedBillLocation } from '@/lib/sharing'
 import { migrateBillSchema } from '@/lib/validation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
@@ -512,6 +513,8 @@ function DesktopBillSplitter() {
   }, [dispatch, toast])
 
   const confirmNewBill = useCallback(() => {
+    const nextUrl = stripSharedBillLocation(pathname, searchParams.toString())
+    router.replace(nextUrl, { scroll: false })
     dispatch({ type: 'NEW_BILL' })
     toast({ title: "New bill created", variant: "success" })
     analytics.trackBillCreated()
@@ -520,7 +523,7 @@ function DesktopBillSplitter() {
     )
     newBillSourceRef.current = "button"
     setIsNewBillDialogOpen(false)
-  }, [dispatch, toast, analytics])
+  }, [analytics, dispatch, pathname, router, searchParams, toast])
 
   const openDeleteDialog = useCallback((item: Item) => {
     setPendingDeleteItem(item)
@@ -672,7 +675,18 @@ function DesktopBillSplitter() {
       }
 
       const migratedBill = migrateBillSchema(result.bill)
-      dispatch({ type: 'LOAD_BILL', payload: migratedBill })
+      dispatch({
+        type: 'LOAD_BILL',
+        payload: {
+          bill: migratedBill,
+          source: 'shared',
+          sharedOriginBillId: trimmedId,
+        },
+      })
+      const nextParams = new URLSearchParams(searchParams.toString())
+      nextParams.delete('bill')
+      nextParams.delete('share')
+      router.push(buildAppUrl(buildSharedBillPath(trimmedId), nextParams.toString()), { scroll: false })
       toast({
         title: "Bill loaded!",
         description: `Loaded "${migratedBill.title}"`,
@@ -686,7 +700,7 @@ function DesktopBillSplitter() {
         setIsLoadingBill(false)
       }
     }
-  }, [billId, dispatch, toast, analytics])
+  }, [billId, dispatch, router, searchParams, toast, analytics])
 
   // --- Copy Breakdown ---
   const copyBreakdown = useCallback(async () => {
@@ -1085,7 +1099,10 @@ function DesktopBillSplitter() {
                   name="bill-title"
                   autoComplete="off"
                 />
-                <SyncStatusIndicator inline />
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                  <SyncStatusIndicator inline />
+                  <BillSourceIndicator />
+                </div>
               </div>
             </div>
 
