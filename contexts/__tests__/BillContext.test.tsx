@@ -17,7 +17,21 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 )
 
 describe('BillContext', () => {
+  let storage: Record<string, string>
+
   beforeEach(() => {
+    storage = {}
+    jest.mocked(localStorage.getItem).mockImplementation((key: string) => storage[key] ?? null)
+    jest.mocked(localStorage.setItem).mockImplementation((key: string, value: string) => {
+      storage[key] = value
+    })
+    jest.mocked(localStorage.removeItem).mockImplementation((key: string) => {
+      delete storage[key]
+    })
+    jest.mocked(localStorage.clear).mockImplementation(() => {
+      storage = {}
+    })
+
     // Clear localStorage before each test
     localStorage.clear()
     window.history.replaceState({}, '', '/')
@@ -32,6 +46,8 @@ describe('BillContext', () => {
       expect(result.current.state.currentBill.people[0].name).toBe('Person 1')
       expect(result.current.state.currentBill.items).toEqual([])
       expect(result.current.state.currentBill.status).toBe('active')
+      expect(result.current.state.billSource).toBe('draft')
+      expect(result.current.state.sharedOriginBillId).toBeNull()
       expect(result.current.state.syncStatus).toBe('never_synced')
     })
 
@@ -471,6 +487,8 @@ describe('BillContext', () => {
       expect(result.current.state.currentBill.status).toBe('active')
       expect(result.current.state.currentBill.people).toHaveLength(1)
       expect(result.current.state.currentBill.items).toHaveLength(1)
+      expect(result.current.state.billSource).toBe('draft')
+      expect(result.current.state.sharedOriginBillId).toBeNull()
       expect(result.current.state.history).toEqual([])
     })
 
@@ -490,6 +508,9 @@ describe('BillContext', () => {
         expect(result.current.state.currentBill.id).toBe(sharedBill.id)
       })
       expect(result.current.state.currentBill.title).toBe('Shared Bill')
+      expect(result.current.state.billSource).toBe('shared')
+      expect(result.current.state.sharedOriginBillId).toBe(sharedBill.id)
+      expect(result.current.state.syncStatus).toBe('synced')
       expect(getBillFromCloud).toHaveBeenCalledWith(sharedBill.id)
     })
 
@@ -512,6 +533,7 @@ describe('BillContext', () => {
         expect(result.current.state.currentBill.id).toBe(sharedBill.id)
       })
       expect(result.current.state.currentBill.title).toBe('Loaded After Navigation')
+      expect(result.current.state.billSource).toBe('shared')
       expect(getBillFromCloud).toHaveBeenCalledWith(sharedBill.id)
     })
 
@@ -539,6 +561,63 @@ describe('BillContext', () => {
         expect(getBillFromCloud).toHaveBeenCalledTimes(1)
       })
       expect(result.current.state.currentBill.title).toBe('Stable Shared Bill')
+    })
+
+    it('should fork a shared bill into a local copy on first edit', async () => {
+      const sharedBill = createMockBill({
+        id: '1780007206455-yojajgt',
+        title: 'Shared Bill',
+      })
+
+      jest.mocked(getBillFromCloud).mockResolvedValue({ bill: sharedBill })
+      window.history.replaceState({}, '', `/?bill=${sharedBill.id}`)
+
+      const { result } = renderHook(() => useBill(), { wrapper })
+
+      await waitFor(() => {
+        expect(result.current.state.currentBill.id).toBe(sharedBill.id)
+      })
+
+      act(() => {
+        result.current.dispatch({ type: 'SET_BILL_TITLE', payload: 'Edited Copy' })
+      })
+
+      expect(result.current.state.currentBill.id).not.toBe(sharedBill.id)
+      expect(result.current.state.currentBill.title).toBe('Edited Copy')
+      expect(result.current.state.billSource).toBe('shared_copy')
+      expect(result.current.state.sharedOriginBillId).toBe(sharedBill.id)
+      expect(window.location.search).toBe('')
+    })
+
+    it('should preserve the current draft when a shared bill is loaded', async () => {
+      const localDraft = createMockBill({
+        id: 'draft-bill-id',
+        title: 'Local Draft',
+      })
+      const sharedBill = createMockBill({
+        id: '1780007206455-yojajgt',
+        title: 'Shared Bill',
+      })
+
+      localStorage.setItem('splitSimple_currentBill', JSON.stringify(localDraft))
+      jest.mocked(getBillFromCloud).mockResolvedValue({ bill: sharedBill })
+      window.history.replaceState({}, '', `/?bill=${sharedBill.id}`)
+
+      const { result } = renderHook(() => useBill(), { wrapper })
+
+      await waitFor(() => {
+        expect(result.current.state.currentBill.id).toBe(sharedBill.id)
+      })
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 600))
+      })
+
+      const savedDraft = JSON.parse(localStorage.getItem('splitSimple_currentBill') || '{}')
+      const sharedCache = JSON.parse(localStorage.getItem('splitsimple_bills') || '{}')
+
+      expect(savedDraft.title).toBe('Local Draft')
+      expect(sharedCache[sharedBill.id]?.title).toBe('Shared Bill')
     })
   })
 })
