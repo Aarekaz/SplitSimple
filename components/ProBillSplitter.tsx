@@ -31,7 +31,7 @@ import { ShareBill } from '@/components/ShareBill'
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator'
 import { useBillAnalytics } from '@/hooks/use-analytics'
 import { TIMING } from '@/lib/constants'
-import { extractBillIdFromInput, getBillFromCloud } from '@/lib/sharing'
+import { extractBillIdFromInput, getBillFromCloud, stripSharedBillParams } from '@/lib/sharing'
 import { migrateBillSchema } from '@/lib/validation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
@@ -512,6 +512,8 @@ function DesktopBillSplitter() {
   }, [dispatch, toast])
 
   const confirmNewBill = useCallback(() => {
+    const nextSearch = stripSharedBillParams(searchParams.toString())
+    router.replace(nextSearch ? `${pathname}${nextSearch}` : pathname, { scroll: false })
     dispatch({ type: 'NEW_BILL' })
     toast({ title: "New bill created", variant: "success" })
     analytics.trackBillCreated()
@@ -520,7 +522,7 @@ function DesktopBillSplitter() {
     )
     newBillSourceRef.current = "button"
     setIsNewBillDialogOpen(false)
-  }, [dispatch, toast, analytics])
+  }, [analytics, dispatch, pathname, router, searchParams, toast])
 
   const openDeleteDialog = useCallback((item: Item) => {
     setPendingDeleteItem(item)
