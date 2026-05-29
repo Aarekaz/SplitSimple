@@ -55,7 +55,17 @@ export async function proxyToBackend(
     method: request.method,
     headers,
     body,
+  }).catch((error: unknown) => {
+    console.error("Backend proxy request failed:", error)
+    return null
   })
+
+  if (!backendResponse) {
+    return NextResponse.json(
+      { error: "Backend service is unavailable" },
+      { status: 502 }
+    )
+  }
 
   return new NextResponse(backendResponse.body, {
     status: backendResponse.status,
