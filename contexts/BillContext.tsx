@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useEffect, useRef } from "react"
-import { getBillFromCloud, getSharedBillIdFromSearch, storeBillInCloud } from "@/lib/sharing"
+import { createContext, useCallback, useContext, useReducer, useEffect, useRef } from "react"
+import { getBillFromCloud, getSharedBillIdFromSearch, storeBillInCloud, stripSharedBillParams } from "@/lib/sharing"
 import { isMigratableBill, isRecord, migrateBillSchema, type MigratableBill } from "@/lib/validation"
 import type { Bill, BillSource, BillStatus, Item, Person, SyncStatus, TaxTipAllocation } from "@/lib/bill-types"
 
@@ -390,6 +390,14 @@ const getSharedBillIdFromLocation = (): string | null => {
   return getSharedBillIdFromSearch(window.location.search)
 }
 
+const clearSharedBillParamsFromLocation = () => {
+  if (typeof window === "undefined") return
+
+  const nextSearch = stripSharedBillParams(window.location.search)
+  const nextUrl = `${window.location.pathname}${nextSearch}${window.location.hash}`
+  window.history.replaceState(window.history.state, "", nextUrl)
+}
+
 const generateShareUrl = (billId: string): string => {
   // Ensure we always use the root path for sharing
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
@@ -425,29 +433,41 @@ const BillContext = createContext<{
 
 // Provider
 export function BillProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(billReducer, initialState)
+  const [state, rawDispatch] = useReducer(billReducer, initialState)
   const sharedBillIdRef = useRef<string | null>(null)
   const sharedBillLoadRequestRef = useRef(0)
 
   const canUndo = state.historyIndex >= 0
   const canRedo = state.historyIndex < state.history.length - 1
 
+  const dispatch = useCallback((action: BillAction) => {
+    const shouldClearSharedUrl =
+      state.billSource === "shared" && (EDITABLE_BILL_ACTIONS.has(action.type) || action.type === "NEW_BILL")
+
+    if (shouldClearSharedUrl) {
+      clearSharedBillParamsFromLocation()
+    }
+
+    rawDispatch(action)
+  }, [state.billSource])
+
   // Auto-sync to cloud functionality
   const syncToCloud = async () => {
+    if (state.billSource === "shared") return
     if (state.syncStatus === "syncing") return // Avoid duplicate sync calls
     
-    dispatch({ type: "SYNC_TO_CLOUD" })
+    rawDispatch({ type: "SYNC_TO_CLOUD" })
     
     try {
       const result = await storeBillInCloud(state.currentBill)
       if (result.success) {
-        dispatch({ type: "SET_SYNC_STATUS", payload: "synced" })
+        rawDispatch({ type: "SET_SYNC_STATUS", payload: "synced" })
       } else {
-        dispatch({ type: "SET_SYNC_STATUS", payload: "error" })
+        rawDispatch({ type: "SET_SYNC_STATUS", payload: "error" })
       }
     } catch (error) {
       console.error("Sync to cloud failed:", error)
-      dispatch({ type: "SET_SYNC_STATUS", payload: "error" })
+      rawDispatch({ type: "SET_SYNC_STATUS", payload: "error" })
     }
   }
 
@@ -472,7 +492,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           if (saved) {
             const bill: unknown = JSON.parse(saved)
             if (isMigratableBill(bill)) {
-              dispatch({
+              rawDispatch({
                 type: "LOAD_BILL",
                 payload: {
                   bill: migrateBillSchema(bill),
@@ -493,7 +513,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
         if (cloudResult.bill) {
           const migratedBill = migrateBillSchema(cloudResult.bill)
-          dispatch({
+          rawDispatch({
             type: "LOAD_BILL",
             payload: {
               bill: migratedBill,
@@ -520,7 +540,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
         if (localSharedBill) {
           const migratedBill = migrateBillSchema(localSharedBill)
-          dispatch({
+          rawDispatch({
             type: "LOAD_BILL",
             payload: {
               bill: migratedBill,
