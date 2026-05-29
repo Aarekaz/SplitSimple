@@ -28,6 +28,7 @@ import { cn, formatCurrencyWithCents as formatCurrencySimple } from '@/lib/utils
 import { generateSummaryText, copyToClipboard } from '@/lib/export'
 import { useToast } from '@/hooks/use-toast'
 import { ShareBill } from '@/components/ShareBill'
+import { BillSourceIndicator } from '@/components/BillSourceIndicator'
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator'
 import { useBillAnalytics } from '@/hooks/use-analytics'
 import { TIMING } from '@/lib/constants'
@@ -1094,7 +1095,10 @@ function DesktopBillSplitter() {
                   name="bill-title"
                   autoComplete="off"
                 />
-                <SyncStatusIndicator inline />
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                  <SyncStatusIndicator inline />
+                  <BillSourceIndicator />
+                </div>
               </div>
             </div>
 
