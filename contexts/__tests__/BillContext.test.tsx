@@ -514,6 +514,25 @@ describe('BillContext', () => {
       expect(getBillFromCloud).toHaveBeenCalledWith(sharedBill.id)
     })
 
+    it('should load a shared bill from the dedicated shared route on mount', async () => {
+      const sharedBill = createMockBill({
+        id: '1780007206455-yojajgt',
+        title: 'Path Shared Bill',
+      })
+
+      jest.mocked(getBillFromCloud).mockResolvedValue({ bill: sharedBill })
+      window.history.replaceState({}, '', `/b/${sharedBill.id}`)
+
+      const { result } = renderHook(() => useBill(), { wrapper })
+
+      await waitFor(() => {
+        expect(result.current.state.currentBill.id).toBe(sharedBill.id)
+      })
+
+      expect(result.current.state.billSource).toBe('shared')
+      expect(getBillFromCloud).toHaveBeenCalledWith(sharedBill.id)
+    })
+
     it('should load a shared bill when the URL changes after mount', async () => {
       const sharedBill = createMockBill({
         id: '1780007206455-yojajgt',
@@ -586,6 +605,7 @@ describe('BillContext', () => {
       expect(result.current.state.currentBill.title).toBe('Edited Copy')
       expect(result.current.state.billSource).toBe('shared_copy')
       expect(result.current.state.sharedOriginBillId).toBe(sharedBill.id)
+      expect(window.location.pathname).toBe('/')
       expect(window.location.search).toBe('')
     })
 

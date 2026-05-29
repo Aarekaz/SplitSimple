@@ -1,12 +1,13 @@
 "use client"
 
 import React, { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Label } from "@/components/ui/label"
 import { Search, Loader2 } from "lucide-react"
-import { extractBillIdFromInput, getBillFromCloud } from "@/lib/sharing"
+import { buildAppUrl, buildSharedBillPath, extractBillIdFromInput, getBillFromCloud } from "@/lib/sharing"
 import { useBill } from "@/contexts/BillContext"
 import { useToast } from "@/hooks/use-toast"
 import { migrateBillSchema } from "@/lib/validation"
@@ -23,6 +24,8 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
   const { toast } = useToast()
   const analytics = useBillAnalytics()
   const isMobile = useIsMobile()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [billId, setBillId] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -89,6 +92,10 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
             sharedOriginBillId: trimmedId,
           },
         })
+        const nextParams = new URLSearchParams(searchParams.toString())
+        nextParams.delete("bill")
+        nextParams.delete("share")
+        router.push(buildAppUrl(buildSharedBillPath(trimmedId), nextParams.toString()), { scroll: false })
         setBillId("")
         setIsOpen(false)
 
@@ -139,7 +146,7 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
           <SheetHeader className="p-6 pb-4">
             <SheetTitle>Load Bill by ID</SheetTitle>
             <SheetDescription>
-              Enter a bill ID to load a shared bill. You can find the bill ID in the share URL.
+              Enter a bill ID to load a shared bill. You can paste the full share link too.
             </SheetDescription>
           </SheetHeader>
           <div className="px-6 pb-6 space-y-4">
@@ -165,7 +172,7 @@ export function BillLookup({ mode = "auto" }: BillLookupProps) {
                 <p className="text-xs text-destructive">{error}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Example: If the URL is <code className="px-1 bg-muted rounded text-[10px]">?bill=1763442653885-vlpkbu4</code>,
+                Example: If the URL is <code className="px-1 bg-muted rounded text-[10px]">/b/1763442653885-vlpkbu4</code>,
                 enter <code className="px-1 bg-muted rounded text-[10px]">1763442653885-vlpkbu4</code>
               </p>
             </div>

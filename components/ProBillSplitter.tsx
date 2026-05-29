@@ -32,7 +32,7 @@ import { BillSourceIndicator } from '@/components/BillSourceIndicator'
 import { SyncStatusIndicator } from '@/components/SyncStatusIndicator'
 import { useBillAnalytics } from '@/hooks/use-analytics'
 import { TIMING } from '@/lib/constants'
-import { extractBillIdFromInput, getBillFromCloud, stripSharedBillParams } from '@/lib/sharing'
+import { buildAppUrl, buildSharedBillPath, extractBillIdFromInput, getBillFromCloud, stripSharedBillLocation } from '@/lib/sharing'
 import { migrateBillSchema } from '@/lib/validation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
@@ -513,8 +513,8 @@ function DesktopBillSplitter() {
   }, [dispatch, toast])
 
   const confirmNewBill = useCallback(() => {
-    const nextSearch = stripSharedBillParams(searchParams.toString())
-    router.replace(nextSearch ? `${pathname}${nextSearch}` : pathname, { scroll: false })
+    const nextUrl = stripSharedBillLocation(pathname, searchParams.toString())
+    router.replace(nextUrl, { scroll: false })
     dispatch({ type: 'NEW_BILL' })
     toast({ title: "New bill created", variant: "success" })
     analytics.trackBillCreated()
@@ -683,6 +683,10 @@ function DesktopBillSplitter() {
           sharedOriginBillId: trimmedId,
         },
       })
+      const nextParams = new URLSearchParams(searchParams.toString())
+      nextParams.delete('bill')
+      nextParams.delete('share')
+      router.push(buildAppUrl(buildSharedBillPath(trimmedId), nextParams.toString()), { scroll: false })
       toast({
         title: "Bill loaded!",
         description: `Loaded "${migratedBill.title}"`,
@@ -696,7 +700,7 @@ function DesktopBillSplitter() {
         setIsLoadingBill(false)
       }
     }
-  }, [billId, dispatch, toast, analytics])
+  }, [billId, dispatch, router, searchParams, toast, analytics])
 
   // --- Copy Breakdown ---
   const copyBreakdown = useCallback(async () => {
