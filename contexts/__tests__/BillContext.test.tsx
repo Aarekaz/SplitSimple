@@ -508,5 +508,31 @@ describe('BillContext', () => {
       expect(result.current.state.currentBill.title).toBe('Loaded After Navigation')
       expect(getBillFromCloud).toHaveBeenCalledWith(sharedBill.id)
     })
+
+    it('should not refetch when unrelated query params change for the same shared bill', async () => {
+      const sharedBill = createMockBill({
+        id: '1780007206455-yojajgt',
+        title: 'Stable Shared Bill',
+      })
+
+      jest.mocked(getBillFromCloud).mockResolvedValue({ bill: sharedBill })
+      window.history.replaceState({}, '', `/?bill=${sharedBill.id}`)
+
+      const { result } = renderHook(() => useBill(), { wrapper })
+
+      await waitFor(() => {
+        expect(result.current.state.currentBill.id).toBe(sharedBill.id)
+      })
+      expect(getBillFromCloud).toHaveBeenCalledTimes(1)
+
+      act(() => {
+        window.history.pushState({}, '', `/?bill=${sharedBill.id}&view=breakdown`)
+      })
+
+      await waitFor(() => {
+        expect(getBillFromCloud).toHaveBeenCalledTimes(1)
+      })
+      expect(result.current.state.currentBill.title).toBe('Stable Shared Bill')
+    })
   })
 })

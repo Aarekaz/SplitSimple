@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useReducer, useEffect } from "react"
-import { getBillFromCloud, storeBillInCloud } from "@/lib/sharing"
+import { createContext, useContext, useReducer, useEffect, useRef } from "react"
+import { getBillFromCloud, getSharedBillIdFromSearch, storeBillInCloud } from "@/lib/sharing"
 import { isMigratableBill, isRecord, migrateBillSchema, type MigratableBill } from "@/lib/validation"
 import type { Bill, BillStatus, Item, Person, SyncStatus, TaxTipAllocation } from "@/lib/bill-types"
 
@@ -317,8 +317,7 @@ const loadBillFromLocalStorage = (billId: string): MigratableBill | null => {
 const getSharedBillIdFromLocation = (): string | null => {
   if (typeof window === "undefined") return null
 
-  const params = new URLSearchParams(window.location.search)
-  return params.get("bill") || params.get("share")
+  return getSharedBillIdFromSearch(window.location.search)
 }
 
 const generateShareUrl = (billId: string): string => {
@@ -357,6 +356,8 @@ const BillContext = createContext<{
 // Provider
 export function BillProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(billReducer, initialState)
+  const sharedBillIdRef = useRef<string | null>(null)
+  const sharedBillLoadRequestRef = useRef(0)
 
   const canUndo = state.historyIndex >= 0
   const canRedo = state.historyIndex < state.history.length - 1
@@ -384,6 +385,15 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadBillFromLocation = async (loadLocalFallback: boolean) => {
       const sharedBillId = getSharedBillIdFromLocation()
+      const previousSharedBillId = sharedBillIdRef.current
+      sharedBillIdRef.current = sharedBillId
+
+      if (sharedBillId === previousSharedBillId && sharedBillId !== null) {
+        return
+      }
+
+      const requestId = ++sharedBillLoadRequestRef.current
+
       if (!sharedBillId) {
         if (!loadLocalFallback) return
 
@@ -403,6 +413,8 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const cloudResult = await getBillFromCloud(sharedBillId)
+        if (sharedBillLoadRequestRef.current !== requestId) return
+
         if (cloudResult.bill) {
           const migratedBill = migrateBillSchema(cloudResult.bill)
           dispatch({ type: "LOAD_BILL", payload: migratedBill })
@@ -421,6 +433,8 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         }
 
         const localSharedBill = loadBillFromLocalStorage(sharedBillId)
+        if (sharedBillLoadRequestRef.current !== requestId) return
+
         if (localSharedBill) {
           const migratedBill = migrateBillSchema(localSharedBill)
           dispatch({ type: "LOAD_BILL", payload: migratedBill })
