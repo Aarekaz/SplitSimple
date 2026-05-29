@@ -3,6 +3,24 @@ import { isMigratableBill, isRecord, migrateBillSchema } from "@/lib/validation"
 
 const FULL_BILL_ID_PATTERN = /^\d{13}-[a-z0-9]+$/i
 
+function normalizeSearchInput(search: string): string {
+  return search.startsWith("?") ? search.slice(1) : search
+}
+
+export function getSharedBillIdFromSearch(search: string): string | null {
+  const params = new URLSearchParams(normalizeSearchInput(search))
+  return params.get("bill") || params.get("share")
+}
+
+export function stripSharedBillParams(search: string): string {
+  const params = new URLSearchParams(normalizeSearchInput(search))
+  params.delete("bill")
+  params.delete("share")
+
+  const nextSearch = params.toString()
+  return nextSearch ? `?${nextSearch}` : ""
+}
+
 export function extractBillIdFromInput(input: string): string {
   const trimmed = input.trim().replace(/^#/, "")
   if (!trimmed) return ""
@@ -13,8 +31,7 @@ export function extractBillIdFromInput(input: string): string {
 
   const queryStart = trimmed.indexOf("?")
   if (queryStart >= 0) {
-    const params = new URLSearchParams(trimmed.slice(queryStart + 1))
-    const sharedId = params.get("bill") || params.get("share")
+    const sharedId = getSharedBillIdFromSearch(trimmed.slice(queryStart))
     if (sharedId) {
       return sharedId.trim()
     }
@@ -22,7 +39,7 @@ export function extractBillIdFromInput(input: string): string {
 
   try {
     const url = new URL(trimmed)
-    const sharedId = url.searchParams.get("bill") || url.searchParams.get("share")
+    const sharedId = getSharedBillIdFromSearch(url.search)
     if (sharedId) {
       return sharedId.trim()
     }
