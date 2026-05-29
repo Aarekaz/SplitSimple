@@ -612,7 +612,13 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
   // Debounced persistence whenever the active bill changes (500ms delay)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      const hasSharedBillInLocation = getSharedBillIdFromLocation() !== null
+
       try {
+        if (hasSharedBillInLocation && state.billSource === "draft") {
+          return
+        }
+
         saveBillToLocalStorage(state.currentBill)
 
         if (state.billSource === "shared") {
@@ -623,7 +629,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error("Failed to save bill to localStorage:", error)
 
-        if (state.billSource === "shared") {
+        if (state.billSource === "shared" || (hasSharedBillInLocation && state.billSource === "draft")) {
           return
         }
 
@@ -655,8 +661,9 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
   // Debounced auto-sync to cloud when bill changes
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | undefined
+    const hasSharedBillInLocation = getSharedBillIdFromLocation() !== null
     
-    if (state.billSource !== "shared" && state.syncStatus === "never_synced") {
+    if (!hasSharedBillInLocation && state.billSource !== "shared" && state.syncStatus === "never_synced") {
       timeoutId = setTimeout(() => {
         syncToCloud()
       }, 2000) // 2-second debounce
