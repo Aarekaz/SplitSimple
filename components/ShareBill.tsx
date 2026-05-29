@@ -30,6 +30,8 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
   const [isStoring, setIsStoring] = useState(false)
   const [shareUrl, setShareUrl] = useState("")
   const [storeError, setStoreError] = useState<string | null>(null)
+  const isSharedCopy = state.billSource === "shared_copy"
+  const shareTriggerLabel = isSharedCopy ? "Share updated copy" : "Share"
 
   // Generate share URL when dialog opens
   const handleOpenDialog = async (open: boolean) => {
@@ -158,20 +160,23 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
           id={id ?? "share-bill-trigger"}  // Allow external triggering via document.getElementById()
           variant={variant}
           size={size}
+          aria-label={shareTriggerLabel}
           className={showText ? "flex items-center gap-1.5 btn-smooth" : "dock-item p-0 h-auto bg-transparent border-0 hover:bg-primary/10"}
         >
           <Share2 className={showText ? "h-4 w-4 transition-transform duration-200 group-hover:scale-110" : "h-5 w-5 text-foreground"} />
-          {showText && <span>Share</span>}
+          {showText && <span>{shareTriggerLabel}</span>}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
-            Share & Export "{state.currentBill.title}"
+            {isSharedCopy ? `Share updated copy "${state.currentBill.title}"` : `Share & Export "${state.currentBill.title}"`}
           </DialogTitle>
           <DialogDescription>
-            Share a link with anyone or export your bill data. Bills are stored securely and expire after 6 months.
+            {isSharedCopy
+              ? "This creates a new link for your edited copy. The original shared bill stays unchanged."
+              : "Share a link with anyone or export your bill data. Bills are stored securely and expire after 1 year."}
           </DialogDescription>
         </DialogHeader>
         
@@ -245,7 +250,7 @@ export function ShareBill({ variant = "outline", size = "sm", showText = true, i
 
           <Alert>
             <AlertDescription className="text-sm">
-              <strong>✅ Universal sharing:</strong> This link works for anyone and auto-deletes after 6 months. 
+              <strong>✅ Universal sharing:</strong> This link works for anyone and auto-deletes after 1 year. 
               Bills are stored securely in the cloud.
             </AlertDescription>
           </Alert>

@@ -865,62 +865,65 @@ function DesktopBillSplitter() {
       return
     }
 
+    // Ignore spreadsheet hotkeys while focus is in other form controls like the bill title.
+    if (isInInput) {
+      return
+    }
+
     // Global shortcuts (only when not typing in other inputs)
-    if (!isInInput) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault()
-        hotkeyActions.dispatchUndo()
-        hotkeyActions.toastUndo()
-        return
-      }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault()
+      hotkeyActions.dispatchUndo()
+      hotkeyActions.toastUndo()
+      return
+    }
 
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
-        e.preventDefault()
-        hotkeyActions.dispatchRedo()
-        hotkeyActions.toastRedo()
-        return
-      }
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+      e.preventDefault()
+      hotkeyActions.dispatchRedo()
+      hotkeyActions.toastRedo()
+      return
+    }
 
-      // Cmd+N: New bill
-      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
-        e.preventDefault()
-        newBillSourceRef.current = "shortcut"
-        setIsNewBillDialogOpen(true)
-        return
-      }
+    // Cmd+N: New bill
+    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+      e.preventDefault()
+      newBillSourceRef.current = "shortcut"
+      setIsNewBillDialogOpen(true)
+      return
+    }
 
-      // Cmd+Shift+N: Add new item
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
-        e.preventDefault()
-        hotkeyActions.addItem()
-        analytics.trackFeatureUsed("keyboard_shortcut_add_item")
-        return
-      }
+    // Cmd+Shift+N: Add new item
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
+      e.preventDefault()
+      hotkeyActions.addItem()
+      analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+      return
+    }
 
-      // Cmd+Shift+P: Add person
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
-        e.preventDefault()
-        hotkeyActions.addPerson()
-        analytics.trackFeatureUsed("keyboard_shortcut_add_person")
-        return
-      }
+    // Cmd+Shift+P: Add person
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
+      e.preventDefault()
+      hotkeyActions.addPerson()
+      analytics.trackFeatureUsed("keyboard_shortcut_add_person")
+      return
+    }
 
-      // Cmd+Shift+C: Copy summary
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
-        e.preventDefault()
-        hotkeyActions.copyBreakdown()
-        analytics.trackFeatureUsed("keyboard_shortcut_copy")
-        return
-      }
+    // Cmd+Shift+C: Copy summary
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
+      e.preventDefault()
+      hotkeyActions.copyBreakdown()
+      analytics.trackFeatureUsed("keyboard_shortcut_copy")
+      return
+    }
 
-      // Cmd+S: Share
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 's') {
-        e.preventDefault()
-        const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
-        if (shareButton) shareButton.click()
-        analytics.trackFeatureUsed("keyboard_shortcut_share")
-        return
-      }
+    // Cmd+S: Share
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 's') {
+      e.preventDefault()
+      const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
+      if (shareButton) shareButton.click()
+      analytics.trackFeatureUsed("keyboard_shortcut_share")
+      return
     }
 
     // Grid navigation - Excel-like behavior
@@ -1054,11 +1057,11 @@ function DesktopBillSplitter() {
     previousItemsLengthRef.current = items.length
 
     if (activeView !== 'ledger') return
-    if (prevLen === 0 && items.length === 1) {
+    if (prevLen === 0 && items.length === 1 && !hasMeaningfulItems) {
       setSelectedCell({ row: 0, col: 'name' })
       setEditing(true)
     }
-  }, [activeView, items.length])
+  }, [activeView, hasMeaningfulItems, items.length])
 
   useEffect(() => {
     if (editing && editInputRef.current) {
@@ -1086,6 +1089,9 @@ function DesktopBillSplitter() {
                   onChange={(e) => {
                     dispatch({ type: 'SET_BILL_TITLE', payload: e.target.value })
                     analytics.trackTitleChanged(e.target.value)
+                  }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation()
                   }}
                   style={{
                     width: `${Math.min(Math.max((title || '').length || 7, 7), 26)}ch`,
