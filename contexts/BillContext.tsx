@@ -2,7 +2,8 @@
 
 import type React from "react"
 import { createContext, useCallback, useContext, useReducer, useEffect, useRef } from "react"
-import { getBillFromCloud, getSharedBillIdFromSearch, storeBillInCloud, stripSharedBillParams } from "@/lib/sharing"
+import { getBillFromCloud, getSharedBillIdFromLocationParts, storeBillInCloud, stripSharedBillLocation } from "@/lib/sharing"
+import { normalizeBillForPersistence } from "@/lib/persisted-bill"
 import { isMigratableBill, isRecord, migrateBillSchema, type MigratableBill } from "@/lib/validation"
 import type { Bill, BillSource, BillStatus, Item, Person, SyncStatus, TaxTipAllocation } from "@/lib/bill-types"
 
@@ -354,6 +355,7 @@ function billReducer(state: BillState, action: BillAction): BillState {
 // Sharing functionality
 const saveBillToLocalStorage = (bill: Bill) => {
   try {
+    const normalizedBill = normalizeBillForPersistence(bill)
     const billsData = localStorage.getItem("splitsimple_bills") || "{}"
     const parsedBills: unknown = JSON.parse(billsData)
     const bills: Record<string, unknown> = {}
@@ -362,7 +364,7 @@ const saveBillToLocalStorage = (bill: Bill) => {
         bills[id] = storedBill
       }
     }
-    bills[bill.id] = bill
+    bills[normalizedBill.id] = normalizedBill
     localStorage.setItem("splitsimple_bills", JSON.stringify(bills))
   } catch (error) {
     console.error("Failed to save bill to localStorage:", error)
@@ -387,21 +389,14 @@ const loadBillFromLocalStorage = (billId: string): MigratableBill | null => {
 const getSharedBillIdFromLocation = (): string | null => {
   if (typeof window === "undefined") return null
 
-  return getSharedBillIdFromSearch(window.location.search)
+  return getSharedBillIdFromLocationParts(window.location.pathname, window.location.search)
 }
 
 const clearSharedBillParamsFromLocation = () => {
   if (typeof window === "undefined") return
 
-  const nextSearch = stripSharedBillParams(window.location.search)
-  const nextUrl = `${window.location.pathname}${nextSearch}${window.location.hash}`
+  const nextUrl = stripSharedBillLocation(window.location.pathname, window.location.search, window.location.hash)
   window.history.replaceState(window.history.state, "", nextUrl)
-}
-
-const generateShareUrl = (billId: string): string => {
-  // Ensure we always use the root path for sharing
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
-  return `${baseUrl}/?bill=${billId}`
 }
 
 function addToHistory(state: BillState, newBill: Bill): BillState {
@@ -625,7 +620,7 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
           return
         }
 
-        localStorage.setItem("splitSimple_currentBill", JSON.stringify(state.currentBill))
+        localStorage.setItem("splitSimple_currentBill", JSON.stringify(normalizeBillForPersistence(state.currentBill)))
       } catch (error) {
         console.error("Failed to save bill to localStorage:", error)
 
@@ -636,8 +631,8 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         // Try to save with a smaller payload if the bill is too large
         try {
           const minimalBill = {
-            ...state.currentBill,
-            items: state.currentBill.items.map(item => ({
+            ...normalizeBillForPersistence(state.currentBill),
+            items: normalizeBillForPersistence(state.currentBill).items.map(item => ({
               id: item.id,
               name: item.name,
               price: item.price,

@@ -1,4 +1,5 @@
 import type { Bill, CloudBillResult, CloudStoreResult } from "@/lib/bill-types"
+import { normalizeBillForPersistence } from "@/lib/persisted-bill"
 import { isMigratableBill, isRecord, migrateBillSchema } from "@/lib/validation"
 
 const FULL_BILL_ID_PATTERN = /^\d{13}-[a-z0-9]+$/i
@@ -58,7 +59,7 @@ export async function storeBillInCloud(bill: Bill): Promise<CloudStoreResult> {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ bill }),
+      body: JSON.stringify({ bill: normalizeBillForPersistence(bill) }),
     })
 
     if (!response.ok) {
