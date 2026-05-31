@@ -38,6 +38,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
 import { AnimatedNumber } from '@/components/AnimatedNumber'
 import { SplitSimpleIcon } from '@/components/SplitSimpleIcon'
+import { BillStartOptions } from '@/components/BillStartOptions'
 import { ToastAction } from '@/components/ui/toast'
 import { getSplitMethodOption, splitMethodOptions } from '@/components/split-method-options'
 
@@ -1719,62 +1720,42 @@ function DesktopBillSplitter() {
                             <X size={16} />
                           </button>
                         </div>
-                        <div className="mt-4 space-y-2">
-                          {people.length === 0 ? (
-                            <button
-                              onClick={addPerson}
-                              className="w-full h-9 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-bold text-white transition-transform active:scale-[0.97] flex items-center justify-between"
-                            >
-                              <span>Add first person</span>
-                              <span className="text-primary-foreground/70">{modKey}{shiftKey}P</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                if (items.length === 0) {
-                                  addItem()
-                                  return
-                                }
-                                setSelectedCell({ row: 0, col: 'name' })
-                                setEditing(true)
-                              }}
-                              className="w-full h-9 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-bold text-white transition-transform active:scale-[0.97] flex items-center justify-between"
-                            >
-                              <span>Add items</span>
-                              <span className="text-primary-foreground/70">{modKey}{shiftKey}N</span>
-                            </button>
-                          )}
-                          {people.length === 0 ? (
-                            <button
-                              onClick={() => {
-                                addPerson()
-                                if (items.length === 0) {
-                                  addItem()
-                                }
-                              }}
-                              className="w-full h-9 px-3 rounded-md bg-muted hover:bg-muted-foreground/15 text-xs font-bold text-foreground transition-colors flex items-center justify-between"
-                              title="Adds a person first, then takes you to add items"
-                            >
-                              <span>Add items</span>
-                              <span className="text-muted-foreground">{modKey}{shiftKey}N</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={addPerson}
-                              className="w-full h-9 px-3 rounded-md bg-muted hover:bg-muted-foreground/15 text-xs font-bold text-foreground transition-colors flex items-center justify-between"
-                            >
-                              <span>Add another person</span>
-                              <span className="text-muted-foreground">{modKey}{shiftKey}P</span>
-                            </button>
-                          )}
-                          <ReceiptScanner
-                            onImport={handleScanImport}
-                            trigger={(
-                              <button className="w-full h-9 px-3 rounded-md bg-muted hover:bg-muted-foreground/15 text-xs font-bold text-foreground transition-colors flex items-center gap-2">
-                                <Camera size={14} /> Scan receipt to import items
+                        <div className="mt-4 space-y-4">
+                          <BillStartOptions />
+
+                          <div className="space-y-2">
+                            {people.length === 0 ? (
+                              <button
+                                onClick={addPerson}
+                                className="w-full h-9 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-bold text-white transition-transform active:scale-[0.97] flex items-center justify-between"
+                              >
+                                <span>Add first person</span>
+                                <span className="text-primary-foreground/70">{modKey}{shiftKey}P</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  if (items.length === 0) {
+                                    addItem()
+                                    return
+                                  }
+                                  setSelectedCell({ row: 0, col: 'name' })
+                                  setEditing(true)
+                                }}
+                                className="w-full h-9 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-bold text-white transition-transform active:scale-[0.97] flex items-center justify-between"
+                              >
+                                <span>Add items</span>
+                                <span className="text-primary-foreground/70">{modKey}{shiftKey}N</span>
                               </button>
                             )}
-                          />
+                            <button
+                              onClick={addPerson}
+                              className="w-full h-9 px-3 rounded-md bg-muted hover:bg-muted-foreground/15 text-xs font-bold text-foreground transition-colors flex items-center justify-between"
+                            >
+                              <span>{people.length === 0 ? "Add first person" : "Add another person"}</span>
+                              <span className="text-muted-foreground">{modKey}{shiftKey}P</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
