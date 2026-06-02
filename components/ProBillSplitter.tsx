@@ -69,6 +69,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -2180,6 +2181,7 @@ function DesktopBillSplitter() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Edit Member</DialogTitle>
+            <DialogDescription>Update this person's display name and color.</DialogDescription>
           </DialogHeader>
           {editingPerson && (
             <div className="space-y-5">
