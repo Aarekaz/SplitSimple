@@ -836,6 +836,14 @@ function DesktopBillSplitter() {
       }
     }
 
+    // A modal/dialog (Edit Member, New Bill, Share, Delete…) owns the keyboard while open.
+    // Its inputs live in a portal; when focus sits on the dialog container or a button
+    // inside it, isInInput is briefly false. Without this guard a printable key falls
+    // through to type-to-edit and silently edits the selected ledger cell behind the modal.
+    if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) {
+      return
+    }
+
     // If currently editing a cell input, let typing happen but keep spreadsheet commits
     if (hotkeyState.editing && isInInput) {
       if (e.key === 'Enter') {

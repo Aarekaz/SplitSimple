@@ -1,16 +1,15 @@
 import type { Bill, Item, Person } from "@/lib/bill-types"
 
+// Mirrors the canonical `COLORS` palette in ProBillSplitter (hex values, same order).
+// `color` and `colorIdx` are both derived from this single source so the stored hex
+// always matches the swatch the Pro view renders via COLORS[colorIdx].
 const PERSON_COLORS = [
-  "#6366f1",
-  "#d97706",
-  "#dc2626",
-  "#22c55e",
-  "#f59e0b",
-  "#8b5cf6",
-  "#06b6d4",
-  "#ef4444",
-  "#10b981",
-  "#f97316",
+  "#4F46E5", // indigo
+  "#F97316", // orange
+  "#F43F5E", // rose
+  "#10B981", // emerald
+  "#3B82F6", // blue
+  "#F59E0B", // amber
 ]
 
 function createId() {
@@ -51,12 +50,15 @@ export function buildQuickSplitBill(input: QuickSplitDraftInput): Bill {
   const tip = sanitizeAmount(input.tip ?? 0)
   const discount = sanitizeAmount(input.discount ?? 0)
 
-  const people: Person[] = input.participants.map((participant, index) => ({
-    id: createId(),
-    name: participant.name.trim(),
-    color: PERSON_COLORS[index % PERSON_COLORS.length],
-    colorIdx: index % 6,
-  }))
+  const people: Person[] = input.participants.map((participant, index) => {
+    const colorIdx = index % PERSON_COLORS.length
+    return {
+      id: createId(),
+      name: participant.name.trim(),
+      color: PERSON_COLORS[colorIdx],
+      colorIdx,
+    }
+  })
 
   const item: Item = {
     id: createId(),
