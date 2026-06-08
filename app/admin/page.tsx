@@ -236,13 +236,14 @@ export default function AdminPage() {
   }
 
   const fetchBills = async () => {
+    if (fetchAbortRef.current) {
+      fetchAbortRef.current.abort()
+    }
+    const controller = new AbortController()
+    fetchAbortRef.current = controller
+
     try {
       setIsFetching(true)
-      if (fetchAbortRef.current) {
-        fetchAbortRef.current.abort()
-      }
-      const controller = new AbortController()
-      fetchAbortRef.current = controller
 
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -289,8 +290,12 @@ export default function AdminPage() {
         variant: 'destructive'
       })
     } finally {
-      setIsFetching(false)
-      fetchAbortRef.current = null
+      // Only the latest request may clear shared state; an aborted older request
+      // must not null a newer request's controller or hide its loading spinner.
+      if (fetchAbortRef.current === controller) {
+        setIsFetching(false)
+        fetchAbortRef.current = null
+      }
     }
   }
 
