@@ -130,6 +130,10 @@ export default function AdminPage() {
       fetchAbortRef.current = null
     }
 
+    // The abort above clears fetchAbortRef, so the in-flight fetchBills' finally
+    // guard (fetchAbortRef.current === controller) will skip its own cleanup.
+    // Reset the loading flag here as part of the unauthorized teardown.
+    setIsFetching(false)
     setIsAuthenticated(false)
     setBills([])
     setStats(null)
