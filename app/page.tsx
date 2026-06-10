@@ -44,8 +44,32 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   return (
-    <Suspense>
-      <ProBillSplitter />
-    </Suspense>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Suspense>
+        <ProBillSplitter />
+      </Suspense>
+    </>
   )
+}
+
+// WebApplication structured data for the homepage — helps Google rich results
+// and AI answer engines understand what SplitSimple is and that it's free.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "SplitSimple",
+  url: "https://splitsimple.anuragd.me",
+  description:
+    "Split restaurant bills, rent, and group expenses by item, share, or exact amount. Free with no signup — see everyone's share instantly and share a link.",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
 }

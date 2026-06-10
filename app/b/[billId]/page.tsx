@@ -13,8 +13,14 @@ interface SharedBillPageProps {
 // description, falling back to generic copy when the bill can't be loaded.
 export async function generateMetadata({ params }: SharedBillPageProps): Promise<Metadata> {
   const { billId } = await params
+
+  // Shared bills are random-ID utility pages that carry user financial data and
+  // near-identical structure — never index them. Social scrapers ignore robots,
+  // so the rich OG preview still works.
+  const noindex = { index: false, follow: false } as const
+
   const bill = await loadSharedBill(billId)
-  if (!bill) return {}
+  if (!bill) return { robots: noindex }
 
   const { title, peopleLabel, totalLabel } = buildSharedBillOgModel(bill)
   const pageTitle = `${title} · SplitSimple`
@@ -26,6 +32,7 @@ export async function generateMetadata({ params }: SharedBillPageProps): Promise
   return {
     title: pageTitle,
     description,
+    robots: noindex,
     openGraph: { title: pageTitle, description, type: "website", siteName: "SplitSimple" },
     twitter: { card: "summary_large_image", title: pageTitle, description },
   }

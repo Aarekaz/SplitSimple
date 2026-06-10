@@ -1329,6 +1329,9 @@ function DesktopBillSplitter() {
 
       {/* --- Main Workspace --- */}
       <main id="main-content" className="pro-main">
+        {/* Single semantic page heading. Visually hidden so it doesn't disrupt
+            the spreadsheet UI, but gives crawlers a keyword-aligned H1. */}
+        <h1 className="sr-only">SplitSimple — split bills and group expenses by item, share, or exact amount</h1>
         {/* LEDGER VIEW */}
         {activeView === 'ledger' && (
           <div className="h-full w-full">
