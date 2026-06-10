@@ -44,7 +44,9 @@ function createParticipantDraft(index: number): QuickSplitParticipantDraft {
 }
 
 function parseCurrencyValue(value: string) {
-  const trimmed = value.trim()
+  // Strip thousands separators so "1,200" parses as 1200 rather than parseFloat
+  // stopping at the comma and silently yielding 1.
+  const trimmed = value.trim().replace(/,/g, "")
   if (!trimmed) return 0
   const parsed = Number.parseFloat(trimmed)
   return Number.isFinite(parsed) ? parsed : NaN
