@@ -147,7 +147,7 @@ export async function getBillFromCloud(billId: string): Promise<CloudBillResult>
 
     if (!response.ok) {
       if (response.status === 404) {
-        return { error: "We couldn't find that bill. Bills expire after 6 months — ask the owner for a fresh link, or double-check the ID." }
+        return { error: "We couldn't find that bill. Bills expire after 1 year — ask the owner for a fresh link, or double-check the ID." }
       }
 
       let errorMessage = 'Something went wrong loading this bill. Please try again.'

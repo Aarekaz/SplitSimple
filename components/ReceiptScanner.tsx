@@ -36,9 +36,10 @@ interface ScanError {
 interface ReceiptScannerProps {
   onImport: (items: ReceiptLineItem[]) => void
   trigger?: React.ReactNode
+  initialTab?: "image" | "text"
 }
 
-export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
+export function ReceiptScanner({ onImport, trigger, initialTab = "image" }: ReceiptScannerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [state, setState] = useState<ScannerState>('idle')
   const [receiptImage, setReceiptImage] = useState<string | null>(null)
@@ -46,6 +47,7 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
   const [zoom, setZoom] = useState(1)
   const [rotation, setRotate] = useState(0)
   const [error, setError] = useState<ScanError | null>(null)
+  const [activeTab, setActiveTab] = useState<"image" | "text">(initialTab)
   const { toast } = useToast()
 
   const handleReset = useCallback(() => {
@@ -55,10 +57,14 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
     setZoom(1)
     setRotate(0)
     setError(null)
-  }, [])
+    setActiveTab(initialTab)
+  }, [initialTab])
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open)
+    if (open) {
+      setActiveTab(initialTab)
+    }
     if (!open) {
       setTimeout(handleReset, 300) // Reset after animation
     }
@@ -195,10 +201,12 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
       )}>
         {state === 'idle' && (
           <UploadView
+            activeTab={activeTab}
             onUpload={processImage}
             onPaste={handlePasteText}
             error={error}
             onDismissError={() => setError(null)}
+            onTabChange={setActiveTab}
           />
         )}
 
@@ -227,15 +235,19 @@ export function ReceiptScanner({ onImport, trigger }: ReceiptScannerProps) {
 // --- Sub-Components ---
 
 function UploadView({
+  activeTab,
   onUpload,
   onPaste,
   error,
-  onDismissError
+  onDismissError,
+  onTabChange,
 }: {
+  activeTab: "image" | "text"
   onUpload: (file: File) => void
   onPaste: (text: string) => void
   error: ScanError | null
   onDismissError: () => void
+  onTabChange: (value: "image" | "text") => void
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
@@ -262,11 +274,11 @@ function UploadView({
 
   return (
     <div className="flex flex-col h-full">
-      <DialogHeader className="p-6 pb-2 border-b border-slate-100">
-        <DialogTitle>Add Receipt</DialogTitle>
-      </DialogHeader>
+        <DialogHeader className="p-6 pb-2 border-b border-slate-100">
+          <DialogTitle>Add Items</DialogTitle>
+        </DialogHeader>
       
-      <Tabs defaultValue="image" className="flex-1 flex flex-col">
+      <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as "image" | "text")} className="flex-1 flex flex-col">
         <div className="px-6 pt-4">
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="image"><ImageIcon className="w-4 h-4 mr-2" /> Upload Image</TabsTrigger>

@@ -27,7 +27,7 @@ import {
   Edit2
 } from "lucide-react"
 import { useBill } from "@/contexts/BillContext"
-import type { Item, Person, ReceiptLineItem } from "@/lib/bill-types"
+import type { Item, Person } from "@/lib/bill-types"
 import { calculateItemSplits, getBillSummary } from "@/lib/calculations"
 import { PersonSelector } from "@/components/PersonSelector"
 import { SplitMethodSelector } from "@/components/SplitMethodSelector"
@@ -40,7 +40,7 @@ import { useBillAnalytics } from "@/hooks/use-analytics"
 import { SplitSimpleIcon } from "@/components/SplitSimpleIcon"
 import { BillLookup } from "@/components/BillLookup"
 import { ShareBill } from "@/components/ShareBill"
-import { ReceiptScanner } from "@/components/ReceiptScanner"
+import { BillStartOptions } from "@/components/BillStartOptions"
 import { cn } from "@/lib/utils"
 
 // Color palette for people
@@ -112,19 +112,6 @@ export function MobileCardView() {
     } else {
       toast({ title: "Copy failed", description: "Please try again", variant: "destructive" })
     }
-  }
-
-  const handleScanImport = (scannedItems: ReceiptLineItem[]) => {
-    scannedItems.forEach((item) => {
-      const newItem: Omit<Item, "id"> = {
-        ...item,
-        splitWith: people.map((p) => p.id),
-        method: "even",
-      }
-      dispatch({ type: "ADD_ITEM", payload: newItem })
-    })
-    analytics.trackFeatureUsed("scan_receipt_import", { count: scannedItems.length })
-    toast({ title: "Items added from scan" })
   }
 
   const handleNewBill = () => {
@@ -279,16 +266,13 @@ export function MobileCardView() {
 
             {items.length === 0 ? (
               <Card>
-                <CardContent className="p-8 text-center space-y-4">
+                <CardContent className="p-6 text-center space-y-4">
                   <div className="text-4xl">📝</div>
                   <div>
                     <p className="font-semibold mb-1">No items yet</p>
-                    <p className="text-sm text-muted-foreground">Add your first item to start splitting</p>
+                    <p className="text-sm text-muted-foreground">Start with a receipt, pasted text, or a manual split.</p>
                   </div>
-                  <Button onClick={handleAddItem} className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Item
-                  </Button>
+                  <BillStartOptions compact />
                 </CardContent>
               </Card>
             ) : (

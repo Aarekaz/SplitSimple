@@ -23,5 +23,5 @@ export const TIMING = {
 
 // Shared bill storage constants
 export const STORAGE = {
-  BILL_TTL_SECONDS: 15552000, // ~6 months (6 * 30 days)
+  BILL_TTL_SECONDS: 31536000, // 1 year (365 days)
 } as const

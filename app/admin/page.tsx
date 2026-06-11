@@ -87,11 +87,16 @@ interface AdminBillsResponse {
   }
 }
 
+interface ApiErrorResponse {
+  error?: string
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isFetching, setIsFetching] = useState(false)
   const [password, setPassword] = useState('')
   const [bills, setBills] = useState<AdminBillMetadata[]>([])
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -107,6 +112,41 @@ export default function AdminPage() {
   const [billToDelete, setBillToDelete] = useState<string | null>(null)
   const fetchDebounceRef = useRef<number | null>(null)
   const fetchAbortRef = useRef<AbortController | null>(null)
+
+  const readErrorMessage = async (response: Response, fallback: string) => {
+    try {
+      const data = await response.json() as ApiErrorResponse
+      return data.error || fallback
+    } catch {
+      return fallback
+    }
+  }
+
+  const handleUnauthorized = () => {
+    if (!isAuthenticated) return
+
+    if (fetchAbortRef.current) {
+      fetchAbortRef.current.abort()
+      fetchAbortRef.current = null
+    }
+
+    // The abort above clears fetchAbortRef, so the in-flight fetchBills' finally
+    // guard (fetchAbortRef.current === controller) will skip its own cleanup.
+    // Reset the loading flag here as part of the unauthorized teardown.
+    setIsFetching(false)
+    setIsAuthenticated(false)
+    setBills([])
+    setStats(null)
+    setSelectedBill(null)
+    setShowBillDialog(false)
+    setShowDeleteDialog(false)
+    setBillToDelete(null)
+    toast({
+      title: 'Session expired',
+      description: 'Please log in again to continue managing bills.',
+      variant: 'destructive'
+    })
+  }
 
   useEffect(() => {
     checkAuth()
@@ -130,6 +170,17 @@ export default function AdminPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, currentPage, searchQuery, statusFilter, sortBy, sortOrder])
+
+  useEffect(() => {
+    return () => {
+      if (fetchAbortRef.current) {
+        fetchAbortRef.current.abort()
+      }
+      if (fetchDebounceRef.current) {
+        window.clearTimeout(fetchDebounceRef.current)
+      }
+    }
+  }, [])
 
   const checkAuth = async () => {
     try {
@@ -189,12 +240,14 @@ export default function AdminPage() {
   }
 
   const fetchBills = async () => {
+    if (fetchAbortRef.current) {
+      fetchAbortRef.current.abort()
+    }
+    const controller = new AbortController()
+    fetchAbortRef.current = controller
+
     try {
-      if (fetchAbortRef.current) {
-        fetchAbortRef.current.abort()
-      }
-      const controller = new AbortController()
-      fetchAbortRef.current = controller
+      setIsFetching(true)
 
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -209,12 +262,27 @@ export default function AdminPage() {
         signal: controller.signal
       })
 
-      if (response.ok) {
-        const data = await response.json() as AdminBillsResponse
-        setBills(data.bills)
-        setStats(data.stats)
-        setTotalPages(data.pagination.totalPages)
+      if (response.status === 401) {
+        handleUnauthorized()
+        return
       }
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, 'Failed to fetch bills'))
+      }
+
+      const data = await response.json() as AdminBillsResponse
+      const safeTotalPages = Math.max(1, data.pagination.totalPages || 1)
+
+      if (currentPage > safeTotalPages) {
+        setTotalPages(safeTotalPages)
+        setCurrentPage(safeTotalPages)
+        return
+      }
+
+      setBills(data.bills)
+      setStats(data.stats)
+      setTotalPages(safeTotalPages)
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         return
@@ -222,9 +290,16 @@ export default function AdminPage() {
       console.error('Error fetching bills:', error)
       toast({
         title: 'Error',
-        description: 'Failed to fetch bills',
+        description: error instanceof Error ? error.message : 'Failed to fetch bills',
         variant: 'destructive'
       })
+    } finally {
+      // Only the latest request may clear shared state; an aborted older request
+      // must not null a newer request's controller or hide its loading spinner.
+      if (fetchAbortRef.current === controller) {
+        setIsFetching(false)
+        fetchAbortRef.current = null
+      }
     }
   }
 
@@ -234,25 +309,30 @@ export default function AdminPage() {
         method: 'DELETE'
       })
 
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Bill deleted successfully'
-        })
-        fetchBills()
-      } else {
-        throw new Error('Failed to delete bill')
+      if (response.status === 401) {
+        handleUnauthorized()
+        return
       }
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, 'Failed to delete bill'))
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Bill deleted successfully'
+      })
+      await fetchBills()
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to delete bill',
+        description: error instanceof Error ? error.message : 'Failed to delete bill',
         variant: 'destructive'
       })
+    } finally {
+      setShowDeleteDialog(false)
+      setBillToDelete(null)
     }
-
-    setShowDeleteDialog(false)
-    setBillToDelete(null)
   }
 
   const handleExtendBill = async (billId: string, days: number = 30) => {
@@ -263,19 +343,24 @@ export default function AdminPage() {
         body: JSON.stringify({ days })
       })
 
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: `Bill expiration extended by ${days} days`
-        })
-        fetchBills()
-      } else {
-        throw new Error('Failed to extend bill')
+      if (response.status === 401) {
+        handleUnauthorized()
+        return
       }
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, 'Failed to extend bill expiration'))
+      }
+
+      toast({
+        title: 'Success',
+        description: `Bill expiration extended by ${days} days`
+      })
+      await fetchBills()
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to extend bill expiration',
+        description: error instanceof Error ? error.message : 'Failed to extend bill expiration',
         variant: 'destructive'
       })
     }
@@ -285,39 +370,52 @@ export default function AdminPage() {
     try {
       const response = await fetch(`/api/admin/export?format=${format}`)
 
-      if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `bills_export_${new Date().toISOString()}.${format}`
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
-
-        toast({
-          title: 'Success',
-          description: 'Bills exported successfully'
-        })
-      } else {
-        throw new Error('Failed to export bills')
+      if (response.status === 401) {
+        handleUnauthorized()
+        return
       }
+
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response, 'Failed to export bills'))
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `bills_export_${new Date().toISOString()}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast({
+        title: 'Success',
+        description: 'Bills exported successfully'
+      })
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to export bills',
+        description: error instanceof Error ? error.message : 'Failed to export bills',
         variant: 'destructive'
       })
     }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast({
-      title: 'Copied',
-      description: 'Share URL copied to clipboard'
-    })
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast({
+        title: 'Copied',
+        description: 'Share URL copied to clipboard'
+      })
+    } catch {
+      toast({
+        title: 'Clipboard blocked',
+        description: 'Could not copy the share URL. Please copy it manually.',
+        variant: 'destructive'
+      })
+    }
   }
 
   const formatBytes = (bytes: number) => {
@@ -327,7 +425,8 @@ export default function AdminPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
+    const date = new Date(dateString)
+    return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleString()
   }
 
   const getStatusBadge = (status: string) => {
@@ -343,6 +442,10 @@ export default function AdminPage() {
       </Badge>
     )
   }
+
+  const safeBillsTotal = Math.max(stats?.totalBills || 0, 1)
+  const activeBillsShare = stats ? Math.min(100, (stats.activeBills / safeBillsTotal) * 100) : 0
+  const sharedBillsShare = stats?.totalBills ? Math.round((stats.sharedBills / stats.totalBills) * 100) : 0
 
   if (isLoading) {
     return (
@@ -666,7 +769,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2 mt-3">
                     <div className="flex-1 bg-green-200 rounded-full h-2">
                       <div className="bg-green-500 h-2 rounded-full transition-[width] duration-500" style={{
-                        width: `${Math.min(100, (stats.activeBills / stats.totalBills) * 100)}%`
+                        width: `${activeBillsShare}%`
                       }} />
                     </div>
                     <span className="text-xs text-green-600">of {stats.totalBills} total</span>
@@ -691,7 +794,7 @@ export default function AdminPage() {
                   
                   <div className="text-3xl font-bold text-gray-900 mb-2">{stats.sharedBills}</div>
                   <p className="text-sm text-gray-600">
-                    {Math.round((stats.sharedBills / stats.totalBills) * 100)}% collaboration rate
+                    {sharedBillsShare}% collaboration rate
                   </p>
                 </CardContent>
               </Card>
@@ -726,10 +829,11 @@ export default function AdminPage() {
                   onClick={() => fetchBills()} 
                   variant="outline" 
                   size="sm"
+                  disabled={isFetching}
                   className="gap-1 btn-smooth border-slate-200 hover:border-slate-300"
                 >
-                  <RefreshCw className="h-4 w-4" />
-                  Sync
+                  <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                  {isFetching ? 'Syncing…' : 'Sync'}
                 </Button>
                 
                 <div className="flex items-center">
@@ -764,7 +868,10 @@ export default function AdminPage() {
                   value={searchQuery}
                   name="search-bills"
                   autoComplete="off"
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1)
+                  }}
                   aria-label="Search bills"
                   className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
@@ -773,7 +880,10 @@ export default function AdminPage() {
               <div className="flex items-center gap-2">
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value)
+                    setCurrentPage(1)
+                  }}
                   aria-label="Filter by status"
                   className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
@@ -785,18 +895,27 @@ export default function AdminPage() {
                 
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    setSortBy(e.target.value)
+                    setCurrentPage(1)
+                  }}
                   aria-label="Sort by"
                   className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 >
                   <option value="lastModified">Last Modified</option>
                   <option value="createdAt">Created</option>
-                  <option value="totalAmount">Amount</option>
-                  <option value="accessCount">Access Count</option>
+                  <option value="total">Amount</option>
+                  <option value="title">Title</option>
+                  <option value="people">People</option>
+                  <option value="items">Items</option>
+                  <option value="size">Size</option>
                 </select>
                 
                 <Button
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  onClick={() => {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+                    setCurrentPage(1)
+                  }}
                   variant="outline"
                   size="sm"
                   className="px-2 btn-smooth border-slate-200 hover:border-slate-300"
@@ -813,6 +932,7 @@ export default function AdminPage() {
                     setStatusFilter('all')
                     setSortBy('lastModified')
                     setSortOrder('desc')
+                    setCurrentPage(1)
                   }}
                 >
                   <XCircle className="h-4 w-4" />
@@ -840,7 +960,16 @@ export default function AdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {bills.map((bill) => (
+                  {bills.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="py-12 text-center">
+                        <div className="space-y-2">
+                          <p className="font-medium text-slate-800">No bills found</p>
+                          <p className="text-sm text-slate-500">Try changing your search or filters, or sync again.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : bills.map((bill) => (
                     <TableRow key={bill.id}>
                       <TableCell className="font-medium">
                         {bill.bill.title || 'Untitled'}
@@ -884,7 +1013,7 @@ export default function AdminPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => copyToClipboard(bill.shareUrl)}
+                            onClick={() => void copyToClipboard(bill.shareUrl)}
                             title="Copy share link"
                             aria-label="Copy share link"
                           >
@@ -996,7 +1125,7 @@ export default function AdminPage() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => copyToClipboard(selectedBill.shareUrl)}
+                    onClick={() => void copyToClipboard(selectedBill.shareUrl)}
                     aria-label="Copy share URL"
                   >
                     <Copy className="h-4 w-4" />

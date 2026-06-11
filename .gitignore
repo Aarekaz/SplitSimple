@@ -48,3 +48,8 @@ public/mockServiceWorker.js
 
 
 .env.local
+.claude/settings.local.json
+.gstack/
+
+# Local tooling artifacts
+.playwright-cli/

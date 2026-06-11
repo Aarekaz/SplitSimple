@@ -38,6 +38,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileSpreadsheetView } from '@/components/MobileSpreadsheetView'
 import { AnimatedNumber } from '@/components/AnimatedNumber'
 import { SplitSimpleIcon } from '@/components/SplitSimpleIcon'
+import { BillStartOptions } from '@/components/BillStartOptions'
 import { ToastAction } from '@/components/ui/toast'
 import { getSplitMethodOption, splitMethodOptions } from '@/components/split-method-options'
 
@@ -68,6 +69,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -835,6 +837,14 @@ function DesktopBillSplitter() {
       }
     }
 
+    // A modal/dialog (Edit Member, New Bill, Share, Delete…) owns the keyboard while open.
+    // Its inputs live in a portal; when focus sits on the dialog container or a button
+    // inside it, isInInput is briefly false. Without this guard a printable key falls
+    // through to type-to-edit and silently edits the selected ledger cell behind the modal.
+    if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) {
+      return
+    }
+
     // If currently editing a cell input, let typing happen but keep spreadsheet commits
     if (hotkeyState.editing && isInInput) {
       if (e.key === 'Enter') {
@@ -865,62 +875,65 @@ function DesktopBillSplitter() {
       return
     }
 
+    // Ignore spreadsheet hotkeys while focus is in other form controls like the bill title.
+    if (isInInput) {
+      return
+    }
+
     // Global shortcuts (only when not typing in other inputs)
-    if (!isInInput) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault()
-        hotkeyActions.dispatchUndo()
-        hotkeyActions.toastUndo()
-        return
-      }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault()
+      hotkeyActions.dispatchUndo()
+      hotkeyActions.toastUndo()
+      return
+    }
 
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
-        e.preventDefault()
-        hotkeyActions.dispatchRedo()
-        hotkeyActions.toastRedo()
-        return
-      }
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+      e.preventDefault()
+      hotkeyActions.dispatchRedo()
+      hotkeyActions.toastRedo()
+      return
+    }
 
-      // Cmd+N: New bill
-      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
-        e.preventDefault()
-        newBillSourceRef.current = "shortcut"
-        setIsNewBillDialogOpen(true)
-        return
-      }
+    // Cmd+N: New bill
+    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+      e.preventDefault()
+      newBillSourceRef.current = "shortcut"
+      setIsNewBillDialogOpen(true)
+      return
+    }
 
-      // Cmd+Shift+N: Add new item
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
-        e.preventDefault()
-        hotkeyActions.addItem()
-        analytics.trackFeatureUsed("keyboard_shortcut_add_item")
-        return
-      }
+    // Cmd+Shift+N: Add new item
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'N') {
+      e.preventDefault()
+      hotkeyActions.addItem()
+      analytics.trackFeatureUsed("keyboard_shortcut_add_item")
+      return
+    }
 
-      // Cmd+Shift+P: Add person
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
-        e.preventDefault()
-        hotkeyActions.addPerson()
-        analytics.trackFeatureUsed("keyboard_shortcut_add_person")
-        return
-      }
+    // Cmd+Shift+P: Add person
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'P') {
+      e.preventDefault()
+      hotkeyActions.addPerson()
+      analytics.trackFeatureUsed("keyboard_shortcut_add_person")
+      return
+    }
 
-      // Cmd+Shift+C: Copy summary
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
-        e.preventDefault()
-        hotkeyActions.copyBreakdown()
-        analytics.trackFeatureUsed("keyboard_shortcut_copy")
-        return
-      }
+    // Cmd+Shift+C: Copy summary
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
+      e.preventDefault()
+      hotkeyActions.copyBreakdown()
+      analytics.trackFeatureUsed("keyboard_shortcut_copy")
+      return
+    }
 
-      // Cmd+S: Share
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 's') {
-        e.preventDefault()
-        const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
-        if (shareButton) shareButton.click()
-        analytics.trackFeatureUsed("keyboard_shortcut_share")
-        return
-      }
+    // Cmd+S: Share
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 's') {
+      e.preventDefault()
+      const shareButton = document.querySelector('[data-share-trigger]') as HTMLButtonElement
+      if (shareButton) shareButton.click()
+      analytics.trackFeatureUsed("keyboard_shortcut_share")
+      return
     }
 
     // Grid navigation - Excel-like behavior
@@ -1054,11 +1067,11 @@ function DesktopBillSplitter() {
     previousItemsLengthRef.current = items.length
 
     if (activeView !== 'ledger') return
-    if (prevLen === 0 && items.length === 1) {
+    if (prevLen === 0 && items.length === 1 && !hasMeaningfulItems) {
       setSelectedCell({ row: 0, col: 'name' })
       setEditing(true)
     }
-  }, [activeView, items.length])
+  }, [activeView, hasMeaningfulItems, items.length])
 
   useEffect(() => {
     if (editing && editInputRef.current) {
@@ -1086,6 +1099,9 @@ function DesktopBillSplitter() {
                   onChange={(e) => {
                     dispatch({ type: 'SET_BILL_TITLE', payload: e.target.value })
                     analytics.trackTitleChanged(e.target.value)
+                  }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation()
                   }}
                   style={{
                     width: `${Math.min(Math.max((title || '').length || 7, 7), 26)}ch`,
@@ -1313,6 +1329,9 @@ function DesktopBillSplitter() {
 
       {/* --- Main Workspace --- */}
       <main id="main-content" className="pro-main">
+        {/* Single semantic page heading. Visually hidden so it doesn't disrupt
+            the spreadsheet UI, but gives crawlers a keyword-aligned H1. */}
+        <h1 className="sr-only">SplitSimple — split bills and group expenses by item, share, or exact amount</h1>
         {/* LEDGER VIEW */}
         {activeView === 'ledger' && (
           <div className="h-full w-full">
@@ -1713,62 +1732,42 @@ function DesktopBillSplitter() {
                             <X size={16} />
                           </button>
                         </div>
-                        <div className="mt-4 space-y-2">
-                          {people.length === 0 ? (
-                            <button
-                              onClick={addPerson}
-                              className="w-full h-9 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-bold text-white transition-transform active:scale-[0.97] flex items-center justify-between"
-                            >
-                              <span>Add first person</span>
-                              <span className="text-primary-foreground/70">{modKey}{shiftKey}P</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                if (items.length === 0) {
-                                  addItem()
-                                  return
-                                }
-                                setSelectedCell({ row: 0, col: 'name' })
-                                setEditing(true)
-                              }}
-                              className="w-full h-9 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-bold text-white transition-transform active:scale-[0.97] flex items-center justify-between"
-                            >
-                              <span>Add items</span>
-                              <span className="text-primary-foreground/70">{modKey}{shiftKey}N</span>
-                            </button>
-                          )}
-                          {people.length === 0 ? (
-                            <button
-                              onClick={() => {
-                                addPerson()
-                                if (items.length === 0) {
-                                  addItem()
-                                }
-                              }}
-                              className="w-full h-9 px-3 rounded-md bg-muted hover:bg-muted-foreground/15 text-xs font-bold text-foreground transition-colors flex items-center justify-between"
-                              title="Adds a person first, then takes you to add items"
-                            >
-                              <span>Add items</span>
-                              <span className="text-muted-foreground">{modKey}{shiftKey}N</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={addPerson}
-                              className="w-full h-9 px-3 rounded-md bg-muted hover:bg-muted-foreground/15 text-xs font-bold text-foreground transition-colors flex items-center justify-between"
-                            >
-                              <span>Add another person</span>
-                              <span className="text-muted-foreground">{modKey}{shiftKey}P</span>
-                            </button>
-                          )}
-                          <ReceiptScanner
-                            onImport={handleScanImport}
-                            trigger={(
-                              <button className="w-full h-9 px-3 rounded-md bg-muted hover:bg-muted-foreground/15 text-xs font-bold text-foreground transition-colors flex items-center gap-2">
-                                <Camera size={14} /> Scan receipt to import items
+                        <div className="mt-4 space-y-4">
+                          <BillStartOptions />
+
+                          <div className="space-y-2">
+                            {people.length === 0 ? (
+                              <button
+                                onClick={addPerson}
+                                className="w-full h-9 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-bold text-white transition-transform active:scale-[0.97] flex items-center justify-between"
+                              >
+                                <span>Add first person</span>
+                                <span className="text-primary-foreground/70">{modKey}{shiftKey}P</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  if (items.length === 0) {
+                                    addItem()
+                                    return
+                                  }
+                                  setSelectedCell({ row: 0, col: 'name' })
+                                  setEditing(true)
+                                }}
+                                className="w-full h-9 px-3 rounded-md bg-primary hover:bg-primary/90 text-xs font-bold text-white transition-transform active:scale-[0.97] flex items-center justify-between"
+                              >
+                                <span>Add items</span>
+                                <span className="text-primary-foreground/70">{modKey}{shiftKey}N</span>
                               </button>
                             )}
-                          />
+                            <button
+                              onClick={addPerson}
+                              className="w-full h-9 px-3 rounded-md bg-muted hover:bg-muted-foreground/15 text-xs font-bold text-foreground transition-colors flex items-center justify-between"
+                            >
+                              <span>{people.length === 0 ? "Add first person" : "Add another person"}</span>
+                              <span className="text-muted-foreground">{modKey}{shiftKey}P</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2185,6 +2184,7 @@ function DesktopBillSplitter() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Edit Member</DialogTitle>
+            <DialogDescription>Update this person's display name and color.</DialogDescription>
           </DialogHeader>
           {editingPerson && (
             <div className="space-y-5">

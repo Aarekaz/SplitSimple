@@ -9,14 +9,16 @@ import { PostHogProvider } from "@/components/PostHogProvider"
 export const metadata: Metadata = {
   metadataBase: new URL("https://splitsimple.anuragd.me"),
   title: "SplitSimple - Easy Expense Splitting",
-  description: "Split expenses with friends and colleagues effortlessly",
+  description:
+    "Split restaurant bills, rent, and group expenses by item, share, or exact amount. Free with no signup — see everyone's share instantly and share a link.",
   generator: "v0.app",
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "SplitSimple - Easy Expense Splitting",
-    description: "Split expenses with friends and colleagues effortlessly",
+    description:
+      "Split restaurant bills, rent, and group expenses by item, share, or exact amount. Free with no signup — see everyone's share instantly and share a link.",
     url: "https://splitsimple.anuragd.me",
     siteName: "SplitSimple",
     locale: "en_US",
@@ -34,7 +36,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "SplitSimple - Easy Expense Splitting",
-    description: "Split expenses with friends and colleagues effortlessly",
+    description:
+      "Split restaurant bills, rent, and group expenses by item, share, or exact amount. Free with no signup — see everyone's share instantly and share a link.",
     images: [
       {
         url: "/og-image.png",
