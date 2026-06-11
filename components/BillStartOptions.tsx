@@ -470,6 +470,12 @@ export function BillStartOptions({ className, compact = false, layout = "sidebar
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  {quickSplitMode === "exact" && (
+                    <p className="text-xs text-muted-foreground">
+                      Exact amounts should add up to the amount to split, before tax and tip. Any tax,
+                      tip, or discount is then shared proportionally on top.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-3">
