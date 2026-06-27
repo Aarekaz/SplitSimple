@@ -1524,7 +1524,7 @@ function DesktopBillSplitter() {
                                         <button
                                           onClick={(e) => e.stopPropagation()}
                                           aria-label="Change split method"
-                                          className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-all flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                                          className="p-1 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded transition-[color,background-color,opacity] duration-150 ease-out flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                                           title="Change split method"
                                         >
                                           {React.createElement(getSplitMethodOption(item.method).icon, { size: 12 })}

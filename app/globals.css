@@ -528,7 +528,7 @@
 
   .clickable-badge:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 0 3px rgba(var(--primary), 0.1);
+    box-shadow: 0 0 0 3px oklch(from var(--primary) l c h / 0.1);
   }
 
   .clickable-badge:active {
@@ -540,7 +540,7 @@
   textarea:focus,
   select:focus {
     @apply outline-none ring-2 ring-primary ring-offset-2;
-    background-color: rgba(var(--primary), 0.02);
+    background-color: oklch(from var(--primary) l c h / 0.02);
     transition:
       box-shadow 0.2s var(--ease-out-cubic),
       border-color 0.2s var(--ease-out-cubic),
@@ -584,10 +584,10 @@
   /* Success ripple effect */
   @keyframes success-ripple {
     0% {
-      box-shadow: 0 0 0 0 rgba(var(--success), 0.4);
+      box-shadow: 0 0 0 0 oklch(from var(--success) l c h / 0.4);
     }
     100% {
-      box-shadow: 0 0 0 10px rgba(var(--success), 0);
+      box-shadow: 0 0 0 10px oklch(from var(--success) l c h / 0);
     }
   }
 
@@ -630,15 +630,15 @@
   /* Pulse animation for new inputs */
   @keyframes pulse-border {
     0%, 100% {
-      box-shadow: 0 0 0 0 rgba(var(--primary), 0.4);
+      box-shadow: 0 0 0 0 oklch(from var(--primary) l c h / 0.4);
     }
     50% {
-      box-shadow: 0 0 0 4px rgba(var(--primary), 0.1);
+      box-shadow: 0 0 0 4px oklch(from var(--primary) l c h / 0.1);
     }
   }
 
   .input-focus-hint {
-    animation: pulse-border 0.3s ease-in-out 3;
+    animation: pulse-border 0.3s ease-out 2;
   }
 
   /* Stagger slide-in animations */
@@ -738,17 +738,15 @@
   }
 
   .ledger-row {
-    @apply border-b border-border transition-[transform,box-shadow,background-color,border-color] duration-200;
+    @apply border-b border-border transition-[box-shadow,background-color,border-color] duration-200;
     border-left: 3px solid transparent;
-    transform-origin: center;
   }
 
   .ledger-row:hover {
     @apply bg-muted/30;
-    border-left-color: hsl(var(--primary));
-    transform: scale(1.002);
-    box-shadow: 0 2px 8px -2px rgba(var(--primary), 0.15),
-                0 0 0 1px rgba(var(--primary), 0.05);
+    border-left-color: var(--primary);
+    box-shadow: 0 2px 8px -2px oklch(from var(--primary) l c h / 0.15),
+                0 0 0 1px oklch(from var(--primary) l c h / 0.05);
   }
 
   .ledger-row-expanded {
